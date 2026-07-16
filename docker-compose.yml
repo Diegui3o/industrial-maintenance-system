@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16
@@ -13,4 +15,8 @@ services:
       POSTGRES_DB: mantenimiento
 
     volumes:
-      - ./db:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:

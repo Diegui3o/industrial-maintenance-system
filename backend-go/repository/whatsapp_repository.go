@@ -9,6 +9,14 @@ type WhatsAppRepository struct {
 	DB *sql.DB
 }
 
+type WhatsAppInstancia struct {
+	ID         int
+	Nombre     string
+	Telefono   string
+	Estado     string
+	RutaSesion string
+}
+
 func NewWhatsAppRepository(db *sql.DB) *WhatsAppRepository {
 	return &WhatsAppRepository{DB: db}
 }
@@ -65,4 +73,34 @@ func (r *WhatsAppRepository) AsociarEquipoGrupo(equipoID, grupoID int) error {
         INSERT INTO equipo_grupo (equipo_id, grupo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING
     `, equipoID, grupoID)
 	return err
+}
+
+func (r *WhatsAppRepository) ObtenerInstancia(id int) (*WhatsAppInstancia, error) {
+
+	var instancia WhatsAppInstancia
+
+	err := r.DB.QueryRow(`
+		SELECT
+			id,
+			nombre,
+			telefono,
+			estado,
+			ruta_sesion
+		FROM whatsapp_instancias
+		WHERE id = $1
+	`,
+		id,
+	).Scan(
+		&instancia.ID,
+		&instancia.Nombre,
+		&instancia.Telefono,
+		&instancia.Estado,
+		&instancia.RutaSesion,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &instancia, nil
 }

@@ -2,6 +2,10 @@
 DROP TABLE IF EXISTS equipo_grupo CASCADE;
 DROP TABLE IF EXISTS grupos_whatsapp CASCADE;
 DROP TABLE IF EXISTS cola_notificaciones CASCADE;
+DROP TABLE IF EXISTS reglas_notificacion CASCADE;
+DROP TABLE IF EXISTS destinatarios CASCADE;
+DROP TABLE IF EXISTS grupos_notificacion CASCADE;
+DROP TABLE IF EXISTS plantillas_notificacion CASCADE;
 
 -- ============================================
 -- PLANTILLAS DE MENSAJES (personalizables)

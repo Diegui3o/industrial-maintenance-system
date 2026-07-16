@@ -15,6 +15,7 @@ type RuleEngine struct {
 	EventoService   *services.EventosService
 	NotifierService *services.NotifierService
 	EquipoRepo      *repository.EquipoRepository
+	Dispatcher      *services.DispatcherService
 }
 
 func (e *RuleEngine) ProcessSensorData(equipoID int, parametro string, valor float64, unidad string) {
@@ -58,8 +59,12 @@ func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetr
 	err := e.EventoService.CambiarEstadoEquipo(equipoID, "fallo", motivo)
 	if err != nil {
 		log.Printf("Error cambiando estado: %v", err)
+		return
 	}
+
+	e.Dispatcher.Dispatch(equipoID, "fallo", "alta", motivo)
 }
+
 func (e *RuleEngine) ProcessPingRecovery(equipoID int, latency float64) {
 	equipo, _ := e.EquipoRepo.ObtenerEquipoPorID(equipoID)
 
@@ -70,5 +75,8 @@ func (e *RuleEngine) ProcessPingRecovery(equipoID int, latency float64) {
 	motivo := fmt.Sprintf("Conexión restablecida. Latencia: %.0fms", latency)
 	e.EventoService.CambiarEstadoEquipo(equipoID, "activo", motivo)
 	e.AlarmaService.CerrarAlarmasActivasPorEquipo(equipoID)
+
+	e.Dispatcher.Dispatch(equipoID, "recuperacion", "info", motivo)
+
 	log.Printf("🟢 Equipo %d recuperado", equipoID)
 }

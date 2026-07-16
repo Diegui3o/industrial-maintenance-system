@@ -24,6 +24,7 @@ func InitScheduler(db *sql.DB) *scheduler.Scheduler {
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	eventosService := services.NewEventosService(eventosRepo, equipoRepo, auditoriaService, alarmaService)
+	dispatcherService := services.NewDispatcherService(notifRepo, equipoRepo)
 
 	notifierService := &services.NotifierService{
 		WhatsApp:   nil,
@@ -40,6 +41,7 @@ func InitScheduler(db *sql.DB) *scheduler.Scheduler {
 		EventoService:   eventosService,
 		NotifierService: notifierService,
 		EquipoRepo:      equipoRepo,
+		Dispatcher:      dispatcherService,
 	}
 
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
