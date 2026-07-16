@@ -51,18 +51,17 @@ func main() {
 		)
 	}
 
-	if len(groups) > 0 {
+	grupoPrueba := "120363428461703924@g.us"
 
-		err := client.SendToGroup(
-			groups[0].JID.String(),
-			"🚨 Prueba desde Bot Mantenimiento",
-		)
+	err = client.SendToGroup(
+		grupoPrueba,
+		"hola",
+	)
 
-		if err != nil {
-			log.Println(err)
-		}
-
-		log.Println("✅ Enviado!")
+	if err != nil {
+		log.Println("Error enviando:", err)
+	} else {
+		log.Println("✅ Mensaje enviado correctamente")
 	}
 
 	client.Disconnect()

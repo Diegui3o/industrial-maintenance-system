@@ -37,7 +37,7 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 	container, err := sqlstore.New(
 		ctx,
 		"sqlite",
-		sessionPath+"?_pragma=foreign_keys(1)",
+		sessionPath+"?_pragma=foreign_keys(1)&_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)",
 		nil,
 	)
 
@@ -180,10 +180,23 @@ func (w *WhatsAppClient) GetGroups() ([]*types.GroupInfo, error) {
 }
 
 func (w *WhatsAppClient) SendToGroup(groupJID string, message string) error {
-	target, _ := types.ParseJID(groupJID)
-	_, err := w.Client.SendMessage(context.Background(), target, &waProto.Message{
-		Conversation: &message,
-	})
+
+	ctx := context.Background()
+
+	target, err := types.ParseJID(groupJID)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Client.SendMessage(
+		ctx,
+		target,
+		&waProto.Message{
+			Conversation: &message,
+		},
+	)
+
 	return err
 }
 
