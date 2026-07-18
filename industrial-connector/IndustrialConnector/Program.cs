@@ -33,6 +33,8 @@ builder.Services.AddHttpClient<ExporterService>(client =>
 // ============================================
 builder.Services.AddHostedService<PiSystemWorker>();
 builder.Services.AddHostedService<BatchSenderWorker>();
+builder.Services.AddHostedService<DiagnosticWorker>();
+builder.Services.AddHostedService<OpcUaWorker>();
 
 // ============================================
 // LOGGING

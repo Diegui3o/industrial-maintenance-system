@@ -14,6 +14,7 @@ public class HealthService
     public long TotalSent { get; set; }
     public DateTime LastReadAt { get; set; }
     public DateTime LastSentAt { get; set; }
+    public DateTime LastDiagAt { get; set; }
 
     public object GetStatus()
     {
