@@ -41,7 +41,10 @@ func (e *RuleEngine) ProcessSensorData(equipoID int, parametro string, valor flo
 		log.Printf("Error cambiando estado: %v", err)
 		return
 	}
+
 	e.NotifierService.NotificarFalloEquipo(equipoID, motivo, umbrales.Severidad)
+	e.Dispatcher.Dispatch(equipoID, "fallo", umbrales.Severidad, motivo)
+	log.Printf("🚨 Equipo %d en FALLO por %s", equipoID, parametro)
 }
 
 func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetries int) {

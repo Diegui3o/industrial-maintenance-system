@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"backend/engine"
 	"backend/handlers"
 	"backend/repository"
 	"backend/services"
@@ -10,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(db *sql.DB) *mux.Router {
+func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 
 	r := mux.NewRouter()
 
@@ -33,7 +34,6 @@ func SetupRoutes(db *sql.DB) *mux.Router {
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
 	dispositivoService := &services.DispositivoRedService{Repo: dispositivoRepo}
-
 	equipoHandler := &handlers.EquipoHandler{Service: equipoService}
 	eventosHandler := &handlers.EventosHandler{Service: eventosService}
 	metricaHandler := &handlers.MetricaHandler{Service: metricaService}
@@ -44,6 +44,7 @@ func SetupRoutes(db *sql.DB) *mux.Router {
 	dispositivoHandler := &handlers.DispositivoRedHandler{Service: dispositivoService}
 	configHandler := &handlers.ConfigHandler{Repo: configRepo}
 	whatsappHandler := &handlers.WhatsAppHandler{Repo: whatsappRepo}
+	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 
 	r.HandleFunc("/api/equipos", equipoHandler.GetEquipos).Methods("GET")
 	r.HandleFunc("/api/equipos", equipoHandler.PostEquipos).Methods("POST")
@@ -87,6 +88,7 @@ func SetupRoutes(db *sql.DB) *mux.Router {
 	r.HandleFunc("/api/grupos", whatsappHandler.ListarGrupos).Methods("GET")
 	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
 	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
+	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
 
 	return r
 }

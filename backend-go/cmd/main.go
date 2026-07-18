@@ -13,11 +13,11 @@ import (
 func main() {
 	db := config.ConnectDB()
 
-	r := routes.SetupRoutes(db)
-
-	sched := core.InitScheduler(db)
+	sched, ruleEngine := core.InitScheduler(db)
 	go sched.Start()
 
-	log.Println("Servidor corriendo en :1880")
+	r := routes.SetupRoutes(db, ruleEngine)
+
+	log.Println("🚀 Servidor corriendo en :1880")
 	log.Fatal(http.ListenAndServe(":1880", r))
 }

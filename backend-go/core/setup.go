@@ -11,7 +11,7 @@ import (
 	"backend/services"
 )
 
-func InitScheduler(db *sql.DB) *scheduler.Scheduler {
+func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 	configRepo := repository.NewConfigRepository(db)
 	sensorRepo := repository.NewSensorRepository(db)
 	alarmaRepo := &repository.AlarmaRepository{DB: db}
@@ -46,5 +46,6 @@ func InitScheduler(db *sql.DB) *scheduler.Scheduler {
 
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
 	log.Println("Scheduler inicializado")
-	return sched
+
+	return sched, ruleEngine
 }
