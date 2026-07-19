@@ -151,7 +151,7 @@ private fun SettingsTile(onClick: () -> Unit) {
             containerColor = Color.Transparent
         ),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(AppColors.NexaOrange.copy(alpha = 0.5f))
+            brush = androidx.compose.ui.graphics.SolidColor(AppColors.TextSecondary.copy(alpha = 0.5f))
         ),
         shape = MaterialTheme.shapes.large
     ) {
@@ -170,12 +170,12 @@ private fun SettingsTile(onClick: () -> Unit) {
                 text = "Configuración",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
-                color = AppColors.NexaOrange,
+                color = AppColors.TextPrimary,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = "→",
-                color = AppColors.NexaOrange,
+                color = AppColors.TextSecondary,
                 style = MaterialTheme.typography.titleMedium
             )
         }

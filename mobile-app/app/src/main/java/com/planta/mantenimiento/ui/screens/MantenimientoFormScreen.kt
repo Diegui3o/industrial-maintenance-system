@@ -1,6 +1,8 @@
 package com.planta.mantenimiento.ui.screens
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +24,7 @@ import com.planta.mantenimiento.ui.viewmodel.MantenimientoViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MantenimientoFormScreen(
@@ -263,7 +266,7 @@ fun MantenimientoFormScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.NexaOrange
+                    containerColor = AppColors.Success
                 ),
                 shape = MaterialTheme.shapes.medium
             ) {

@@ -70,7 +70,7 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver al panel",
-                            tint = AppColors.NexaOrange
+                            tint = AppColors.TextPrimary
                         )
                     }
                 },
@@ -187,7 +187,7 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.NexaOrange
+                    containerColor = AppColors.Success
                 ),
                 shape = MaterialTheme.shapes.medium
             ) {
@@ -209,7 +209,7 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = AppColors.NexaOrange
+                    contentColor = AppColors.TextPrimary
                 ),
                 border = ButtonDefaults.outlinedButtonBorder,
                 shape = MaterialTheme.shapes.medium

@@ -10,7 +10,7 @@ val White = Color(0xFFFFFFFF)
 val LightGray = Color(0xFFF5F5F5)
 val SoftGray = Color(0xFFE0E0E0)
 
-val SuccessGreen = Color(0xFF2E7D32)
+val SuccessGreen = Color(0xFF44AF48)
 val ErrorRed = Color(0xFFC62828)
 
 val TextPrimaryColor = Color(0xFF212121)
