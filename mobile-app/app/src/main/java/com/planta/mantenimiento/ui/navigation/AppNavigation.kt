@@ -7,8 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.planta.mantenimiento.data.local.PreferencesManager
 import com.planta.mantenimiento.ui.screens.*
-import com.planta.mantenimiento.ui.viewmodel.EquipoViewModel
-import com.planta.mantenimiento.ui.viewmodel.MantenimientoViewModel
+import com.planta.mantenimiento.ui.screens.home.HomeScreen
 
 @Composable
 fun AppNavigation(context: Context) {
@@ -20,7 +19,7 @@ fun AppNavigation(context: Context) {
             HomeScreen(navController, prefs)
         }
         composable("equipos") {
-            EquipoListScreen()
+            EquipoListScreen(navController = navController)
         }
         composable("mantenimientos") {
             MantenimientoListScreen(navController)
@@ -29,7 +28,7 @@ fun AppNavigation(context: Context) {
             MantenimientoFormScreen(navController)
         }
         composable("settings") {
-            SettingsScreen(prefs) { navController.popBackStack() }
+            SettingsScreen(navController = navController, prefs = prefs)
         }
     }
 }
