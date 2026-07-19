@@ -1,14 +1,9 @@
--- ============================================
--- NUEVA TABLA DE MANTENIMIENTO (FORMATO EXCEL)
--- ============================================
 CREATE TABLE mantenimiento (
     id SERIAL PRIMARY KEY,
 
-    -- Relaciones
     equipo_id INT NOT NULL REFERENCES equipos(id),
     usuario_id INT REFERENCES usuarios(id),
 
-    -- Campos del formato oficial
     fecha_reporte DATE NOT NULL DEFAULT CURRENT_DATE,
     fase TEXT NOT NULL,
     taller TEXT NOT NULL,
@@ -26,14 +21,12 @@ CREATE TABLE mantenimiento (
     tn_dejadas_procesar NUMERIC(10,2),
     enlace TEXT,
 
-    -- Control
     estado_falla VARCHAR(20) DEFAULT 'abierta'
         CHECK (estado_falla IN ('abierta','en_proceso','cerrada')),
     creado_en TIMESTAMPTZ DEFAULT NOW(),
     actualizado_en TIMESTAMPTZ
 );
 
--- Índices
 CREATE INDEX idx_mant_fecha ON mantenimiento(fecha_reporte);
 CREATE INDEX idx_mant_fase ON mantenimiento(fase);
 CREATE INDEX idx_mant_taller ON mantenimiento(taller);

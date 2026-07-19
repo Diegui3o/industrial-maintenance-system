@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.gson)
 
+    implementation("androidx.navigation:navigation-compose:2.8.5")
+
     // WorkManager
     implementation(libs.work.runtime.ktx)
 }

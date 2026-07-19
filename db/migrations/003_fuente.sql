@@ -1,6 +1,3 @@
--- ============================================
--- CONFIGURACIÓN DE UMBRALES
--- ============================================
 CREATE TABLE config_umbrales (
     id SERIAL PRIMARY KEY,
     equipo_id INT NOT NULL REFERENCES equipos(id),
@@ -14,9 +11,6 @@ CREATE TABLE config_umbrales (
     actualizado_en TIMESTAMPTZ
 );
 
--- ============================================
--- CONFIGURACIÓN DE FUENTES DE DATOS
--- ============================================
 CREATE TABLE config_fuentes (
     id SERIAL PRIMARY KEY,
     equipo_id INT NOT NULL REFERENCES equipos(id),
@@ -29,9 +23,6 @@ CREATE TABLE config_fuentes (
     creado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- REGISTRO DE VALORES DE SENSORES
--- ============================================
 CREATE TABLE datos_sensores (
     id SERIAL PRIMARY KEY,
     equipo_id INT NOT NULL REFERENCES equipos(id),
