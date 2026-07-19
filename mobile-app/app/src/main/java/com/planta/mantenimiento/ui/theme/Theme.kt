@@ -4,29 +4,46 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val IndustrialBlue = Color(0xFF1A3C5E)      // Azul corporativo oscuro
-val IndustrialBlueLight = Color(0xFF2D5F8A)
-val IndustrialGray = Color(0xFFF5F5F5)
-val IndustrialWhite = Color(0xFFFFFFFF)
-val IndustrialRed = Color(0xFFD32F2F)       // Solo para alertas
-val IndustrialGreen = Color(0xFF388E3C)     // Solo para éxito
+// 🎨 Colores base
+val OrangePrimary = Color(0xFFFF6F00)
+val White = Color(0xFFFFFFFF)
+val LightGray = Color(0xFFF5F5F5)
+val SoftGray = Color(0xFFE0E0E0)
 
-private val LightColorScheme = lightColorScheme(
-    primary = IndustrialBlue,
-    onPrimary = IndustrialWhite,
-    primaryContainer = IndustrialBlueLight,
-    secondary = IndustrialGray,
-    background = IndustrialGray,
-    surface = IndustrialWhite,
-    error = IndustrialRed,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-)
+val SuccessGreen = Color(0xFF2E7D32)
+val ErrorRed = Color(0xFFC62828)
+
+val TextPrimaryColor = Color(0xFF212121)
+val TextSecondaryColor = Color(0xFF757575)
+
+// 🔥 Objeto central de colores
+object AppColors {
+
+    val NexaOrange = OrangePrimary
+    val NexaWhite = White
+
+    val BackgroundGradientTop = White
+    val BackgroundGradientMid = LightGray
+    val BackgroundGradientBottom = SoftGray
+
+    val TextPrimary = TextPrimaryColor
+    val TextSecondary = TextSecondaryColor
+
+    val Success = SuccessGreen
+    val Error = ErrorRed
+
+    val Card = White
+    val ButtonSecondary = LightGray
+
+    // ✅ LOS QUE TE FALTABAN
+    val IndustrialGreen = SuccessGreen
+    val IndustrialRed = ErrorRed
+}
 
 @Composable
 fun MantenimientoTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = lightColorScheme(),
         typography = Typography(),
         content = content
     )

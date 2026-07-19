@@ -9,7 +9,7 @@ import com.planta.mantenimiento.data.local.dao.MantenimientoDao
 import com.planta.mantenimiento.model.Equipo
 import com.planta.mantenimiento.model.Mantenimiento
 
-@Database(entities = [Equipo::class, Mantenimiento::class], version = 2, exportSchema = false)
+@Database(entities = [Equipo::class, Mantenimiento::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun equipoDao(): EquipoDao
     abstract fun mantenimientoDao(): MantenimientoDao

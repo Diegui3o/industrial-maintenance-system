@@ -94,6 +94,8 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
+	diagHandler := &handlers.DiagnosticoHandler{}
+	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
 
 	return r
 }
