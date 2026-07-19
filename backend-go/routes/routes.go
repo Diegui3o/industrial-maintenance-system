@@ -25,6 +25,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	dispositivoRepo := &repository.DispositivoRedRepository{DB: db}
 	configRepo := repository.NewConfigRepository(db)
 	whatsappRepo := repository.NewWhatsAppRepository(db)
+	mantenimientoRepo := repository.NewMantenimientoRepository(db)
 
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
@@ -45,6 +46,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	configHandler := &handlers.ConfigHandler{Repo: configRepo}
 	whatsappHandler := &handlers.WhatsAppHandler{Repo: whatsappRepo}
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
+	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 
 	r.HandleFunc("/api/equipos", equipoHandler.GetEquipos).Methods("GET")
 	r.HandleFunc("/api/equipos", equipoHandler.PostEquipos).Methods("POST")
@@ -89,6 +91,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
 	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
 	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
+	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
+	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
 
 	return r
 }

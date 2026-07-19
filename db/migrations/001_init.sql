@@ -35,43 +35,6 @@ CREATE TABLE usuarios (
     creado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE mantenimiento (
-    id SERIAL PRIMARY KEY,
-
-    numero_falla TEXT UNIQUE NOT NULL,
-
-    equipo_id INT NOT NULL,
-    usuario_id INT,
-
-    tipo_mantenimiento TEXT NOT NULL CHECK (
-        tipo_mantenimiento IN (
-            'correctivo',
-            'preventivo',
-            'emergencia'
-        )
-    ),
-
-    accion TEXT,
-    observacion TEXT,
-
-    estado_falla VARCHAR(20) CHECK (
-        estado_falla IN (
-            'abierta',
-            'en_proceso',
-            'cerrada'
-        )
-    ),
-
-    fecha_inicio TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    fecha_fin TIMESTAMPTZ,
-
-    creado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMPTZ,
-
-    FOREIGN KEY (equipo_id) REFERENCES equipos(id) ON DELETE RESTRICT,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT
-);
-
 CREATE TABLE eventos_estado (
     id SERIAL PRIMARY KEY,
 
@@ -150,9 +113,6 @@ CREATE TABLE auditoria(
     fecha TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
-
-CREATE INDEX idx_mantenimiento_equipo 
-ON mantenimiento(equipo_id);
 
 CREATE INDEX idx_eventos_equipo 
 ON eventos_estado(equipo_id);
