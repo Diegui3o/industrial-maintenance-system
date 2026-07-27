@@ -7,6 +7,7 @@ export const colors = {
   text: { primary: '#1F2329', secondary: '#5E6573', muted: '#8A919F', onPrimary: '#FFFFFF' },
   border: '#DADDE3',
   borderLight: '#E8EAEE',
+  primaryGhost: '#C45A1A15', 
   status: {
     success: '#2D7A4C', successBg: '#E8F5E9',
     error: '#B93636', errorBg: '#FDE8E8',

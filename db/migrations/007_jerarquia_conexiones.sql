@@ -6,11 +6,7 @@ ALTER TABLE equipos
 ADD COLUMN IF NOT EXISTS activo_padre_id INT REFERENCES equipos(id),
 ADD COLUMN IF NOT EXISTS nivel_jerarquia INT DEFAULT 0,
 ADD COLUMN IF NOT EXISTS tag TEXT,
-ADD COLUMN IF NOT EXISTS codigo_sap TEXT,
-ADD COLUMN IF NOT EXISTS tipo_activo TEXT DEFAULT 'equipo',
 ADD COLUMN IF NOT EXISTS ubicacion_fisica TEXT,
-ADD COLUMN IF NOT EXISTS marca TEXT,
-ADD COLUMN IF NOT EXISTS modelo_equipo TEXT,
 ADD COLUMN IF NOT EXISTS descripcion_larga TEXT;
 
 -- Índice para búsqueda por padre
@@ -23,7 +19,6 @@ CREATE INDEX IF NOT EXISTS idx_equipos_padre ON equipos(activo_padre_id);
 CREATE TABLE IF NOT EXISTS conexiones (
     id SERIAL PRIMARY KEY,
 
-    -- ¿Qué se conecta?
     origen_id INT NOT NULL REFERENCES equipos(id),
     destino_id INT NOT NULL REFERENCES equipos(id),
 

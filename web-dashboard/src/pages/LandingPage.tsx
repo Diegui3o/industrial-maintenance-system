@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { colors, spacing, radius, shadows } from '../theme/colors';
+import { colors, spacing, radius } from '../theme/colors';
 import Badge from '../components/Badge';
 
 interface Props {
