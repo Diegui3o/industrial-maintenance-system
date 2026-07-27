@@ -1,0 +1,14 @@
+# entorno
+.env
+*.log
+
+# sistema
+.DS_Store
+Thumbs.db
+
+# vscode
+.vscode/
+
+# node (frontend futuro)
+node_modules/
+dist/
