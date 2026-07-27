@@ -322,3 +322,51 @@ func (r *EquipoRepository) ObtenerEstadoActualEquipo(equipoID int) (string, erro
 	).Scan(&estado)
 	return estado, err
 }
+
+// ListarHijos: equipos que están dentro de otro equipo
+func (r *EquipoRepository) ListarHijos(padreID int) ([]models.Equipo, error) {
+    query := `
+        SELECT id, codigo, nombre, area, tipo_activo, tag, nivel_jerarquia,
+               ip, ubicacion_fisica, marca, modelo_equipo, estado_equipo
+        FROM equipos
+        WHERE activo_padre_id = $1
+        ORDER BY nivel_jerarquia, nombre
+    `
+    rows, err := r.DB.Query(query, padreID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var hijos []models.Equipo
+    for rows.Next() {
+        var e models.Equipo
+        rows.Scan(&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.TipoActivo, &e.Tag,
+            &e.NivelJerarquia, &e.IP, &e.UbicacionFisica, &e.Marca, &e.ModeloEquipo, &e.EstadoEquipo)
+        hijos = append(hijos, e)
+    }
+    return hijos, rows.Err()
+}
+
+// ListarRaices: equipos sin padre (nivel más alto)
+func (r *EquipoRepository) ListarRaices() ([]models.Equipo, error) {
+    query := `
+        SELECT id, codigo, nombre, area, tipo_activo, tag, nivel_jerarquia
+        FROM equipos
+        WHERE activo_padre_id IS NULL
+        ORDER BY nombre
+    `
+    rows, err := r.DB.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var raices []models.Equipo
+    for rows.Next() {
+        var e models.Equipo
+        rows.Scan(&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.TipoActivo, &e.Tag, &e.NivelJerarquia)
+        raices = append(raices, e)
+    }
+    return raices, rows.Err()
+}

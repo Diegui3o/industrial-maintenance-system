@@ -18,6 +18,6 @@ func main() {
 
 	r := routes.SetupRoutes(db, ruleEngine)
 
-	log.Println("🚀 Servidor corriendo en :1880")
-	log.Fatal(http.ListenAndServe("0.0.0.0:1880", r))
+	log.Println("_/ Servidor corriendo en :1883")
+	log.Fatal(http.ListenAndServe("0.0.0.0:1883", r))
 }

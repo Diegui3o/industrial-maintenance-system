@@ -26,6 +26,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	configRepo := repository.NewConfigRepository(db)
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	mantenimientoRepo := repository.NewMantenimientoRepository(db)
+	conexionRepo := repository.NewConexionRepository(db)
 
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
@@ -47,6 +48,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	whatsappHandler := &handlers.WhatsAppHandler{Repo: whatsappRepo}
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
+	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 
 	r.HandleFunc("/api/equipos", equipoHandler.GetEquipos).Methods("GET")
 	r.HandleFunc("/api/equipos", equipoHandler.PostEquipos).Methods("POST")
@@ -96,6 +98,14 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
 	diagHandler := &handlers.DiagnosticoHandler{}
 	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.Crear).Methods("POST")
+	r.HandleFunc("/api/equipos/{id}/conexiones/{conId}", conexionHandler.Eliminar).Methods("DELETE")
+
+	// Jerarquía
+	r.HandleFunc("/api/equipos/raices", equipoHandler.GetRaices).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
+
 
 	return r
 }
