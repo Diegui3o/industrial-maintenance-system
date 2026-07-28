@@ -107,7 +107,32 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
     onError: () => setFeedback('error')
   })
 
-  const handleSubmit = () => mutation.mutate()
+const handleSubmit = () => {
+  // Validar IP si se ingresó
+  if (form.endpoint && form.endpoint.trim() !== '') {
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
+    const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!ipRegex.test(form.endpoint) && !domainRegex.test(form.endpoint)) {
+      setFeedback('error')
+      return
+    }
+    if (!form.intervalo_segundos || form.intervalo_segundos < 1) {
+      setFeedback('error')
+      return
+    }
+    if (!form.timeout_segundos || form.timeout_segundos < 1) {
+      setFeedback('error')
+      return
+    }
+    if (!form.reintentos || form.reintentos < 1) {
+      setFeedback('error')
+      return
+    }
+  }
+  
+  setFeedback(null)
+  mutation.mutate()
+}
 
   return (
     <Layout title="Nuevo Equipo" subtitle={`Paso ${step + 1}: ${STEPS[step]}`} onBack={() => onNavigate('equipos')}>

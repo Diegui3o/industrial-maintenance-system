@@ -9,6 +9,7 @@ import EventosPage from './pages/EventosPage';
 import MetricasPage from './pages/MetricasPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
 import { getEquipos } from './services/api';
+import EquipoEditPage from './pages/EquipoEditPage';
 
 export default function App() {
   const [screen, setScreen] = useState<string>('dashboard');
@@ -53,7 +54,7 @@ export default function App() {
     case 'dashboard':
       return <DashboardPage onNavigate={navigate} isConnected={isConnected} />;
     case 'equipos':
-      return <EquiposPage onNavigate={navigate} onBack={goBack} />;
+      return <EquiposPage onNavigate={navigate} />;
     case 'equipo-detalle':
       return <EquipoDetailPage equipo={screenParams} onNavigate={navigate} onBack={goBack} />;
     case 'crear':
@@ -64,6 +65,8 @@ export default function App() {
       return <EventosPage onNavigate={navigate} onBack={goBack} />;
     case 'metricas':
       return <MetricasPage onNavigate={navigate} onBack={goBack} />;
+    case 'editar-equipo':
+      return <EquipoEditPage equipo={screenParams} onNavigate={navigate} onBack={() => navigate('equipo-detalle', screenParams)} />;
     case 'configuracion':
       return <ConfiguracionPage onNavigate={navigate} onBack={goBack} />;
     default:

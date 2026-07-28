@@ -31,20 +31,25 @@ export default function MonitoreoStep({ form, update }: Props) {
       {form.requiere_monitoreo && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginLeft: 28 }}>
           <Field label="Tipo Fuente" value={form.tipo_fuente} onChange={v => update({ tipo_fuente: v })} />
-          <Field label="Endpoint (IP/URL)" value={form.endpoint} onChange={v => update({ endpoint: v })} />
-          <Field label="Intervalo (seg)" value={String(form.intervalo_segundos)} onChange={v => update({ intervalo_segundos: Number(v) || 60 })} />
-          <Field label="Timeout (seg)" value={String(form.timeout_segundos)} onChange={v => update({ timeout_segundos: Number(v) || 10 })} />
+          <Field label="Intervalo (seg)" value={String(form.intervalo_segundos)} 
+            onChange={v => update({ intervalo_segundos: Number(v) || 0 })} type="number" />
+          <Field label="Timeout (seg)" value={String(form.timeout_segundos)} 
+            onChange={v => update({ timeout_segundos: Number(v) || 0 })} type="number" />
+          <Field label="Reintentos" value={String(form.reintentos)} 
+            onChange={v => update({ reintentos: Number(v) || 0 })} type="number" />
         </div>
       )}
     </div>
   )
 }
 
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Field({ label, value, onChange, placeholder, type = 'text' }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string
+}) {
   return (
     <div style={{ marginBottom: 12 }}>
       <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1, color: colors.text.muted }}>{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         style={{ width: '100%', padding: '8px 10px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 13 }} />
     </div>
   )

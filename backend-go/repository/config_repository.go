@@ -161,10 +161,13 @@ func (r *ConfigRepository) ObtenerFuentePorID(id int) (*models.ConfigFuente, err
 }
 
 func (r *ConfigRepository) ListarFuentesPorEquipo(equipoID int) ([]models.ConfigFuente, error) {
-	rows, err := r.DB.Query(`
+	query := `
         SELECT id, equipo_id, tipo_fuente, endpoint, intervalo_segundos, timeout_segundos, reintentos, activo
-        FROM config_fuentes WHERE equipo_id = $1 ORDER BY id ASC
-    `, equipoID)
+        FROM config_fuentes
+        WHERE equipo_id = $1
+        ORDER BY id ASC
+    `
+	rows, err := r.DB.Query(query, equipoID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,9 +176,7 @@ func (r *ConfigRepository) ListarFuentesPorEquipo(equipoID int) ([]models.Config
 	var fuentes []models.ConfigFuente
 	for rows.Next() {
 		var f models.ConfigFuente
-		if err := rows.Scan(&f.ID, &f.EquipoID, &f.TipoFuente, &f.Endpoint, &f.IntervaloSegundos, &f.TimeoutSegundos, &f.Reintentos, &f.Activo); err != nil {
-			return nil, err
-		}
+		rows.Scan(&f.ID, &f.EquipoID, &f.TipoFuente, &f.Endpoint, &f.IntervaloSegundos, &f.TimeoutSegundos, &f.Reintentos, &f.Activo)
 		fuentes = append(fuentes, f)
 	}
 	return fuentes, rows.Err()

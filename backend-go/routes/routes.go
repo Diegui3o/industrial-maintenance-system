@@ -36,7 +36,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
 	dispositivoService := &services.DispositivoRedService{Repo: dispositivoRepo}
-	equipoHandler := &handlers.EquipoHandler{Service: equipoService}
+	equipoHandler := &handlers.EquipoHandler{
+		Service:    equipoService,
+		ConfigRepo: configRepo}
 	eventosHandler := &handlers.EventosHandler{Service: eventosService}
 	metricaHandler := &handlers.MetricaHandler{Service: metricaService}
 	auditoriaHandler := handlers.NewAuditoriaHandler(auditoriaService)
@@ -105,7 +107,6 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	// Jerarquía
 	r.HandleFunc("/api/equipos/raices", equipoHandler.GetRaices).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
-
 
 	return r
 }

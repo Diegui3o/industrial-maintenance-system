@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"backend/models"
+	"backend/repository"
 	"backend/services"
 	"backend/utils"
 
@@ -13,7 +14,8 @@ import (
 )
 
 type EquipoHandler struct {
-	Service *services.EquipoService
+	Service    *services.EquipoService
+	ConfigRepo *repository.ConfigRepository
 }
 
 func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
@@ -62,17 +64,51 @@ func (h *EquipoHandler) PostEquipos(w http.ResponseWriter, r *http.Request) {
 
 func (h *EquipoHandler) GetEquipoPorID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		utils.ErrorJSON(w, 400, "id invalido")
-		return
-	}
+	id, _ := strconv.Atoi(vars["id"])
+
 	equipo, err := h.Service.BuscarEquipoPorID(id)
 	if err != nil {
 		utils.ErrorJSON(w, 500, "error buscando equipo")
 		return
 	}
-	json.NewEncoder(w).Encode(equipo)
+
+	// Buscar dispositivo de red asociado
+	dispositivos, _ := h.Service.Repo.ListarDispositivosPorEquipo(id)
+	var dispositivo map[string]interface{}
+	if len(dispositivos) > 0 {
+		dispositivo = map[string]interface{}{
+			"tipo_dispositivo": dispositivos[0].TipoDispositivo,
+			"ip":               dispositivos[0].IP,
+			"puerto":           dispositivos[0].Puerto,
+			"protocolo":        dispositivos[0].Protocolo,
+			"usuario_red":      dispositivos[0].Usuario,
+			"password_hash":    dispositivos[0].PasswordHash,
+		}
+	}
+
+	// Buscar fuente ping asociada
+	fuentes, _ := h.ConfigRepo.ListarFuentesPorEquipo(id)
+	var fuente map[string]interface{}
+	for _, f := range fuentes {
+		if f.TipoFuente == "ping" {
+			fuente = map[string]interface{}{
+				"endpoint":           f.Endpoint,
+				"intervalo_segundos": f.IntervaloSegundos,
+				"timeout_segundos":   f.TimeoutSegundos,
+				"reintentos":         f.Reintentos,
+			}
+			break
+		}
+	}
+
+	// Respuesta completa
+	response := map[string]interface{}{
+		"equipo":      equipo,
+		"dispositivo": dispositivo,
+		"ping":        fuente,
+	}
+
+	utils.SuccessJSON(w, 200, response)
 }
 
 func (h *EquipoHandler) UpdateEquipos(w http.ResponseWriter, r *http.Request) {

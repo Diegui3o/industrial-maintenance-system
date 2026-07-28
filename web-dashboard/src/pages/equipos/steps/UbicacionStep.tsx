@@ -87,8 +87,7 @@ export default function UbicacionStep({ form, update }: Props) {
                           transition: 'background 0.15s'
                         }}
                         onMouseEnter={ev => (ev.currentTarget.style.background = colors.background)}
-                        onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}
-                      >
+                        onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
                         <span style={{ fontWeight: 600, fontSize: 13 }}>{e.codigo}</span>
                         <span style={{ color: colors.text.muted, marginLeft: 8, fontSize: 12 }}>{e.nombre}</span>
                         <span style={{ color: colors.text.muted, marginLeft: 8, fontSize: 11 }}>(ID: {e.id})</span>
