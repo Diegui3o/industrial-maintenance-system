@@ -53,3 +53,41 @@ export interface Usuario {
   area?: string;
   creado_en: string;
 }
+
+export interface DispositivoRed {
+  tipo_dispositivo: string
+  ip: string
+  puerto: number
+  protocolo: string
+  usuario: string
+  password_hash: string
+}
+
+export interface ConfigFuente {
+  tipo_fuente: string
+  endpoint: string
+  intervalo_segundos: number
+  timeout_segundos: number
+  reintentos: number
+  activo: boolean
+}
+
+export interface MantenimientoCreate {
+  equipo_id: number
+  fecha_reporte: string
+  fase: string
+  taller: string
+  tipo_criticidad: string
+  sistema: string
+  inicio_parada?: string
+  fin_parada?: string
+  horas: number
+  tipo_intervencion: string
+  modo_falla: string
+  consecuencia_inmediata: string
+  descripcion_evento: string
+  stand_by: boolean
+  produccion_afectada: boolean
+  tn_dejadas_procesar: number
+  enlace: string
+}

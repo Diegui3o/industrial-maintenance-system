@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import DashboardPage from './pages/DashboardPage';
 import EquiposPage from './pages/EquiposPage';
 import EquipoDetailPage from './pages/EquipoDetailPage';
-import EquipoFormPage from './pages/EquipoFormPage';
+import EquipoFormPage from './pages/equipos/EquipoFormPage';
 import AlarmasPage from './pages/AlarmasPage';
 import EventosPage from './pages/EventosPage';
 import MetricasPage from './pages/MetricasPage';
@@ -57,7 +57,7 @@ export default function App() {
     case 'equipo-detalle':
       return <EquipoDetailPage equipo={screenParams} onNavigate={navigate} onBack={goBack} />;
     case 'crear':
-      return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={navigate} onBack={goBack} />;
+      return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={navigate} />;
     case 'alarmas':
       return <AlarmasPage onNavigate={navigate} onBack={goBack} />;
     case 'mantenimiento':
