@@ -46,3 +46,7 @@ func (s *EquipoService) ActualizarEquipo(
 	return s.Repo.ActualizarEquipo(id, e)
 
 }
+
+func (s *EquipoService) ListarCriticos() ([]models.Equipo, error) {
+	return s.Repo.ListarCriticos()
+}

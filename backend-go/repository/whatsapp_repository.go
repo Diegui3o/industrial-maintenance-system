@@ -104,3 +104,54 @@ func (r *WhatsAppRepository) ObtenerInstancia(id int) (*WhatsAppInstancia, error
 
 	return &instancia, nil
 }
+
+// DesasociarEquipoGrupo: quita un equipo de un grupo
+func (r *WhatsAppRepository) DesasociarEquipoGrupo(equipoID, grupoID int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM equipo_grupo WHERE equipo_id = $1 AND grupo_id = $2
+	`, equipoID, grupoID)
+	return err
+}
+
+// ObtenerEquiposPorGrupo: lista los equipos asociados a un grupo
+func (r *WhatsAppRepository) ObtenerEquiposPorGrupo(grupoID int) ([]models.Equipo, error) {
+	rows, err := r.DB.Query(`
+		SELECT e.id, e.codigo, e.nombre, e.area, e.critico, e.estado_equipo
+		FROM equipos e
+		JOIN equipo_grupo eg ON eg.equipo_id = e.id
+		WHERE eg.grupo_id = $1
+		ORDER BY e.nombre
+	`, grupoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var equipos []models.Equipo
+	for rows.Next() {
+		var e models.Equipo
+		if err := rows.Scan(&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.Critico, &e.EstadoEquipo); err != nil {
+			return nil, err
+		}
+		equipos = append(equipos, e)
+	}
+	return equipos, rows.Err()
+}
+
+// EliminarGrupo: borra un grupo y sus asociaciones
+func (r *WhatsAppRepository) EliminarGrupo(id int) error {
+	_, err := r.DB.Exec(`DELETE FROM equipo_grupo WHERE grupo_id = $1`, id)
+	if err != nil {
+		return err
+	}
+	_, err = r.DB.Exec(`DELETE FROM grupos_whatsapp WHERE id = $1`, id)
+	return err
+}
+
+// ActualizarGrupo: modifica nombre o JID
+func (r *WhatsAppRepository) ActualizarGrupo(id int, nombre, jid string) error {
+	_, err := r.DB.Exec(`
+		UPDATE grupos_whatsapp SET nombre = $1, jid = $2 WHERE id = $3
+	`, nombre, jid, id)
+	return err
+}

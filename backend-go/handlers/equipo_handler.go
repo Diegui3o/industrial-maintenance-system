@@ -168,3 +168,15 @@ func (h *EquipoHandler) GetRaices(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.SuccessJSON(w, 200, raices)
 }
+
+func (h *EquipoHandler) ListarCriticos(w http.ResponseWriter, r *http.Request) {
+	equipos, err := h.Service.ListarCriticos()
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error al listar equipos críticos")
+		return
+	}
+	if equipos == nil {
+		equipos = []models.Equipo{}
+	}
+	utils.SuccessJSON(w, http.StatusOK, equipos)
+}

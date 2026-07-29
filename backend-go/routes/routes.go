@@ -109,5 +109,14 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/equipos/raices", equipoHandler.GetRaices).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 
+	r.HandleFunc("/api/grupos", whatsappHandler.ListarGrupos).Methods("GET")
+	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
+	r.HandleFunc("/api/grupos/{id}", whatsappHandler.ActualizarGrupo).Methods("PUT")
+	r.HandleFunc("/api/grupos/{id}", whatsappHandler.EliminarGrupo).Methods("DELETE")
+	r.HandleFunc("/api/grupos/{id}/equipos", whatsappHandler.ListarEquiposPorGrupo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
+	r.HandleFunc("/api/equipos/{id}/grupos/{grupoId}", whatsappHandler.DesasociarGrupo).Methods("DELETE")
+	r.HandleFunc("/api/equipos/criticos", equipoHandler.ListarCriticos).Methods("GET")
+
 	return r
 }

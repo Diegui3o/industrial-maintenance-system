@@ -412,3 +412,26 @@ func (r *EquipoRepository) PropagarEstadoHijos(padreID int, nuevoEstado string, 
 	_, err := r.DB.Exec(query, padreID, nuevoEstado)
 	return err
 }
+
+// ListarCriticos: equipos críticos para asignar a grupos
+func (r *EquipoRepository) ListarCriticos() ([]models.Equipo, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, codigo, nombre, area, estado_equipo
+		FROM equipos WHERE critico = true
+		ORDER BY area, nombre
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var equipos []models.Equipo
+	for rows.Next() {
+		var e models.Equipo
+		if err := rows.Scan(&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.EstadoEquipo); err != nil {
+			return nil, err
+		}
+		equipos = append(equipos, e)
+	}
+	return equipos, rows.Err()
+}

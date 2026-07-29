@@ -236,15 +236,13 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
           </div>
 
           {/* Badge Estado */}
-          {esHoja && (
-            <div style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
-              <Badge
-                text={(equipo.estado_equipo || 'N/A').toUpperCase()}
-                variant={estadoColors[equipo.estado_equipo] || 'default'}
-                dot
-              />
-            </div>
-          )}
+          <div style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+            <Badge
+              text={(equipo.estado_equipo || 'N/A').toUpperCase()}
+              variant={estadoColors[equipo.estado_equipo] || 'default'}
+              dot
+            />
+          </div>
 
           {/* Contador hijos */}
           {!esHoja && desc > 0 && (
