@@ -18,7 +18,6 @@ export default function EquipoEditPage({ equipo, onNavigate, onBack }: Props) {
   const [form, setForm] = useState({ ...equipo })
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [] = useState(false)
 
   const { data: equipos = [] } = useQuery({
     queryKey: ['equipos'],

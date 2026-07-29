@@ -65,6 +65,13 @@ func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetr
 		return
 	}
 
+	// Propagar a hijos
+	err = e.EquipoRepo.PropagarEstadoHijos(equipoID, "fallo",
+		fmt.Sprintf("Padre ID %d en fallo por ping", equipoID))
+	if err != nil {
+		log.Printf("Error propagando estado a hijos: %v", err)
+	}
+
 	e.Dispatcher.Dispatch(equipoID, "fallo", "alta", motivo)
 }
 
@@ -79,7 +86,11 @@ func (e *RuleEngine) ProcessPingRecovery(equipoID int, latency float64) {
 	e.EventoService.CambiarEstadoEquipo(equipoID, "activo", motivo)
 	e.AlarmaService.CerrarAlarmasActivasPorEquipo(equipoID)
 
+	// Recuperar también los hijos
+	e.EquipoRepo.PropagarEstadoHijos(equipoID, "activo",
+		fmt.Sprintf("Padre ID %d recuperado", equipoID))
+
 	e.Dispatcher.Dispatch(equipoID, "recuperacion", "info", motivo)
 
-	log.Printf("🟢 Equipo %d recuperado", equipoID)
+	log.Printf("🟢 Equipo %d y sus hijos recuperados", equipoID)
 }

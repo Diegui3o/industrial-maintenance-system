@@ -125,9 +125,6 @@ func (r *EquipoRepository) ObtenerEquipos(filtros map[string]string, page int, l
 
 	query += " ORDER BY " + columnaOrden + " " + direccion
 
-	fmt.Println("ARGS")
-	fmt.Println(args)
-
 	offset := (page - 1) * limit
 	query += " LIMIT $" + strconv.Itoa(i)
 	args = append(args, limit)
@@ -348,4 +345,22 @@ func (r *EquipoRepository) ListarDispositivosPorEquipo(equipoID int) ([]models.D
 		dispositivos = append(dispositivos, d)
 	}
 	return dispositivos, rows.Err()
+}
+
+func (r *EquipoRepository) PropagarEstadoHijos(padreID int, nuevoEstado string, motivo string) error {
+	// Encontrar todos los hijos (recursivo con WITH RECURSIVE)
+	query := `
+        WITH RECURSIVE descendientes AS (
+            SELECT id FROM equipos WHERE activo_padre_id = $1
+            UNION ALL
+            SELECT e.id FROM equipos e
+            INNER JOIN descendientes d ON e.activo_padre_id = d.id
+        )
+        UPDATE equipos SET 
+            estado_equipo = $2,
+            actualizado_en = NOW()
+        WHERE id IN (SELECT id FROM descendientes)
+    `
+	_, err := r.DB.Exec(query, padreID, nuevoEstado)
+	return err
 }

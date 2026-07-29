@@ -2,20 +2,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { colors, spacing } from '../theme/colors'
 import Layout from '../components/Layout'
-import Card from '../components/Card'
-import Badge from '../components/Badge'
 import Button from '../components/Button'
 import { getEquipos } from '../services/api'
+import ArbolEquipos from './equipos/ArbolEquipos'
 
 interface Props {
   onNavigate: (page: string, params?: any) => void
-}
-
-const estadoColors: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
-  activo: 'success',
-  fallo: 'error',
-  mantenimiento: 'warning',
-  inactivo: 'default',
 }
 
 export default function EquiposPage({ onNavigate }: Props) {
@@ -25,13 +17,8 @@ export default function EquiposPage({ onNavigate }: Props) {
     queryFn: getEquipos
   })
 
-  const filtered = equipos.filter(e =>
-    e.nombre?.toLowerCase().includes(filter.toLowerCase()) ||
-    e.codigo?.toLowerCase().includes(filter.toLowerCase())
-  )
-
   return (
-    <Layout title="Equipos" subtitle="Gestión de activos industriales" onBack={() => onNavigate('dashboard')}>
+    <Layout title="Equipos" subtitle="Jerarquía de activos industriales" onBack={() => onNavigate('dashboard')}>
       <div style={{ display: 'flex', gap: spacing.md, marginBottom: spacing.lg, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <input
@@ -46,38 +33,13 @@ export default function EquiposPage({ onNavigate }: Props) {
 
       {isLoading && <p style={{ color: colors.text.muted }}>Cargando equipos...</p>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: spacing.md }}>
-        {filtered.map((equipo, i) => (
-          <Card key={equipo.id} onClick={() => onNavigate('equipo-detalle', equipo)} padding={20}
-            className={`animate-fade-in-up stagger-${(i % 6) + 1}`}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm }}>
-              <div>
-                <p style={{ fontSize: 12, color: colors.text.muted, fontWeight: 600, letterSpacing: 1 }}>{equipo.codigo}</p>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginTop: 2 }}>{equipo.nombre}</h3>
-              </div>
-              {equipo.critico && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: colors.status.error, background: colors.status.errorBg, padding: '2px 8px', borderRadius: 20 }}>
-                  CRÍTICO
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: spacing.sm }}>
-              <Badge text={equipo.area || 'Sin área'} variant="default" />
-              <Badge text={equipo.tipo || 'Sin tipo'} variant="default" />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md }}>
-              <Badge text={(equipo.estado_equipo || '').toUpperCase()} variant={estadoColors[equipo.estado_equipo] || 'default'} dot />
-              <span style={{ fontSize: 12, color: colors.text.muted }}>Ver detalle →</span>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <ArbolEquipos equipos={equipos} filter={filter} onNavigate={onNavigate} />
 
-      {!isLoading && filtered.length === 0 && (
+      {!isLoading && equipos.length === 0 && (
         <div style={{ textAlign: 'center', padding: spacing.xxl }}>
-          <p style={{ fontSize: 48, marginBottom: spacing.md }}>🔍</p>
-          <h3 style={{ marginBottom: spacing.sm }}>No se encontraron equipos</h3>
-          <p style={{ color: colors.text.muted }}>{equipos.length === 0 ? 'No hay equipos registrados. Crea el primero.' : 'Intenta con otro término'}</p>
+          <p style={{ fontSize: 48 }}>📦</p>
+          <h3>No hay equipos registrados</h3>
+          <p style={{ color: colors.text.muted }}>Crea el primer equipo para empezar.</p>
         </div>
       )}
     </Layout>
