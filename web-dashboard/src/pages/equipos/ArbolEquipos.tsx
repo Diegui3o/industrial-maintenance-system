@@ -22,72 +22,43 @@ const estadoColors: Record<string, 'success' | 'error' | 'warning' | 'default'> 
 }
 
 const iconos: Record<string, string> = {
-  planta: '🏭',
-  fase: '📁',
-  area: '📍',
-  equipo: '🔧',
-  motor: '⚙️',
-  sensor: '📡',
-  valvula: '🔩',
-  bomba: '💧',
-  compresor: '🌀',
-  tablero: '🗄️',
-  generador: '⚡',
-  ventilador: '🌪️',
-  molino: '⛓️',
+  planta: '🏭', fase: '📁', area: '📍', equipo: '🔧',
+  motor: '⚙️', sensor: '📡', valvula: '🔩', bomba: '💧',
+  compresor: '🌀', tablero: '🗄️', generador: '⚡',
+  ventilador: '🌪️', molino: '⛓️', default: '📦',
 }
-const getIcono = (tipo: string) => iconos[tipo?.toLowerCase()] || '📦'
+const getIcono = (tipo?: string) => iconos[tipo?.toLowerCase() || ''] || iconos.default
 
-// ─── Estilos por nivel con valores DINÁMICOS y límites ───
-const nivelBorder = (nivel: number): string => {
-  if (nivel === 0) return colors.primary
-  if (nivel === 1) return '#7A8BA3'
-  return '#B8C0CC'
+/* ═══════════════════════════════════════
+   ESCALADO POR NIVEL (mantenido tal cual)
+   ═══════════════════════════════════════ */
+const scale = (nivel: number) => {
+  const pct = Math.max(58, 100 - nivel * 12)
+  return pct / 100
 }
 
-const nivelBg = (nivel: number): string => {
-  if (nivel === 0) return colors.surface
-  if (nivel === 1) return '#F4F5F8'
-  return colors.surface
-}
+const font = (base: number, nivel: number) =>
+  Math.max(9, Math.round(base * scale(nivel)))
 
-const nivelRadius = (nivel: number): number => {
-  if (nivel === 0) return 12
-  if (nivel === 1) return 10
-  return 8
-}
+const nivelVisual = (nivel: number) => ({
+  border: nivel === 0 ? colors.primary : nivel === 1 ? '#7A8BA3' : nivel === 2 ? '#A0AAB8' : '#B8C0CC',
+  borderWidth: nivel === 0 ? 2 : 1.5,
+  bg: nivel === 0 ? colors.surface : nivel === 1 ? '#F4F5F8' : nivel === 2 ? '#EFF1F5' : colors.surface,
+  radius: Math.max(6, 12 - nivel * 2),
+  pad: Math.max(8, 20 - nivel * 4),
+  gap: Math.max(6, 14 - nivel * 3),
+  icon: font(22, nivel),
+  nombre: font(15, nivel),
+  codigo: font(11, nivel),
+  meta: font(10, nivel),
+  badge: font(9, nivel),
+  minW: Math.max(120, 320 - nivel * 70),
+  leafMinW: Math.max(110, 160 - nivel * 18),
+})
 
-const nivelPadding = (nivel: number): string => {
-  if (nivel === 0) return '18px'
-  if (nivel === 1) return '12px'
-  return '10px'
-}
-
-// ✅ TAMAÑO DE TEXTO DINÁMICO CON LÍMITES MÍNIMOS
-const tamanoTextoPrincipal = (nivel: number, cantidadHijos: number): number => {
-  // Base por nivel
-  let base = nivel === 0 ? 15 : nivel === 1 ? 13 : 12
-  // Reducimos levemente si hay muchos hijos, SIN BAJAR DE 10px (legible)
-  if (cantidadHijos > 6) base -= 1
-  if (cantidadHijos > 12) base -= 0.5
-  return Math.max(base, 11) // LÍNEA CLAVE: nunca menor a 11px
-}
-
-const tamanoTextoSecundario = (nivel: number, cantidadHijos: number): number => {
-  let base = nivel === 0 ? 12 : nivel === 1 ? 11 : 10
-  if (cantidadHijos > 6) base -= 0.5
-  return Math.max(base, 10) // Nunca menor a 10px
-}
-
-// ✅ Ajuste de ancho mínimo según cantidad de hijos y nivel
-const anchoMinimo = (nivel: number, cantidadHijos: number): number => {
-  let base = nivel === 0 ? 220 : nivel === 1 ? 180 : 150
-  if (cantidadHijos > 8) base += 20
-  return base
-}
+/* ═══════════════════════════════════════ */
 
 export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
-  // ─── Construir árbol ───
   const arbol = useMemo(() => {
     const mapa = new Map<number, TreeNode>()
     const raices: TreeNode[] = []
@@ -108,19 +79,12 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
     return raices
   }, [equipos])
 
-  // ─── Filtrar recursivamente ───
   const filtrar = (nodo: TreeNode, t: string): TreeNode | null => {
-    const hijosFiltrados = nodo.hijos
-      .map(h => filtrar(h, t))
-      .filter(Boolean) as TreeNode[]
-
+    const hijosF = nodo.hijos.map(h => filtrar(h, t)).filter(Boolean) as TreeNode[]
     const match =
       nodo.equipo.nombre?.toLowerCase().includes(t) ||
       nodo.equipo.codigo?.toLowerCase().includes(t)
-
-    return match || hijosFiltrados.length > 0
-      ? { ...nodo, hijos: hijosFiltrados }
-      : null
+    return match || hijosF.length ? { ...nodo, hijos: hijosF } : null
   }
 
   const arbolFiltrado = useMemo(() => {
@@ -128,9 +92,11 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
     return t ? arbol.map(r => filtrar(r, t)).filter(Boolean) as TreeNode[] : arbol
   }, [arbol, filter])
 
-  // ─── Resaltar búsqueda ───
-  const resaltar = (texto: string, termino: string) => {
-    if (!termino || !texto) return <span>{texto}</span>
+  const contarDescendientes = (nodo: TreeNode): number =>
+    nodo.hijos.reduce((acc, h) => acc + 1 + contarDescendientes(h), 0)
+
+  const resaltar = (texto?: string, termino?: string) => {
+    if (!termino || !texto) return <span>{texto || '—'}</span>
     const t = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const regex = new RegExp(`(${t})`, 'gi')
     const partes = texto.split(regex)
@@ -158,71 +124,69 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
     )
   }
 
-  // ─── Contador recursivo de hijos ───
-  const contarDescendientes = (nodo: TreeNode): number => {
-    return nodo.hijos.reduce((acc, h) => acc + 1 + contarDescendientes(h), 0)
-  }
-
-  // ─── Render recursivo de cajas anidadas ───
+  /* ═══════ CAJA RECURSIVA ═══════ */
   const Caja = ({ nodo }: { nodo: TreeNode }) => {
     const { equipo, hijos, nivel } = nodo
     const term = filter.toLowerCase().trim()
-    const border = nivelBorder(nivel)
-    const bg = nivelBg(nivel)
-    const radius = nivelRadius(nivel)
-    const pad = nivelPadding(nivel)
+    const v = nivelVisual(nivel)
     const desc = contarDescendientes(nodo)
     const esHoja = hijos.length === 0
-    const cantidadHijosDirectos = hijos.length
-
-    // Valores dinámicos calculados
-    const tamanoCodigo = tamanoTextoPrincipal(nivel, cantidadHijosDirectos)
-    const tamanoNombre = tamanoTextoSecundario(nivel, cantidadHijosDirectos)
-    const minW = anchoMinimo(nivel, cantidadHijosDirectos)
-    const tamanoIcono = nivel === 0 ? 22 : nivel === 1 ? 19 : 17
 
     return (
       <div
         style={{
-          background: bg,
-          borderRadius: radius,
-          border: `${nivel === 0 ? 2 : 1.5}px solid ${border}`,
-          padding: pad,
-          transition: 'all 0.2s ease',
           display: 'inline-flex',
           flexDirection: 'column',
+          background: v.bg,
+          borderRadius: v.radius,
+          border: `${v.borderWidth}px solid ${v.border}`,
+          padding: `${v.pad}px`,
           width: 'fit-content',
-          minWidth: minW,
+          minWidth: esHoja ? v.leafMinW : v.minW,
           maxWidth: '100%',
           cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          position: 'relative',
         }}
-        onClick={() => esHoja && onNavigate('equipo-detalle', equipo)}
+        onClick={() => onNavigate('equipo-detalle', equipo)}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = colors.primary
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'
+          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.07)'
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = border
+          e.currentTarget.style.borderColor = v.border
           e.currentTarget.style.boxShadow = 'none'
         }}
       >
-        {/* Header de la caja */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: esHoja ? 8 : 12,
-            flexWrap: 'nowrap',
-          }}
-        >
-          <span style={{ fontSize: tamanoIcono, flexShrink: 0 }}>
+        {/* ── Línea indicadora de nivel ── */}
+        {nivel > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              left: -1,
+              top: 10,
+              bottom: 10,
+              width: 3,
+              borderRadius: 4,
+              background: nivel === 1 ? colors.primary : nivel === 2 ? '#7A8BA3' : '#B8C0CC',
+              opacity: 0.4,
+            }}
+          />
+        )}
+
+        {/* ── CONTENIDO PRINCIPAL ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+          {/* Icono */}
+          <span style={{ fontSize: v.icon, lineHeight: 1.2, flexShrink: 0, marginTop: 2 }}>
             {getIcono(equipo.tipo_activo || equipo.tipo)}
           </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Datos organizados */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* 1. NOMBRE: DESTACADO */}
             <div
               style={{
-                fontSize: tamanoCodigo,
+                fontSize: v.nombre,
                 fontWeight: 700,
                 color: colors.text.primary,
                 whiteSpace: 'nowrap',
@@ -230,38 +194,52 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
                 textOverflow: 'ellipsis',
               }}
             >
-              {resaltar(equipo.codigo || 'N/A', term)}
+              {resaltar(equipo.nombre || 'Sin nombre', term)}
             </div>
-            {!esHoja && (
-              <div
-                style={{
-                  fontSize: tamanoNombre,
-                  color: colors.text.muted,
-                  marginTop: 2,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {resaltar(equipo.nombre, term)}
-              </div>
+
+            {/* 2. CÓDIGO: más pequeño y gris */}
+            <div
+              style={{
+                fontSize: v.codigo,
+                color: colors.text.muted,
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {resaltar(equipo.codigo || '—', term)}
+            </div>
+
+            {/* 3. IP (si existe) */}
+            {equipo.ip && (
+            <div style={{ fontSize: v.meta, color: colors.text.muted, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                🌐 {equipo.ip}
+            </div>
+            )}
+            {equipo.ubicacion_fisica && (
+            <div style={{ fontSize: v.meta, color: colors.text.muted, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                📍 {equipo.ubicacion_fisica}
+            </div>
             )}
           </div>
 
-          {/* Badge estado (solo en hojas) */}
+          {/* Badge Estado */}
           {esHoja && (
-            <Badge
-              text={(equipo.estado_equipo || 'N/A').toUpperCase()}
-              variant={estadoColors[equipo.estado_equipo] || 'default'}
-              dot
-            />
+            <div style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+              <Badge
+                text={(equipo.estado_equipo || 'N/A').toUpperCase()}
+                variant={estadoColors[equipo.estado_equipo] || 'default'}
+                dot
+              />
+            </div>
           )}
 
-          {/* Contador de hijos (solo en ramas) */}
+          {/* Contador hijos */}
           {!esHoja && desc > 0 && (
             <span
               style={{
-                fontSize: 10,
+                fontSize: v.badge,
                 fontWeight: 700,
                 color: colors.text.muted,
                 background: colors.surface,
@@ -269,6 +247,7 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
                 borderRadius: 20,
                 border: `1px solid ${colors.borderLight}`,
                 flexShrink: 0,
+                alignSelf: 'flex-start',
               }}
             >
               {desc}
@@ -276,12 +255,12 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
           )}
         </div>
 
-        {/* Contenedor de hijos con mejor espaciado */}
+        {/* ── Hijos anidados ── */}
         {hijos.length > 0 && (
           <div
             style={{
               display: 'flex',
-              gap: nivel === 0 ? 14 : 10,
+              gap: v.gap,
               flexWrap: 'wrap',
               alignItems: 'flex-start',
               marginTop: 8,
@@ -296,12 +275,13 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
     )
   }
 
+  /* ═══════ RENDER PRINCIPAL ═══════ */
   return (
-    <div style={{ overflow: 'auto', padding: '12px 0' }}>
+    <div style={{ overflow: 'auto', padding: '4px 2px' }}>
       <div
         style={{
           display: 'flex',
-          gap: 18,
+          gap: 20,
           flexWrap: 'wrap',
           alignItems: 'flex-start',
         }}
