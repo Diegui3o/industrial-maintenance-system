@@ -30,6 +30,7 @@ export default function MonitoreoStep({ form, update }: Props) {
       <Toggle label="¿Requiere monitoreo (ping/PI)?" checked={form.requiere_monitoreo} onChange={v => update({ requiere_monitoreo: v })} />
       {form.requiere_monitoreo && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginLeft: 28 }}>
+            <Field label="Endpoint (IP/URL)" value={form.endpoint} onChange={v => update({ endpoint: v })} placeholder="10.30.47.49" />
           <Field label="Tipo Fuente" value={form.tipo_fuente} onChange={v => update({ tipo_fuente: v })} />
           <Field label="Intervalo (seg)" value={String(form.intervalo_segundos)} 
             onChange={v => update({ intervalo_segundos: Number(v) || 0 })} type="number" />

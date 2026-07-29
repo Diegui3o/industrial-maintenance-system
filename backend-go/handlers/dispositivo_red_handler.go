@@ -19,11 +19,15 @@ type DispositivoRedHandler struct {
 
 // Crear: POST /api/dispositivos
 func (h *DispositivoRedHandler) Crear(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	equipoID, _ := strconv.Atoi(vars["id"])
+
 	var d models.DispositivoRed
 	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
+	d.EquipoID = equipoID
 
 	if d.EquipoID == 0 || d.IP == "" {
 		utils.ErrorJSON(w, http.StatusBadRequest, "equipo_id e ip son obligatorios")

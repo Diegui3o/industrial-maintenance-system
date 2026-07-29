@@ -13,14 +13,17 @@ type EquipoRepository struct {
 
 func (r *EquipoRepository) ObtenerEquipos(filtros map[string]string, page int, limit int, sort string, order string) ([]models.Equipo, error) {
 	query := `
-	SELECT
-		id, codigo, nombre, area, tipo, fase, fabricante, modelo, numero_serie,
-		critico, estado_equipo, fecha_instalacion, fecha_creacion, actualizado_en,
-		activo_padre_id, nivel_jerarquia, tag, ubicacion_fisica, descripcion_larga
-	FROM equipos
+	SELECT DISTINCT
+		e.id, e.codigo, e.nombre, e.area, e.tipo, e.fase, e.fabricante,
+		e.modelo, e.numero_serie, e.critico, e.estado_equipo,
+		e.fecha_instalacion, e.fecha_creacion, e.actualizado_en,
+		e.activo_padre_id, e.nivel_jerarquia, e.tag,
+		e.ubicacion_fisica, e.descripcion_larga,
+		COALESCE(d.ip, '') as ip
+	FROM equipos e
+	LEFT JOIN dispositivos_red d ON d.equipo_id = e.id
 	WHERE 1=1
 	`
-
 	args := []interface{}{}
 	i := 1
 
@@ -145,6 +148,10 @@ func (r *EquipoRepository) ObtenerEquipos(filtros map[string]string, page int, l
 	for rows.Next() {
 		var e models.Equipo
 		var (
+			fase             sql.NullString
+			fabricante       sql.NullString
+			modeloStr        sql.NullString
+			numeroSerie      sql.NullString
 			activoPadreID    sql.NullInt64
 			nivelJerarquia   sql.NullInt64
 			tag              sql.NullString
@@ -154,12 +161,19 @@ func (r *EquipoRepository) ObtenerEquipos(filtros map[string]string, page int, l
 
 		err := rows.Scan(
 			&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.Tipo,
-			&e.Fase, &e.Fabricante, &e.Modelo, &e.NumeroSerie,
+			&fase, &fabricante, &modeloStr, &numeroSerie,
 			&e.Critico, &e.EstadoEquipo, &e.FechaInstalacion,
 			&e.FechaCreacion, &e.ActualizadoEn,
 			&activoPadreID, &nivelJerarquia, &tag,
 			&ubicacionFisica, &descripcionLarga,
+			&e.IP,
 		)
+
+		e.Fase = fase.String
+		e.Fabricante = fabricante.String
+		e.Modelo = modeloStr.String
+		e.NumeroSerie = numeroSerie.String
+
 		if err != nil {
 			return nil, err
 		}
@@ -183,22 +197,38 @@ func (r *EquipoRepository) ObtenerEquipos(filtros map[string]string, page int, l
 	return lista, nil
 }
 
-func (r *EquipoRepository) CrearEquipos(e models.Equipo) error {
-	_, err := r.DB.Exec(`
-    INSERT INTO equipos(
-        Codigo, Nombre, Area, Tipo, Fase, Fabricante, Modelo,
-        Numero_serie, Critico, Estado_equipo, Fecha_instalacion,
-        activo_padre_id, nivel_jerarquia, tag,
-        ubicacion_fisica, descripcion_larga
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
+	var activoPadreID interface{}
+	if e.ActivoPadreID != nil {
+		activoPadreID = *e.ActivoPadreID
+	}
+
+	var existe int
+	r.DB.QueryRow("SELECT COUNT(*) FROM equipos WHERE codigo = $1", e.Codigo).Scan(&existe)
+	if existe > 0 {
+		return fmt.Errorf("ya existe un equipo con el código %s", e.Codigo)
+	}
+
+	err := r.DB.QueryRow(`
+        INSERT INTO equipos(
+            Codigo, Nombre, Area, Tipo, Fase, Fabricante, Modelo,
+            Numero_serie, Critico, Estado_equipo, Fecha_instalacion,
+            activo_padre_id, nivel_jerarquia, tag,
+            ubicacion_fisica, descripcion_larga
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        RETURNING id, fecha_creacion
     `,
 		e.Codigo, e.Nombre, e.Area, e.Tipo, e.Fase, e.Fabricante, e.Modelo,
 		e.NumeroSerie, e.Critico, e.EstadoEquipo, e.FechaInstalacion,
-		e.ActivoPadreID, e.NivelJerarquia, e.Tag,
+		activoPadreID, e.NivelJerarquia, e.Tag,
 		e.UbicacionFisica, e.DescripcionLarga,
-	)
-	return err
+	).Scan(&e.ID, &e.FechaCreacion)
+
+	if err != nil {
+		return fmt.Errorf("error creando equipo: %w", err)
+	}
+	return nil
 }
 
 func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
@@ -212,6 +242,10 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
     `
 	e := &models.Equipo{}
 	var (
+		fase             sql.NullString
+		fabricante       sql.NullString
+		modeloStr        sql.NullString
+		numeroSerie      sql.NullString
 		activoPadreID    sql.NullInt64
 		nivelJerarquia   sql.NullInt64
 		tag              sql.NullString
@@ -221,12 +255,26 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 
 	err := r.DB.QueryRow(query, id).Scan(
 		&e.ID, &e.Codigo, &e.Nombre, &e.Area, &e.Tipo,
-		&e.Fase, &e.Fabricante, &e.Modelo, &e.NumeroSerie,
+		&fase, &fabricante, &modeloStr, &numeroSerie,
 		&e.Critico, &e.EstadoEquipo, &e.FechaInstalacion,
 		&e.FechaCreacion, &e.ActualizadoEn,
 		&activoPadreID, &nivelJerarquia, &tag,
 		&ubicacionFisica, &descripcionLarga,
 	)
+
+	e.Fase = fase.String
+	e.Fabricante = fabricante.String
+	e.Modelo = modeloStr.String
+	e.NumeroSerie = numeroSerie.String
+	if activoPadreID.Valid {
+		pid := int(activoPadreID.Int64)
+		e.ActivoPadreID = &pid
+	}
+	e.NivelJerarquia = int(nivelJerarquia.Int64)
+	e.Tag = tag.String
+	e.UbicacionFisica = ubicacionFisica.String
+	e.DescripcionLarga = descripcionLarga.String
+
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("equipo no encontrado")
 	}

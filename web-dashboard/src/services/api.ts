@@ -9,7 +9,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export const getEquipos = () => fetchJson<any[]>('/equipos');
+export const getEquipos = () => fetchJson<any[]>('/equipos').catch(() => [])
 export const getEquipo = (id: number) => fetchJson<any>(`/equipos/${id}`);
 export const createEquipo = (data: any) => fetchJson<any>('/equipos', { method: 'POST', body: JSON.stringify(data) });
 export const getAlarmas = (params?: { estado?: string }) => {

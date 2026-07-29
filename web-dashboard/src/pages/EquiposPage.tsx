@@ -33,7 +33,7 @@ export default function EquiposPage({ onNavigate }: Props) {
 
       {isLoading && <p style={{ color: colors.text.muted }}>Cargando equipos...</p>}
 
-      <ArbolEquipos equipos={equipos} filter={filter} onNavigate={onNavigate} />
+      <ArbolEquipos equipos={equipos || []} filter={filter} onNavigate={onNavigate} />
 
       {!isLoading && equipos.length === 0 && (
         <div style={{ textAlign: 'center', padding: spacing.xxl }}>

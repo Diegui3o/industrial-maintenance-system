@@ -34,7 +34,7 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const equipo = await createEquipo({
+      const payload = JSON.parse(JSON.stringify({
         codigo: form.codigo,
         nombre: form.nombre,
         area: form.area,
@@ -45,15 +45,21 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
         numero_serie: form.numero_serie,
         critico: form.critico,
         estado_equipo: form.estado_equipo,
-        fecha_instalacion: form.fecha_instalacion || undefined,
-        activo_padre_id: form.activo_padre_id || undefined,
-        nivel_jerarquia: form.nivel_jerarquia,
-        tag: form.tag || undefined,
-        ubicacion_fisica: form.ubicacion_fisica || undefined,
-        descripcion_larga: form.descripcion_larga || undefined,
-      })
+        fecha_instalacion: form.fecha_instalacion || null,
+        activo_padre_id: form.activo_padre_id ?? null,
+        nivel_jerarquia: form.nivel_jerarquia ?? 0,
+        tag: form.tag || '',
+        ubicacion_fisica: form.ubicacion_fisica || '',
+        descripcion_larga: form.descripcion_larga || '',
+      }))
 
+      const equipo = await createEquipo(payload)
       const equipoId = equipo.id
+
+      if (!equipoId || equipoId === 0) {
+        console.error('Error: equipo sin ID')
+        return
+      }
 
       if (form.es_dispositivo_red && form.ip) {
         await createDispositivoRed(equipoId, {
@@ -104,7 +110,12 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
       queryClient.invalidateQueries({ queryKey: ['equipos'] })
       setTimeout(() => onSuccess(), 1500)
     },
-    onError: () => setFeedback('error')
+    onError: (err: any) => {
+      setFeedback('error')
+      if (err.message?.includes('duplicate') || err.message?.includes('llave duplicada')) {
+        alert('⚠️ Ya existe un equipo con ese código. Usa uno diferente.')
+      }
+    }
   })
 
 const handleSubmit = () => {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -43,6 +44,9 @@ func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorJSON(w, 500, err.Error())
 		return
 	}
+	if equipos == nil {
+		equipos = []models.Equipo{}
+	}
 	utils.SuccessJSON(w, http.StatusOK, equipos)
 }
 
@@ -50,16 +54,24 @@ func (h *EquipoHandler) PostEquipos(w http.ResponseWriter, r *http.Request) {
 	var e models.Equipo
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
+		log.Printf("❌ Error decodificando JSON: %v", err)
 		utils.ErrorJSON(w, 400, "JSON inválido")
 		return
 	}
-	err = h.Service.CrearEquipos(e)
+
+	log.Printf("📥 Creando equipo: %s", e.Codigo)
+
+	err = h.Service.CrearEquipos(&e)
 	if err != nil {
-		utils.ErrorJSON(w, 500, "No se pudo crear equipo")
+		log.Printf("❌ Error creando equipo: %v", err)
+		utils.ErrorJSON(w, 500, err.Error())
 		return
 	}
+
+	log.Printf("📤 Enviando respuesta: ID=%d, Código=%s", e.ID, e.Codigo)
+
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"mensaje": "Equipo creado"})
+	json.NewEncoder(w).Encode(e)
 }
 
 func (h *EquipoHandler) GetEquipoPorID(w http.ResponseWriter, r *http.Request) {

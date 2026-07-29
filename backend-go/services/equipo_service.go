@@ -26,12 +26,8 @@ func (s *EquipoService) ListarEquipos(
 	)
 }
 
-func (s *EquipoService) CrearEquipos(
-	e models.Equipo,
-) error {
-
+func (s *EquipoService) CrearEquipos(e *models.Equipo) error {
 	return s.Repo.CrearEquipos(e)
-
 }
 
 func (s *EquipoService) BuscarEquipoPorID(

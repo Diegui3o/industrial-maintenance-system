@@ -59,6 +59,14 @@ const nivelVisual = (nivel: number) => ({
 /* ═══════════════════════════════════════ */
 
 export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
+  if (!equipos || equipos.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: 48 }}>
+        <p style={{ fontSize: 14, color: colors.text.muted }}>No hay equipos para mostrar</p>
+      </div>
+    )
+  }
+
   const arbol = useMemo(() => {
     const mapa = new Map<number, TreeNode>()
     const raices: TreeNode[] = []
@@ -148,7 +156,10 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
           transition: 'all 0.2s ease',
           position: 'relative',
         }}
-        onClick={() => onNavigate('equipo-detalle', equipo)}
+        onClick={(e) => { 
+        e.stopPropagation()
+        onNavigate('equipo-detalle', equipo) 
+        }}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = colors.primary
           e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.07)'
@@ -213,7 +224,7 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
 
             {/* 3. IP (si existe) */}
             {equipo.ip && (
-            <div style={{ fontSize: v.meta, color: colors.text.muted, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: v.meta, color: colors.text.muted }}>
                 🌐 {equipo.ip}
             </div>
             )}
@@ -286,7 +297,7 @@ export default function ArbolEquipos({ equipos, filter, onNavigate }: Props) {
           alignItems: 'flex-start',
         }}
       >
-        {arbolFiltrado.map(n => (
+        {(arbolFiltrado || []).map(n => (
           <Caja key={n.equipo.id} nodo={n} />
         ))}
       </div>
