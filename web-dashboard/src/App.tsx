@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { AppProvider, useApp } from './context/AppContext';
 import DashboardPage from './pages/DashboardPage';
 import EquiposPage from './pages/EquiposPage';
 import EquipoDetailPage from './pages/EquipoDetailPage';
@@ -8,71 +8,47 @@ import AlarmasPage from './pages/AlarmasPage';
 import EventosPage from './pages/EventosPage';
 import MetricasPage from './pages/MetricasPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
-import { getEquipos } from './services/api';
-import EquipoEditPage from './pages/EquipoEditPage';
 import NotificacionesPage from './pages/NotificacionesPage';
+import EquipoEditPage from './pages/EquipoEditPage';
 
 export default function App() {
-  const [screen, setScreen] = useState<string>('dashboard');
-  const [screenParams, setScreenParams] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const queryClient = useQueryClient();
+  return (
+    <AppProvider>
+      <Router />
+    </AppProvider>
+  );
+}
 
-  // Check de conexión cada 30s
+function Router() {
+  const { current, navigate, goBack } = useApp();
+  const { screen, params } = current;
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+
   useEffect(() => {
-    const check = () => {
-      getEquipos()
-        .then(() => setIsConnected(true))
+    fetch('/api/equipos')
+      .then(r => setIsConnected(r.ok))
+      .catch(() => setIsConnected(false));
+    const iv = setInterval(() => {
+      fetch('/api/equipos')
+        .then(r => setIsConnected(r.ok))
         .catch(() => setIsConnected(false));
-    };
-    check();
-    const iv = setInterval(check, 30000);
+    }, 30000);
     return () => clearInterval(iv);
   }, []);
 
-  const navigate = (page: string, params?: any) => {
-    setScreen(page);
-    setScreenParams(params);
-    window.scrollTo(0, 0);
-  };
-
-  const goBack = () => {
-    const childScreens = ['equipos','crear','alarmas','mantenimiento','metricas','configuracion','equipo-detalle'];
-    if (childScreens.includes(screen)) {
-      navigate('dashboard');
-    }
-  };
-
-  // Refrescar datos al volver al dashboard
-  useEffect(() => {
-    if (screen === 'dashboard') {
-      queryClient.invalidateQueries({ queryKey: ['equipos'] });
-      queryClient.invalidateQueries({ queryKey: ['alarmas'] });
-    }
-  }, [screen, queryClient]);
+  const nav = (s: string, p?: any) => navigate(s, p);
 
   switch (screen) {
-    case 'dashboard':
-      return <DashboardPage onNavigate={navigate} isConnected={isConnected} />;
-    case 'equipos':
-      return <EquiposPage onNavigate={navigate} />;
-    case 'equipo-detalle':
-      return <EquipoDetailPage equipo={screenParams} onNavigate={navigate} onBack={goBack} />;
-    case 'crear':
-      return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={navigate} />;
-    case 'alarmas':
-      return <AlarmasPage onNavigate={navigate} onBack={goBack} />;
-    case 'mantenimiento':
-      return <EventosPage onNavigate={navigate} onBack={goBack} />;
-    case 'metricas':
-      return <MetricasPage onNavigate={navigate} onBack={goBack} />;
-    case 'editar-equipo':
-      return <EquipoEditPage equipo={screenParams} onNavigate={navigate} onBack={() => navigate('equipo-detalle', screenParams)} />;
-    case 'configuracion':
-      return <ConfiguracionPage onNavigate={navigate} onBack={goBack} />;
-    case 'notificaciones':
-      return <NotificacionesPage onNavigate={navigate} onBack={goBack} />;
-    default:
-      return <DashboardPage onNavigate={navigate} isConnected={isConnected} />;
+    case 'dashboard':     return <DashboardPage onNavigate={nav} isConnected={null} />;
+    case 'equipos':       return <EquiposPage onNavigate={nav} />;
+    case 'crear':         return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={nav} />;
+    case 'equipo-detalle': return <EquipoDetailPage equipo={params} onNavigate={nav} onBack={goBack} />;
+    case 'editar-equipo': return <EquipoEditPage equipo={params} onNavigate={nav} onBack={goBack} />;
+    case 'alarmas':       return <AlarmasPage onNavigate={nav} onBack={goBack} />;
+    case 'mantenimiento': return <EventosPage onNavigate={nav} onBack={goBack} />;
+    case 'metricas':      return <MetricasPage onNavigate={nav} onBack={goBack} />;
+    case 'configuracion': return <ConfiguracionPage onNavigate={nav} onBack={goBack} />;
+    case 'notificaciones': return <NotificacionesPage onNavigate={nav} onBack={goBack} />;
+    default:              return <DashboardPage onNavigate={nav} isConnected={null} />;
   }
 }

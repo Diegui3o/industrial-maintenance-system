@@ -8,13 +8,13 @@ interface Props {
   onBack?: () => void;
 }
 
-export default function NotificacionesPage({ onNavigate }: Props) {
+export default function NotificacionesPage({ onNavigate, onBack }: Props) {
   const auth = useWhatsAppAuth();
 
-  // Cerrar sesión al salir
   const handleBack = () => {
     auth.logout();
-    onNavigate('dashboard');
+    if (onBack) onBack();
+    else onNavigate('dashboard');
   };
 
   if (!auth.autenticado) {

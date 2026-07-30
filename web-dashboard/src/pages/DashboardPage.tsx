@@ -9,13 +9,13 @@ interface Props {
   isConnected: boolean | null;
 }
 const menuItems = [
-  { id: 'equipos', label: 'Equipos', sub: 'Gestionar activos', color: colors.primary },
-  { id: 'crear', label: 'Nuevo Equipo', sub: 'Registrar', color: colors.status.success },
-  { id: 'alarmas', label: 'Alarmas', sub: 'Monitoreo', color: colors.status.error },
-  { id: 'mantenimiento', label: 'Mantenimiento', sub: 'Eventos', color: colors.status.warning },
-  { id: 'metricas', label: 'Métricas', sub: 'KPIs', color: colors.status.info },
-  { id: 'notificaciones', label: 'Notificaciones', sub: 'WhatsApp & Alertas', color: '#25D366' },
-  { id: 'configuracion', label: 'Ajustes', sub: 'Sistema', color: colors.text.muted },
+  { id: 'equipos', label: 'Equipos', sub: 'Gestionar activos', color: colors.primary, path: '/equipos' },
+  { id: 'crear', label: 'Nuevo Equipo', sub: 'Registrar', color: colors.status.success, path: null },
+  { id: 'alarmas', label: 'Alarmas', sub: 'Monitoreo', color: colors.status.error, path: '/alarmas' },
+  { id: 'mantenimiento', label: 'Mantenimiento', sub: 'Eventos', color: colors.status.warning, path: '/eventos' },
+  { id: 'metricas', label: 'Métricas', sub: 'KPIs', color: colors.status.info, path: '/metricas' },
+  { id: 'notificaciones', label: 'Notificaciones', sub: 'WhatsApp & Alertas', color: '#25D366', path: null },
+  { id: 'configuracion', label: 'Ajustes', sub: 'Sistema', color: colors.text.muted, path: null },
 ];
 
 const severidadMap: Record<string, { label: string; color: string; bg: string }> = {
@@ -291,7 +291,13 @@ export default function DashboardPage({ onNavigate, isConnected }: Props) {
               return (
                 <div
                   key={item.id}
-                  onClick={() => onNavigate(item.id)}
+                  onClick={() => {
+                    if (item.path) {
+                      window.location.href = item.path;
+                    } else {
+                      onNavigate(item.id);
+                    }
+                  }}
                   style={{
                     background: colors.surface,
                     borderRadius: radius.md,
