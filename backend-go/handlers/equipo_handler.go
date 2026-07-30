@@ -172,7 +172,7 @@ func (h *EquipoHandler) GetRaices(w http.ResponseWriter, r *http.Request) {
 func (h *EquipoHandler) ListarCriticos(w http.ResponseWriter, r *http.Request) {
 	equipos, err := h.Service.ListarCriticos()
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, "Error al listar equipos críticos")
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if equipos == nil {

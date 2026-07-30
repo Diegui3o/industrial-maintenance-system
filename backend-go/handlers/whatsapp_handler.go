@@ -2,23 +2,33 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
 	"backend/models"
 	"backend/repository"
 	"backend/utils"
+	"backend/whatsapp"
 
 	"github.com/gorilla/mux"
 )
 
 type WhatsAppHandler struct {
-	Repo *repository.WhatsAppRepository
+	Repo           *repository.WhatsAppRepository
+	WhatsAppClient *whatsapp.WhatsAppClient
+	DB             *sql.DB
 }
 
 func (h *WhatsAppHandler) ListarGrupos(w http.ResponseWriter, r *http.Request) {
-	grupos, err := h.Repo.ListarGrupos()
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida. Usa ?api_key=TU_KEY")
+		return
+	}
+	grupos, err := h.Repo.ListarGruposPorUsuario(usuarioID)
 	if err != nil {
 		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
 		return
@@ -30,6 +40,11 @@ func (h *WhatsAppHandler) ListarGrupos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *WhatsAppHandler) CrearGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
 	var g models.GrupoWhatsApp
 	if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
@@ -43,6 +58,7 @@ func (h *WhatsAppHandler) CrearGrupo(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	g.UsuarioID = usuarioID
 	utils.SuccessJSON(w, http.StatusCreated, g)
 }
 
@@ -125,4 +141,68 @@ func (h *WhatsAppHandler) ActualizarGrupo(w http.ResponseWriter, r *http.Request
 		return
 	}
 	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo actualizado"})
+}
+
+func (h *WhatsAppHandler) EnviarMensajePrueba(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	var body struct {
+		Mensaje string `json:"mensaje"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	// Obtener grupo
+	grupo, err := h.Repo.ObtenerGrupoPorID(id)
+	if err != nil {
+		log.Printf("ERROR: grupo %d no encontrado: %v", id, err)
+		utils.ErrorJSON(w, http.StatusNotFound, "Grupo no encontrado")
+		return
+	}
+
+	// Enviar mensaje
+	err = h.WhatsAppClient.SendToGroup(grupo.JID, body.Mensaje)
+	if err != nil {
+		log.Printf("ERROR enviando mensaje a grupo %d: %v", id, err)
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error enviando mensaje")
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Mensaje enviado"})
+}
+func (h *WhatsAppHandler) ListarGruposReales(w http.ResponseWriter, r *http.Request) {
+	if h.WhatsAppClient == nil || !h.WhatsAppClient.IsConnected() {
+		utils.ErrorJSON(w, http.StatusServiceUnavailable, "WhatsApp no conectado. Vincule primero.")
+		return
+	}
+
+	groups, err := h.WhatsAppClient.GetGroups()
+	if err != nil {
+		log.Printf("ERROR obteniendo grupos de WhatsApp: %v", err)
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo grupos")
+		return
+	}
+
+	// Convertir a JSON ligero
+	var result []map[string]string
+	for _, g := range groups {
+		result = append(result, map[string]string{
+			"jid":    g.JID.String(),
+			"nombre": g.Name,
+		})
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, result)
+}
+
+func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
+	apiKey := utils.GetAPIKey(r)
+	usuarioID := utils.GetUsuarioIDFromKey(h.DB, apiKey)
+	if usuarioID == 0 {
+		return 0
+	}
+	return usuarioID
 }

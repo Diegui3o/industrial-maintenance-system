@@ -9,6 +9,17 @@ type WhatsAppRepository struct {
 	DB *sql.DB
 }
 
+func (r *WhatsAppRepository) ObtenerGrupoPorID(id int) (*models.GrupoWhatsApp, error) {
+	var g models.GrupoWhatsApp
+	err := r.DB.QueryRow(`
+		SELECT id, nombre, jid, activo FROM grupos_whatsapp WHERE id = $1
+	`, id).Scan(&g.ID, &g.Nombre, &g.JID, &g.Activo)
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
 type WhatsAppInstancia struct {
 	ID         int
 	Nombre     string
@@ -154,4 +165,38 @@ func (r *WhatsAppRepository) ActualizarGrupo(id int, nombre, jid string) error {
 		UPDATE grupos_whatsapp SET nombre = $1, jid = $2 WHERE id = $3
 	`, nombre, jid, id)
 	return err
+}
+
+func (r *WhatsAppRepository) ListarGruposPorUsuario(usuarioID int) ([]models.GrupoWhatsApp, error) {
+	query := `SELECT id, nombre, jid, activo, COALESCE(usuario_id,0) FROM grupos_whatsapp `
+	args := []interface{}{}
+
+	if usuarioID > 0 {
+		query += `WHERE usuario_id = $1 `
+		args = append(args, usuarioID)
+	}
+	query += `ORDER BY nombre`
+
+	rows, err := r.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var grupos []models.GrupoWhatsApp
+	for rows.Next() {
+		var g models.GrupoWhatsApp
+		if err := rows.Scan(&g.ID, &g.Nombre, &g.JID, &g.Activo, &g.UsuarioID); err != nil {
+			return nil, err
+		}
+		grupos = append(grupos, g)
+	}
+	return grupos, rows.Err()
+}
+
+func (r *WhatsAppRepository) CrearGrupoConUsuario(g *models.GrupoWhatsApp) error {
+	return r.DB.QueryRow(`
+		INSERT INTO grupos_whatsapp (nombre, jid, usuario_id) 
+		VALUES ($1, $2, $3) RETURNING id
+	`, g.Nombre, g.JID, g.UsuarioID).Scan(&g.ID)
 }

@@ -91,3 +91,18 @@ export interface MantenimientoCreate {
   tn_dejadas_procesar: number
   enlace: string
 }
+
+export interface GrupoWhatsApp {
+  id: number;
+  nombre: string;
+  jid: string;
+  activo: boolean;
+}
+
+export interface GrupoEquipo {
+  id: number;
+  codigo: string;
+  nombre: string;
+  area: string;
+  estado_equipo: string;
+}

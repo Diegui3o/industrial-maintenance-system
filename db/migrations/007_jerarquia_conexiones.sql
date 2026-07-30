@@ -49,3 +49,17 @@ CREATE TABLE IF NOT EXISTS conexiones (
 CREATE INDEX IF NOT EXISTS idx_conexiones_origen ON conexiones(origen_id);
 CREATE INDEX IF NOT EXISTS idx_conexiones_destino ON conexiones(destino_id);
 CREATE INDEX IF NOT EXISTS idx_conexiones_tipo ON conexiones(tipo_conexion);
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS api_key TEXT UNIQUE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'usuario' CHECK (rol IN ('admin', 'usuario'));
+ALTER TABLE grupos_whatsapp ADD COLUMN IF NOT EXISTS usuario_id INT REFERENCES usuarios(id);
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS api_key TEXT UNIQUE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'usuario';
+
+-- Generar API Keys para usuarios existentes
+UPDATE usuarios SET api_key = 'mto_' || encode(gen_random_bytes(16), 'hex') WHERE api_key IS NULL;
+UPDATE usuarios SET rol = 'admin' WHERE id = 1;  -- El primer usuario es admin
+
+-- Ver las keys generadas
+SELECT id, nombre, username, rol, api_key FROM usuarios;

@@ -6,6 +6,7 @@ import (
 	"backend/handlers"
 	"backend/repository"
 	"backend/services"
+	"backend/whatsapp"
 	"database/sql"
 
 	"github.com/gorilla/mux"
@@ -47,13 +48,20 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	dashboardHandler := &handlers.DashboardHandler{Service: dashboardService}
 	dispositivoHandler := &handlers.DispositivoRedHandler{Service: dispositivoService}
 	configHandler := &handlers.ConfigHandler{Repo: configRepo}
-	whatsappHandler := &handlers.WhatsAppHandler{Repo: whatsappRepo}
+	whatsappClient := whatsapp.NewWhatsAppClient()
+	whatsappHandler := &handlers.WhatsAppHandler{
+		Repo:           whatsappRepo,
+		WhatsAppClient: whatsappClient,
+		DB:             db,
+	}
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 
 	r.HandleFunc("/api/equipos", equipoHandler.GetEquipos).Methods("GET")
 	r.HandleFunc("/api/equipos", equipoHandler.PostEquipos).Methods("POST")
+	r.HandleFunc("/api/equipos/criticos", equipoHandler.ListarCriticos).Methods("GET")
+	r.HandleFunc("/api/equipos/raices", equipoHandler.GetRaices).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}", equipoHandler.GetEquipoPorID).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}", equipoHandler.UpdateEquipos).Methods("PUT")
 
@@ -64,6 +72,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 
 	r.HandleFunc("/api/auditoria", auditoriaHandler.HandleListarAuditoria).Methods("GET")
 
+	r.HandleFunc("/api/usuarios/keys", usuarioHandler.ListarConKeys).Methods("GET")
 	r.HandleFunc("/api/usuarios", usuarioHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/usuarios", usuarioHandler.Listar).Methods("GET")
 	r.HandleFunc("/api/usuarios/{id}", usuarioHandler.ObtenerPorID).Methods("GET")
@@ -106,9 +115,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/equipos/{id}/conexiones/{conId}", conexionHandler.Eliminar).Methods("DELETE")
 
 	// Jerarquía
-	r.HandleFunc("/api/equipos/raices", equipoHandler.GetRaices).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 
+	// WhatsApp
 	r.HandleFunc("/api/grupos", whatsappHandler.ListarGrupos).Methods("GET")
 	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
 	r.HandleFunc("/api/grupos/{id}", whatsappHandler.ActualizarGrupo).Methods("PUT")
@@ -116,7 +125,8 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/grupos/{id}/equipos", whatsappHandler.ListarEquiposPorGrupo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
 	r.HandleFunc("/api/equipos/{id}/grupos/{grupoId}", whatsappHandler.DesasociarGrupo).Methods("DELETE")
-	r.HandleFunc("/api/equipos/criticos", equipoHandler.ListarCriticos).Methods("GET")
+	r.HandleFunc("/api/grupos/{id}/enviar", whatsappHandler.EnviarMensajePrueba).Methods("POST")
+	r.HandleFunc("/api/whatsapp/grupos", whatsappHandler.ListarGruposReales).Methods("GET")
 
 	return r
 }

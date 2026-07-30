@@ -52,3 +52,12 @@ func (h *UsuarioHandler) ObtenerPorID(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.SuccessJSON(w, http.StatusOK, u)
 }
+
+func (h *UsuarioHandler) ListarConKeys(w http.ResponseWriter, r *http.Request) {
+	usuarios, err := h.Service.ListarConKeys()
+	if err != nil {
+		utils.ErrorJSON(w, 500, "Error al listar usuarios")
+		return
+	}
+	utils.SuccessJSON(w, 200, usuarios)
+}

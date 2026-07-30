@@ -46,3 +46,21 @@ func (r *UsuarioRepository) ObtenerPorID(id int) (*models.Usuario, error) {
 	}
 	return u, err
 }
+
+func (r *UsuarioRepository) ListarConKeys() ([]models.Usuario, error) {
+	rows, err := r.DB.Query(`SELECT id, nombre, username, area, COALESCE(api_key,''), COALESCE(rol,'usuario'), creado_en FROM usuarios ORDER BY nombre`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usuarios []models.Usuario
+	for rows.Next() {
+		var u models.Usuario
+		if err := rows.Scan(&u.ID, &u.Nombre, &u.Username, &u.Area, &u.APIKey, &u.Rol, &u.CreadoEn); err != nil {
+			return nil, err
+		}
+		usuarios = append(usuarios, u)
+	}
+	return usuarios, rows.Err()
+}

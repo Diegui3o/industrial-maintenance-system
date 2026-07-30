@@ -205,3 +205,7 @@ func (w *WhatsAppClient) Disconnect() {
 		w.Client.Disconnect()
 	}
 }
+
+func (w *WhatsAppClient) IsConnected() bool {
+	return w.Client != nil && w.Client.IsConnected()
+}

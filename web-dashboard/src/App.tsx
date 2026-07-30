@@ -10,6 +10,7 @@ import MetricasPage from './pages/MetricasPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
 import { getEquipos } from './services/api';
 import EquipoEditPage from './pages/EquipoEditPage';
+import NotificacionesPage from './pages/NotificacionesPage';
 
 export default function App() {
   const [screen, setScreen] = useState<string>('dashboard');
@@ -69,6 +70,8 @@ export default function App() {
       return <EquipoEditPage equipo={screenParams} onNavigate={navigate} onBack={() => navigate('equipo-detalle', screenParams)} />;
     case 'configuracion':
       return <ConfiguracionPage onNavigate={navigate} onBack={goBack} />;
+    case 'notificaciones':
+      return <NotificacionesPage onNavigate={navigate} onBack={goBack} />;
     default:
       return <DashboardPage onNavigate={navigate} isConnected={isConnected} />;
   }

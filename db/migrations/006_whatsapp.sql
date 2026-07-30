@@ -1,4 +1,4 @@
-CREATE TABLE whatsapp_instancias (
+CREATE TABLE IF NOT EXISTS whatsapp_instancias (
     id SERIAL PRIMARY KEY,
 
     nombre TEXT NOT NULL,
@@ -20,4 +20,13 @@ CREATE TABLE whatsapp_instancias (
     creado_en TIMESTAMPTZ DEFAULT NOW(),
 
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS grupos_whatsapp (
+    id SERIAL PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    jid TEXT UNIQUE NOT NULL,
+    activo BOOLEAN DEFAULT TRUE,
+    usuario_id INT REFERENCES usuarios(id),
+    creado_en TIMESTAMPTZ DEFAULT NOW()
 );

@@ -21,3 +21,6 @@ func (s *UsuarioService) Listar() ([]models.Usuario, error) {
 func (s *UsuarioService) ObtenerPorID(id int) (*models.Usuario, error) {
 	return s.Repo.ObtenerPorID(id)
 }
+func (s *UsuarioService) ListarConKeys() ([]models.Usuario, error) {
+	return s.Repo.ListarConKeys()
+}
