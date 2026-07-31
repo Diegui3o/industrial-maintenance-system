@@ -50,3 +50,6 @@ export const desasociarEquipoDeGrupo = (equipoId: number, grupoId: number) =>
 export const getGruposReales = () => fetchWithKey<any[]>('/whatsapp/grupos');
 export const enviarMensajeGrupo = (grupoId: number, mensaje: string) =>
   fetchWithKey<any>(`/grupos/${grupoId}/enviar`, { method: 'POST', body: JSON.stringify({ mensaje }) });
+
+export const getWhatsAppStatus = () =>
+  fetchWithKey<any>('/whatsapp/status').catch(() => ({ conectado: false, qr_disponible: false, numero: '' }));

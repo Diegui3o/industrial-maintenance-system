@@ -39,7 +39,7 @@ function Router() {
   const nav = (s: string, p?: any) => navigate(s, p);
 
   switch (screen) {
-    case 'dashboard':     return <DashboardPage onNavigate={nav} isConnected={null} />;
+    case 'dashboard':     return <DashboardPage onNavigate={nav} isConnected={isConnected} />;
     case 'equipos':       return <EquiposPage onNavigate={nav} />;
     case 'crear':         return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={nav} />;
     case 'equipo-detalle': return <EquipoDetailPage equipo={params} onNavigate={nav} onBack={goBack} />;
@@ -49,6 +49,6 @@ function Router() {
     case 'metricas':      return <MetricasPage onNavigate={nav} onBack={goBack} />;
     case 'configuracion': return <ConfiguracionPage onNavigate={nav} onBack={goBack} />;
     case 'notificaciones': return <NotificacionesPage onNavigate={nav} onBack={goBack} />;
-    default:              return <DashboardPage onNavigate={nav} isConnected={null} />;
+    default:              return <DashboardPage onNavigate={nav} isConnected={isConnected} />;
   }
 }

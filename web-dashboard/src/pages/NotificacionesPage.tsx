@@ -1,4 +1,4 @@
-import { useWhatsAppAuth } from '../hooks/useWhatsAppAuth';
+import { useWhatsAppAuth } from './equipos/hooks/useWhatsAppAuth';
 import Layout from '../components/Layout';
 import WhatsAppLogin from '../components/WhatsAppLogin';
 import NotificacionesContent from './notificaciones/NotificacionesContent';

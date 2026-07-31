@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { verificarKey, setWhatsAppKey, clearWhatsAppKey } from '../services/whatsappApi';
+import { verificarKey, setWhatsAppKey, clearWhatsAppKey } from '../../../services/whatsappApi';
 
 interface AuthState {
   autenticado: boolean;

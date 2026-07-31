@@ -127,6 +127,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/equipos/{id}/grupos/{grupoId}", whatsappHandler.DesasociarGrupo).Methods("DELETE")
 	r.HandleFunc("/api/grupos/{id}/enviar", whatsappHandler.EnviarMensajePrueba).Methods("POST")
 	r.HandleFunc("/api/whatsapp/grupos", whatsappHandler.ListarGruposReales).Methods("GET")
+	r.HandleFunc("/api/whatsapp/status", whatsappHandler.Estado).Methods("GET")
 
 	return r
 }

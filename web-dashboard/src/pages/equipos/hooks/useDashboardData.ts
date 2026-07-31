@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getEquipos, getAlarmas } from '../services/api';
+import { getEquipos, getAlarmas } from '../../../services/api';
 
 export function useDashboardData() {
   const equiposQ = useQuery({ queryKey: ['equipos'], queryFn: getEquipos, refetchInterval: 30000 });

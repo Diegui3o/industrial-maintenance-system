@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { colors, spacing, radius, shadows } from '../theme/colors';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardData } from './equipos/hooks/useDashboardData';
 import Card from '../components/Card';
 
 interface Props {
@@ -291,13 +291,7 @@ export default function DashboardPage({ onNavigate, isConnected }: Props) {
               return (
                 <div
                   key={item.id}
-                  onClick={() => {
-                    if (item.path) {
-                      window.location.href = item.path;
-                    } else {
-                      onNavigate(item.id);
-                    }
-                  }}
+                  onClick={() => onNavigate(item.id)}
                   style={{
                     background: colors.surface,
                     borderRadius: radius.md,

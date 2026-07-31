@@ -206,3 +206,13 @@ func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
 	}
 	return usuarioID
 }
+
+func (h *WhatsAppHandler) Estado(w http.ResponseWriter, r *http.Request) {
+	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
+
+	utils.SuccessJSON(w, 200, map[string]interface{}{
+		"conectado":     conectado,
+		"qr_disponible": !conectado,
+		"numero":        "Sin implementar",
+	})
+}

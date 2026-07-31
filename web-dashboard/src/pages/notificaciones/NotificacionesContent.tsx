@@ -25,8 +25,8 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [mensajePrueba, setMensajePrueba] = useState('');
-  const [gruposReales, setGruposReales] = useState<any[]>([]);
   const [showVinculacion, setShowVinculacion] = useState(false);
+  const [gruposReales, setGruposReales] = useState<any[]>([]);
 
   const cargarDatos = useCallback(async () => {
     const [g, c] = await Promise.all([getGrupos(), getEquiposCriticos()]);
@@ -115,34 +115,43 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       {success && <div style={{ padding: spacing.sm, marginBottom: spacing.md, background: colors.status.successBg, color: colors.status.success, borderRadius: 6, fontSize: 13 }}>{success}</div>}
 
       <div style={{ marginBottom: spacing.lg }}>
-        <Button icon="🔗" onClick={() => { setShowVinculacion(true); getGruposReales().then(setGruposReales); }}>
+        <Button icon="🔗" onClick={async () => { 
+          setShowVinculacion(true); 
+          try {
+            const data = await getGruposReales();
+            setGruposReales(data);
+          } catch {}
+        }}>
           Vincular Grupo de WhatsApp
         </Button>
       </div>
 
-      {showVinculacion && (
-        <Card padding={24} hover={false} style={{ marginBottom: spacing.lg, border: `2px solid #25D366` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
-            <h3 style={{ fontSize: 16, margin: 0, color: '#25D366' }}>📱 Vincular Grupo</h3>
-            <Button variant="ghost" onClick={() => setShowVinculacion(false)}>✕ Cerrar</Button>
-          </div>
-          {gruposReales.length === 0 ? (
-            <p style={{ fontSize: 13, color: colors.text.muted }}>No se encontraron grupos o el bot no está conectado.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-              {gruposReales.map((g: any) => (
-                <div key={g.jid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, background: colors.surfaceMuted, borderRadius: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{g.nombre || 'Grupo'}</div>
-                    <div style={{ fontSize: 11, color: colors.text.muted }}>{g.jid}</div>
-                  </div>
-                  <Button icon="🔗" onClick={() => handleVincularGrupo(g.jid, g.nombre || 'Grupo')}>Vincular</Button>
+    {showVinculacion && (
+      <Card padding={24} hover={false} style={{ marginBottom: spacing.lg, border: `2px solid #25D366` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+          <h3 style={{ fontSize: 16, margin: 0, color: '#25D366' }}>📱 Vincular Grupo</h3>
+          <Button variant="ghost" onClick={() => setShowVinculacion(false)}>✕ Cerrar</Button>
+        </div>
+        <p style={{ fontSize: 13, color: colors.text.secondary, marginBottom: spacing.md }}>
+          Grupos donde el bot de WhatsApp es miembro:
+        </p>
+        {gruposReales.length === 0 ? (
+          <p style={{ fontSize: 13, color: colors.text.muted }}>No se encontraron grupos o el bot no está conectado.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+            {gruposReales.map((g: any) => (
+              <div key={g.jid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, background: colors.surfaceMuted, borderRadius: 6 }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{g.nombre || 'Grupo'}</div>
+                  <div style={{ fontSize: 11, color: colors.text.muted }}>{g.jid}</div>
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
+                <Button icon="🔗" onClick={() => handleVincularGrupo(g.jid, g.nombre || 'Grupo')}>Vincular</Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.lg }}>
         <Card padding={20} hover={false}>
