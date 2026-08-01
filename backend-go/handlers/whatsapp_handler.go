@@ -209,32 +209,47 @@ func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
 	return usuarioID
 }
 
-func (h *WhatsAppHandler) Estado(w http.ResponseWriter, r *http.Request) {
+func (h *WhatsAppHandler) EstadoCompleto(w http.ResponseWriter, r *http.Request) {
 	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
-	qrDisponible := false
+	loggedIn := h.WhatsAppClient != nil && h.WhatsAppClient.IsLoggedIn()
+	qrDisponible := h.WhatsAppClient != nil && h.WhatsAppClient.LastQR != ""
+	var grupos []map[string]string
 
-	if _, err := os.Stat("whatsapp_qr.png"); err == nil {
+	if _, err := os.Stat(h.WhatsAppClient.QRPath); err == nil {
 		qrDisponible = true
+	}
+
+	if conectado && loggedIn {
+		groups, err := h.WhatsAppClient.GetGroups()
+		if err == nil {
+			for _, g := range groups {
+				grupos = append(grupos, map[string]string{
+					"jid":    g.JID.String(),
+					"nombre": g.Name,
+				})
+			}
+		}
 	}
 
 	utils.SuccessJSON(w, 200, map[string]interface{}{
 		"conectado":     conectado,
+		"loggeado":      loggedIn,
 		"qr_disponible": qrDisponible,
+		"grupos":        grupos,
 	})
 }
 
 func (h *WhatsAppHandler) ObtenerQR(w http.ResponseWriter, r *http.Request) {
-	qrPath := "whatsapp_qr.png"
+	qrPath := h.WhatsAppClient.QRPath
 
 	if _, err := os.Stat(qrPath); os.IsNotExist(err) {
-		utils.ErrorJSON(w, http.StatusNotFound, "QR no disponible. Ejecuta el bot en la máquina local.")
+		utils.ErrorJSON(w, http.StatusNotFound, "QR no disponible.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/png")
 	http.ServeFile(w, r, qrPath)
 }
-
 func (h *WhatsAppHandler) IniciarBot(w http.ResponseWriter, r *http.Request) {
 	// Si no está conectado, intentamos conectar
 	if h.WhatsAppClient == nil || !h.WhatsAppClient.IsConnected() {
@@ -278,5 +293,71 @@ func (h *WhatsAppHandler) IniciarBot(w http.ResponseWriter, r *http.Request) {
 
 	utils.SuccessJSON(w, 200, map[string]string{
 		"mensaje": "Bot conectado, pero no se pudieron obtener los grupos.",
+	})
+}
+func (h *WhatsAppHandler) ReiniciarBot(w http.ResponseWriter, r *http.Request) {
+	sessionPath := "/app/whatsapp_sessions/session.db"
+	qrPath := h.WhatsAppClient.QRPath
+
+	os.Remove(sessionPath)
+	os.Remove(qrPath)
+	if h.WhatsAppClient != nil {
+		h.WhatsAppClient.LastQR = ""
+		h.WhatsAppClient.Disconnect()
+	}
+
+	err := h.WhatsAppClient.Connect(sessionPath)
+	if err != nil {
+		log.Printf("Error conectando bot: %v", err)
+		utils.ErrorJSON(w, 500, "No se pudo iniciar el bot: "+err.Error())
+		return
+	}
+
+	if _, err := os.Stat(qrPath); err == nil {
+		qrData, _ := os.ReadFile(qrPath)
+		qrBase64 := base64.StdEncoding.EncodeToString(qrData)
+		utils.SuccessJSON(w, 200, map[string]string{
+			"qr": "data:image/png;base64," + qrBase64,
+		})
+		return
+	}
+
+	utils.SuccessJSON(w, 200, map[string]string{
+		"mensaje": "Bot reiniciado. Escanea el nuevo QR.",
+	})
+}
+
+func (h *WhatsAppHandler) RefreshBot(w http.ResponseWriter, r *http.Request) {
+	// Solo conecta si NO está conectado ni logueado
+	if h.WhatsAppClient == nil || (!h.WhatsAppClient.IsConnected() && !h.WhatsAppClient.IsLoggedIn()) {
+		_ = h.WhatsAppClient.Connect("/app/whatsapp_sessions/session.db")
+	}
+
+	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
+	loggedIn := h.WhatsAppClient != nil && h.WhatsAppClient.IsLoggedIn()
+	qrDisponible := h.WhatsAppClient != nil && h.WhatsAppClient.LastQR != ""
+	var grupos []map[string]string
+
+	if _, err := os.Stat(h.WhatsAppClient.QRPath); err == nil {
+		qrDisponible = true
+	}
+
+	if conectado && loggedIn {
+		groups, err := h.WhatsAppClient.GetGroups()
+		if err == nil {
+			for _, g := range groups {
+				grupos = append(grupos, map[string]string{
+					"jid":    g.JID.String(),
+					"nombre": g.Name,
+				})
+			}
+		}
+	}
+
+	utils.SuccessJSON(w, 200, map[string]interface{}{
+		"conectado":     conectado,
+		"loggeado":      loggedIn,
+		"qr_disponible": qrDisponible,
+		"grupos":        grupos,
 	})
 }

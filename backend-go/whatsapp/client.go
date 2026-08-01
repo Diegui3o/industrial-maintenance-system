@@ -19,11 +19,14 @@ import (
 
 type WhatsAppClient struct {
 	Client *whatsmeow.Client
-	LastQR string // ✅ Guardamos el código QR para exponerlo por API
+	LastQR string
+	QRPath string
 }
 
 func NewWhatsAppClient() *WhatsAppClient {
-	return &WhatsAppClient{}
+	return &WhatsAppClient{
+		QRPath: "/app/whatsapp_sessions/whatsapp_qr.png",
+	}
 }
 
 func (w *WhatsAppClient) Connect(sessionPath string) error {
@@ -53,7 +56,6 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 		return fmt.Errorf("error obteniendo device: %w", err)
 	}
 
-	// ✅ FORMA CORRECTA: NewClient SOLO recibe store y logger (nil = por defecto)
 	w.Client = whatsmeow.NewClient(deviceStore, nil)
 
 	w.Client.AddEventHandler(func(event interface{}) {
@@ -65,6 +67,7 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 		case *events.LoggedOut:
 			fmt.Println("⚠️ Sesión cerrada")
 			w.LastQR = ""
+			os.Remove(w.QRPath)
 		}
 	})
 
@@ -76,7 +79,6 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 			return fmt.Errorf("error creando QR: %w", err)
 		}
 
-		// ✅ La solución real al error de certificado está en el Dockerfile, no acá
 		if err = w.Client.Connect(); err != nil {
 			return fmt.Errorf("error conectando WhatsApp: %w", err)
 		}
@@ -85,16 +87,21 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 			switch qrEvent.Event {
 			case "code":
 				w.LastQR = qrEvent.Code
-				if err := qrcode.WriteFile(qrEvent.Code, qrcode.Medium, 300, "whatsapp_qr.png"); err != nil {
-					return fmt.Errorf("error generando QR: %w", err)
+				os.Remove(w.QRPath)
+				err := qrcode.WriteFile(qrEvent.Code, qrcode.Medium, 300, w.QRPath)
+				if err != nil {
+					fmt.Println("❌ Error guardando QR:", err)
+				} else {
+					fmt.Println("✅ QR generado correctamente en:", w.QRPath)
 				}
-				fmt.Println("✅ QR generado: whatsapp_qr.png")
 			case "success":
 				fmt.Println("✅ WhatsApp vinculado correctamente")
 				w.LastQR = ""
+				os.Remove(w.QRPath)
 				return nil
 			case "timeout":
 				w.LastQR = ""
+				os.Remove(w.QRPath)
 				return fmt.Errorf("QR expirado")
 			}
 		}
@@ -106,6 +113,7 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 		}
 		fmt.Println("✅ Sesión restaurada")
 		w.LastQR = ""
+		os.Remove(w.QRPath)
 	}
 
 	return nil

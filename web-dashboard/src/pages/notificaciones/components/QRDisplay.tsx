@@ -2,16 +2,16 @@ import Button from '../../../components/Button';
 import { colors, spacing } from '../../../theme/colors';
 
 interface Props {
-  qrImage: string;
+  qrUrl: string;
   onVerificar: () => void;
   verificando?: boolean;
 }
 
-export default function QRDisplay({ qrImage, onVerificar, verificando }: Props) {
+export default function QRDisplay({ qrUrl, onVerificar, verificando }: Props) {
   return (
     <div style={{ textAlign: 'center', padding: spacing.lg }}>
       <img
-        src={qrImage}
+        src={qrUrl}
         alt="QR WhatsApp"
         style={{ width: 250, height: 250, margin: '0 auto', display: 'block' }}
       />
@@ -20,7 +20,7 @@ export default function QRDisplay({ qrImage, onVerificar, verificando }: Props) 
         WhatsApp → Dispositivos vinculados → Vincular dispositivo
       </p>
       <Button icon="🔄" onClick={onVerificar} disabled={verificando}>
-        {verificando ? 'Verificando...' : 'Verificar conexión'}
+        {verificando ? 'Verificando…' : 'Actualizar estado'}
       </Button>
     </div>
   );
