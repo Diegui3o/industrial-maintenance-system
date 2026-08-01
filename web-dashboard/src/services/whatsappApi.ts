@@ -5,6 +5,7 @@ let apiKey = '';
 export const setWhatsAppKey = (key: string) => { apiKey = key; };
 export const getWhatsAppKey = () => apiKey;
 export const clearWhatsAppKey = () => { apiKey = ''; };
+export const getWhatsAppQR = () => `/api/whatsapp/qr`;
 
 async function fetchWithKey<T>(url: string, options?: RequestInit): Promise<T> {
   if (!apiKey) throw new Error('API Key no configurada');
@@ -52,4 +53,4 @@ export const enviarMensajeGrupo = (grupoId: number, mensaje: string) =>
   fetchWithKey<any>(`/grupos/${grupoId}/enviar`, { method: 'POST', body: JSON.stringify({ mensaje }) });
 
 export const getWhatsAppStatus = () =>
-  fetchWithKey<any>('/whatsapp/status').catch(() => ({ conectado: false, qr_disponible: false, numero: '' }));
+  fetchWithKey<any>('/whatsapp/status').catch(() => ({ conectado: false }));

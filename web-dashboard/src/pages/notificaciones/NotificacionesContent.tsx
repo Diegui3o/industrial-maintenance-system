@@ -1,14 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { colors, spacing } from '../../theme/colors';
 import {
-  getGrupos, createGrupo, deleteGrupo,
-  getEquiposDeGrupo, asociarEquipoAGrupo, desasociarEquipoDeGrupo,
-  getGruposReales, enviarMensajeGrupo,
+  getGrupos,
+  createGrupo,
+  deleteGrupo,
+  getEquiposDeGrupo,
+  asociarEquipoAGrupo,
+  desasociarEquipoDeGrupo,
+  enviarMensajeGrupo,
+  getWhatsAppKey,
 } from '../../services/whatsappApi';
 import { getEquiposCriticos } from '../../services/api';
+
+// Componentes locales
+import GrupoVinculadoLista from './components/GrupoVinculadoLista';
+import GrupoRealSelector from './components/GrupoRealSelector';
+import QRDisplay from './components/QRDisplay';
+import EquipoCriticoSelector from './components/EquipoCriticoSelector';
+import MensajePruebaInput from './components/MensajePruebaInput';
 
 interface Props {
   usuarioNombre: string;
@@ -18,84 +30,176 @@ interface Props {
 }
 
 export default function NotificacionesContent({ usuarioNombre, onLogout, onNavigate, onBack }: Props) {
-  const [grupos, setGrupos] = useState<any[]>([]);
+  // Estados globales del módulo
+  const [gruposVinculados, setGruposVinculados] = useState<any[]>([]);
   const [criticos, setCriticos] = useState<any[]>([]);
-  const [selectedGrupo, setSelectedGrupo] = useState<any>(null);
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState<any>(null);
   const [equiposGrupo, setEquiposGrupo] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [mensajePrueba, setMensajePrueba] = useState('');
-  const [showVinculacion, setShowVinculacion] = useState(false);
-  const [gruposReales, setGruposReales] = useState<any[]>([]);
 
+  // WhatsApp
+  const [estadoWA, setEstadoWA] = useState<any>(null);
+  const [mostrarVinculacion, setMostrarVinculacion] = useState(false);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [gruposReales, setGruposReales] = useState<any[]>([]);
+  const [verificando, setVerificando] = useState(false);
+
+  const showMsg = (msg: string, isError = false) => {
+    if (isError) {
+      setError(msg);
+      setTimeout(() => setError(null), 4000);
+    } else {
+      setSuccess(msg);
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  // Cargar datos iniciales
   const cargarDatos = useCallback(async () => {
     const [g, c] = await Promise.all([getGrupos(), getEquiposCriticos()]);
-    setGrupos(g);
+    setGruposVinculados(g);
     setCriticos(c);
   }, []);
 
-  useEffect(() => { cargarDatos(); }, [cargarDatos]);
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
 
-  const showMsg = (msg: string, isError = false) => {
-    if (isError) { setError(msg); setTimeout(() => setError(null), 4000); }
-    else { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); }
-  };
+  // Verificar estado WhatsApp cada 30s
+  useEffect(() => {
+    const verificar = async () => {
+      try {
+        const res = await fetch(`/api/whatsapp/estado?api_key=${getWhatsAppKey()}`);
+        const data = await res.json();
+        setEstadoWA(data);
+        if (data.conectado) {
+          const gruposRes = await fetch(`/api/whatsapp/grupos?api_key=${getWhatsAppKey()}`);
+          const gruposData = await gruposRes.json();
+          if (Array.isArray(gruposData)) setGruposReales(gruposData);
+        }
+      } catch {}
+    };
+    verificar();
+    const interval = setInterval(verificar, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
+  // Handlers
   const handleSelectGrupo = async (grupo: any) => {
-    setSelectedGrupo(grupo);
+    setGrupoSeleccionado(grupo);
     const data = await getEquiposDeGrupo(grupo.id);
     setEquiposGrupo(data);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDeleteGrupo = async (id: number) => {
     if (!confirm('¿Eliminar este grupo?')) return;
     try {
       await deleteGrupo(id);
       showMsg('Grupo eliminado');
-      if (selectedGrupo?.id === id) { setSelectedGrupo(null); setEquiposGrupo([]); }
+      if (grupoSeleccionado?.id === id) {
+        setGrupoSeleccionado(null);
+        setEquiposGrupo([]);
+      }
       cargarDatos();
-    } catch (err: any) { showMsg(err.message || 'Error al eliminar', true); }
-  };
-
-  const handleAsociar = async (equipoId: number) => {
-    if (!selectedGrupo) return;
-    try {
-      await asociarEquipoAGrupo(equipoId, selectedGrupo.id);
-      showMsg('Equipo asociado');
-      const data = await getEquiposDeGrupo(selectedGrupo.id);
-      setEquiposGrupo(data);
-    } catch (err: any) { showMsg(err.message || 'Error al asociar', true); }
-  };
-
-  const handleDesasociar = async (equipoId: number) => {
-    if (!selectedGrupo) return;
-    try {
-      await desasociarEquipoDeGrupo(equipoId, selectedGrupo.id);
-      showMsg('Equipo desasociado');
-      const data = await getEquiposDeGrupo(selectedGrupo.id);
-      setEquiposGrupo(data);
-    } catch (err: any) { showMsg(err.message || 'Error al desasociar', true); }
-  };
-
-  const handleEnviarMensaje = async () => {
-    if (!selectedGrupo || !mensajePrueba.trim()) return;
-    try {
-      await enviarMensajeGrupo(selectedGrupo.id, mensajePrueba);
-      showMsg('Mensaje enviado');
-      setMensajePrueba('');
-    } catch (err: any) { showMsg(err.message || 'Error al enviar', true); }
+    } catch (err: any) {
+      showMsg(err.message || 'Error al eliminar', true);
+    }
   };
 
   const handleVincularGrupo = async (jid: string, nombre: string) => {
     try {
       await createGrupo({ nombre, jid });
-      showMsg('Grupo vinculado');
-      setShowVinculacion(false);
+      showMsg('Grupo vinculado exitosamente');
+      setMostrarVinculacion(false);
+      setQrImage(null);
       cargarDatos();
-    } catch (err: any) { showMsg(err.message || 'Error al vincular', true); }
+    } catch (err: any) {
+      showMsg(err.message || 'Error al vincular grupo', true);
+    }
   };
 
-  const equiposDisponibles = criticos.filter((c: any) => !equiposGrupo.find(e => e.id === c.id));
+  const handleAsociar = async (equipoId: number) => {
+    if (!grupoSeleccionado) return;
+    try {
+      await asociarEquipoAGrupo(equipoId, grupoSeleccionado.id);
+      showMsg('Equipo asociado');
+      const data = await getEquiposDeGrupo(grupoSeleccionado.id);
+      setEquiposGrupo(data);
+    } catch (err: any) {
+      showMsg(err.message || 'Error al asociar', true);
+    }
+  };
+
+  const handleDesasociar = async (equipoId: number) => {
+    if (!grupoSeleccionado) return;
+    try {
+      await desasociarEquipoDeGrupo(equipoId, grupoSeleccionado.id);
+      showMsg('Equipo desasociado');
+      const data = await getEquiposDeGrupo(grupoSeleccionado.id);
+      setEquiposGrupo(data);
+    } catch (err: any) {
+      showMsg(err.message || 'Error al desasociar', true);
+    }
+  };
+
+  const handleEnviarMensaje = async () => {
+    if (!grupoSeleccionado || !mensajePrueba.trim()) return;
+    try {
+      await enviarMensajeGrupo(grupoSeleccionado.id, mensajePrueba);
+      showMsg('Mensaje enviado');
+      setMensajePrueba('');
+    } catch (err: any) {
+      showMsg(err.message || 'Error al enviar', true);
+    }
+  };
+
+  const handleIniciarBot = async () => {
+    setVerificando(true);
+    try {
+      const res = await fetch(`/api/whatsapp/iniciar?api_key=${getWhatsAppKey()}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.qr) {
+        setQrImage(data.qr);
+        setMostrarVinculacion(true);
+      } else if (data.grupos) {
+        setGruposReales(data.grupos);
+        setMostrarVinculacion(true);
+        showMsg('¡Bot conectado!');
+      } else {
+        showMsg('Bot iniciado, pero no se obtuvieron datos.', true);
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'Error al iniciar bot', true);
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  const handleVerificarConexion = async () => {
+    setVerificando(true);
+    try {
+      const res = await fetch(`/api/whatsapp/iniciar?api_key=${getWhatsAppKey()}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.grupos) {
+        setGruposReales(data.grupos);
+        setQrImage(null);
+        showMsg('¡Conexión exitosa!');
+      } else if (data.qr) {
+        setQrImage(data.qr);
+        showMsg('Aún no se ha escaneado el QR', true);
+      }
+    } catch {
+      showMsg('Error al verificar', true);
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  const equiposDisponibles = criticos.filter(
+    (c: any) => !equiposGrupo.find((e: any) => e.id === c.id)
+  );
 
   return (
     <Layout
@@ -104,99 +208,124 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       onBack={onBack || (() => onNavigate('dashboard'))}
     >
       {/* Barra de usuario */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: colors.status.success, background: colors.status.successBg, padding: '4px 10px', borderRadius: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginBottom: spacing.lg,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: colors.status.success,
+            background: colors.status.successBg,
+            padding: '4px 10px',
+            borderRadius: 20,
+          }}
+        >
           ● {usuarioNombre}
         </span>
-        <Button variant="ghost" onClick={onLogout}>Salir</Button>
-      </div>
-
-      {error && <div style={{ padding: spacing.sm, marginBottom: spacing.md, background: colors.status.errorBg, color: colors.status.error, borderRadius: 6, fontSize: 13 }}>{error}</div>}
-      {success && <div style={{ padding: spacing.sm, marginBottom: spacing.md, background: colors.status.successBg, color: colors.status.success, borderRadius: 6, fontSize: 13 }}>{success}</div>}
-
-      <div style={{ marginBottom: spacing.lg }}>
-        <Button icon="🔗" onClick={async () => { 
-          setShowVinculacion(true); 
-          try {
-            const data = await getGruposReales();
-            setGruposReales(data);
-          } catch {}
-        }}>
-          Vincular Grupo de WhatsApp
+        <Button variant="ghost" onClick={onLogout}>
+          Salir
         </Button>
       </div>
 
-    {showVinculacion && (
-      <Card padding={24} hover={false} style={{ marginBottom: spacing.lg, border: `2px solid #25D366` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
-          <h3 style={{ fontSize: 16, margin: 0, color: '#25D366' }}>📱 Vincular Grupo</h3>
-          <Button variant="ghost" onClick={() => setShowVinculacion(false)}>✕ Cerrar</Button>
+      {error && (
+        <div
+          style={{
+            padding: spacing.sm,
+            marginBottom: spacing.md,
+            background: colors.status.errorBg,
+            color: colors.status.error,
+            borderRadius: 6,
+            fontSize: 13,
+          }}
+        >
+          {error}
         </div>
-        <p style={{ fontSize: 13, color: colors.text.secondary, marginBottom: spacing.md }}>
-          Grupos donde el bot de WhatsApp es miembro:
-        </p>
-        {gruposReales.length === 0 ? (
-          <p style={{ fontSize: 13, color: colors.text.muted }}>No se encontraron grupos o el bot no está conectado.</p>
+      )}
+      {success && (
+        <div
+          style={{
+            padding: spacing.sm,
+            marginBottom: spacing.md,
+            background: colors.status.successBg,
+            color: colors.status.success,
+            borderRadius: 6,
+            fontSize: 13,
+          }}
+        >
+          {success}
+        </div>
+      )}
+
+      {/* Botón principal */}
+      <div style={{ marginBottom: spacing.lg }}>
+        {estadoWA?.conectado ? (
+          <Button
+            icon="🔗"
+            onClick={async () => {
+              const gruposRes = await fetch(
+                `/api/whatsapp/grupos?api_key=${getWhatsAppKey()}`
+              );
+              const gruposData = await gruposRes.json();
+              setGruposReales(gruposData || []);
+              setMostrarVinculacion(true);
+            }}
+          >
+            Vincular Grupo de WhatsApp
+          </Button>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-            {gruposReales.map((g: any) => (
-              <div key={g.jid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, background: colors.surfaceMuted, borderRadius: 6 }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{g.nombre || 'Grupo'}</div>
-                  <div style={{ fontSize: 11, color: colors.text.muted }}>{g.jid}</div>
-                </div>
-                <Button icon="🔗" onClick={() => handleVincularGrupo(g.jid, g.nombre || 'Grupo')}>Vincular</Button>
-              </div>
-            ))}
-          </div>
+          <Button icon="📱" onClick={handleIniciarBot} disabled={verificando}>
+            {verificando ? 'Iniciando...' : 'Iniciar Bot WhatsApp'}
+          </Button>
         )}
-      </Card>
-    )}
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.lg }}>
-        <Card padding={20} hover={false}>
-          <h3 style={{ fontSize: 16, margin: 0, marginBottom: spacing.md }}>📱 Grupos Vinculados</h3>
-          {grupos.length === 0 ? <p style={{ color: colors.text.muted, fontSize: 13 }}>No hay grupos.</p> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-              {grupos.map((g: any) => (
-                <div key={g.id} onClick={() => handleSelectGrupo(g)} style={{ padding: spacing.md, background: selectedGrupo?.id === g.id ? colors.primaryGhost : colors.surfaceMuted, borderRadius: 6, cursor: 'pointer', border: selectedGrupo?.id === g.id ? `1px solid ${colors.primary}` : '1px solid transparent', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><div style={{ fontWeight: 600, fontSize: 14 }}>{g.nombre}</div><div style={{ fontSize: 11, color: colors.text.muted }}>{g.jid}</div></div>
-                  <div onClick={e => e.stopPropagation()}><Button variant="ghost" icon="🗑️" onClick={() => handleDelete(g.id)}>Eliminar</Button></div>
-                </div>
-              ))}
-            </div>
+      {/* Modal de vinculación / QR */}
+      {mostrarVinculacion && (
+        <>
+          {qrImage ? (
+            <QRDisplay qrImage={qrImage} onVerificar={handleVerificarConexion} verificando={verificando} />
+          ) : (
+            <GrupoRealSelector
+              grupos={gruposReales}
+              onVincular={handleVincularGrupo}
+              onCerrar={() => {
+                setMostrarVinculacion(false);
+                setQrImage(null);
+              }}
+            />
           )}
-        </Card>
+        </>
+      )}
 
+      {/* Grid principal */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.lg }}>
+        <GrupoVinculadoLista
+          grupos={gruposVinculados}
+          grupoSeleccionado={grupoSeleccionado}
+          onSeleccionar={handleSelectGrupo}
+          onEliminar={handleDeleteGrupo}
+        />
         <Card padding={20} hover={false}>
-          <h3 style={{ fontSize: 16, margin: 0, marginBottom: spacing.md }}>{selectedGrupo ? `Equipos en "${selectedGrupo.nombre}"` : 'Selecciona un grupo'}</h3>
-          {!selectedGrupo ? <p style={{ color: colors.text.muted, fontSize: 13 }}>Haz clic en un grupo para ver sus equipos.</p> : (
-            <>
-              {equiposGrupo.length === 0 ? <p style={{ color: colors.text.muted, fontSize: 13, marginBottom: spacing.md }}>Sin equipos.</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, marginBottom: spacing.md }}>
-                  {equiposGrupo.map((e: any) => (
-                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.sm, background: colors.surfaceMuted, borderRadius: 6 }}>
-                      <div><div style={{ fontWeight: 600, fontSize: 13 }}>{e.codigo} - {e.nombre}</div><div style={{ fontSize: 11, color: colors.text.muted }}>{e.area}</div></div>
-                      <Button variant="ghost" icon="✕" onClick={() => handleDesasociar(e.id)}>Quitar</Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {equiposDisponibles.length > 0 && (
-                <div style={{ marginBottom: spacing.md }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: spacing.sm }}>Agregar equipos críticos:</div>
-                  <select defaultValue="" onChange={e => { const id = parseInt(e.target.value); if (id) handleAsociar(id); e.target.value = ''; }} style={{ width: '100%', padding: spacing.sm }}>
-                    <option value="">-- Seleccionar --</option>
-                    {equiposDisponibles.map((e: any) => <option key={e.id} value={e.id}>{e.codigo} - {e.nombre}</option>)}
-                  </select>
-                </div>
-              )}
-              <div style={{ borderTop: `1px solid ${colors.borderLight}`, paddingTop: spacing.md }}>
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: spacing.sm }}>Mensaje de prueba:</div>
-                <textarea value={mensajePrueba} onChange={e => setMensajePrueba(e.target.value)} placeholder="Escribe un mensaje..." style={{ width: '100%', padding: spacing.sm, marginBottom: spacing.sm, minHeight: 60, borderRadius: 6, border: `1px solid ${colors.border}` }} />
-                <Button icon="📤" onClick={handleEnviarMensaje} disabled={!mensajePrueba.trim()}>Enviar</Button>
-              </div>
-            </>
+          <EquipoCriticoSelector
+            grupoNombre={grupoSeleccionado?.nombre}
+            equiposAsignados={equiposGrupo}
+            equiposDisponibles={equiposDisponibles}
+            onAsociar={handleAsociar}
+            onDesasociar={handleDesasociar}
+          />
+          {grupoSeleccionado && (
+            <MensajePruebaInput
+              mensaje={mensajePrueba}
+              onChange={setMensajePrueba}
+              onEnviar={handleEnviarMensaje}
+            />
           )}
         </Card>
       </div>

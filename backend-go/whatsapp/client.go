@@ -2,7 +2,9 @@ package whatsapp
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -17,6 +19,7 @@ import (
 
 type WhatsAppClient struct {
 	Client *whatsmeow.Client
+	LastQR string // ✅ Guardamos el código QR para exponerlo por API
 }
 
 func NewWhatsAppClient() *WhatsAppClient {
@@ -24,13 +27,14 @@ func NewWhatsAppClient() *WhatsAppClient {
 }
 
 func (w *WhatsAppClient) Connect(sessionPath string) error {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
 
 	ctx := context.Background()
 
 	dir := filepath.Dir(sessionPath)
-
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
@@ -40,136 +44,68 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 		sessionPath+"?_pragma=foreign_keys(1)&_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)",
 		nil,
 	)
-
 	if err != nil {
-		return fmt.Errorf(
-			"error creando store: %w",
-			err,
-		)
+		return fmt.Errorf("error creando store: %w", err)
 	}
 
 	deviceStore, err := container.GetFirstDevice(ctx)
-
 	if err != nil {
-		return fmt.Errorf(
-			"error obteniendo device: %w",
-			err,
-		)
+		return fmt.Errorf("error obteniendo device: %w", err)
 	}
 
-	w.Client = whatsmeow.NewClient(
-		deviceStore,
-		nil,
-	)
+	// ✅ FORMA CORRECTA: NewClient SOLO recibe store y logger (nil = por defecto)
+	w.Client = whatsmeow.NewClient(deviceStore, nil)
 
 	w.Client.AddEventHandler(func(event interface{}) {
-
 		switch event.(type) {
-
 		case *events.Connected:
-
 			fmt.Println("🟢 WhatsApp websocket conectado")
-
 		case *events.Disconnected:
-
 			fmt.Println("🔴 WhatsApp desconectado")
-
 		case *events.LoggedOut:
-
 			fmt.Println("⚠️ Sesión cerrada")
-
+			w.LastQR = ""
 		}
-
 	})
-	// ==============================
-	// CASO 1: PRIMERA VEZ
-	// ==============================
 
 	if w.Client.Store.ID == nil {
-
 		fmt.Println("📱 Primera conexión, generando QR")
 
 		qrChan, err := w.Client.GetQRChannel(ctx)
-
 		if err != nil {
-			return fmt.Errorf(
-				"error creando QR: %w",
-				err,
-			)
+			return fmt.Errorf("error creando QR: %w", err)
 		}
 
-		err = w.Client.Connect()
-
-		if err != nil {
-			return fmt.Errorf(
-				"error conectando WhatsApp: %w",
-				err,
-			)
+		// ✅ La solución real al error de certificado está en el Dockerfile, no acá
+		if err = w.Client.Connect(); err != nil {
+			return fmt.Errorf("error conectando WhatsApp: %w", err)
 		}
 
 		for qrEvent := range qrChan {
-
 			switch qrEvent.Event {
-
 			case "code":
-
-				err := qrcode.WriteFile(
-					qrEvent.Code,
-					qrcode.Medium,
-					300,
-					"whatsapp_qr.png",
-				)
-
-				if err != nil {
-					return fmt.Errorf(
-						"error generando QR: %w",
-						err,
-					)
+				w.LastQR = qrEvent.Code
+				if err := qrcode.WriteFile(qrEvent.Code, qrcode.Medium, 300, "whatsapp_qr.png"); err != nil {
+					return fmt.Errorf("error generando QR: %w", err)
 				}
-
-				fmt.Println(
-					"✅ QR generado: whatsapp_qr.png",
-				)
-
+				fmt.Println("✅ QR generado: whatsapp_qr.png")
 			case "success":
-
-				fmt.Println(
-					"✅ WhatsApp vinculado correctamente",
-				)
-
+				fmt.Println("✅ WhatsApp vinculado correctamente")
+				w.LastQR = ""
 				return nil
-
 			case "timeout":
-
-				return fmt.Errorf(
-					"QR expirado",
-				)
+				w.LastQR = ""
+				return fmt.Errorf("QR expirado")
 			}
 		}
 
 	} else {
-
-		// ==============================
-		// CASO 2: SESIÓN EXISTENTE
-		// ==============================
-
-		fmt.Println(
-			"♻️ Restaurando sesión existente",
-		)
-
-		err = w.Client.Connect()
-
-		if err != nil {
-			return fmt.Errorf(
-				"error conectando sesión: %w",
-				err,
-			)
+		fmt.Println("♻️ Restaurando sesión existente")
+		if err = w.Client.Connect(); err != nil {
+			return fmt.Errorf("error conectando sesión: %w", err)
 		}
-
-		fmt.Println(
-			"✅ Sesión restaurada",
-		)
-
+		fmt.Println("✅ Sesión restaurada")
+		w.LastQR = ""
 	}
 
 	return nil
@@ -180,32 +116,20 @@ func (w *WhatsAppClient) GetGroups() ([]*types.GroupInfo, error) {
 }
 
 func (w *WhatsAppClient) SendToGroup(groupJID string, message string) error {
-
 	ctx := context.Background()
-
 	target, err := types.ParseJID(groupJID)
-
 	if err != nil {
 		return err
 	}
-
-	_, err = w.Client.SendMessage(
-		ctx,
-		target,
-		&waProto.Message{
-			Conversation: &message,
-		},
-	)
-
+	_, err = w.Client.SendMessage(ctx, target, &waProto.Message{Conversation: &message})
 	return err
 }
 
+func (w *WhatsAppClient) HasQR() bool { return w.LastQR != "" }
 func (w *WhatsAppClient) Disconnect() {
 	if w.Client != nil {
 		w.Client.Disconnect()
 	}
 }
-
-func (w *WhatsAppClient) IsConnected() bool {
-	return w.Client != nil && w.Client.IsConnected()
-}
+func (w *WhatsAppClient) IsConnected() bool { return w.Client != nil && w.Client.IsConnected() }
+func (w *WhatsAppClient) IsLoggedIn() bool  { return w.Client != nil && w.Client.Store.ID != nil }

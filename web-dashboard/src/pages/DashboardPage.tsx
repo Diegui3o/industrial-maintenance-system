@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { colors, spacing, radius, shadows } from '../theme/colors';
-import { useDashboardData } from './equipos/hooks/useDashboardData';
+import { useDashboardData } from '../hooks/useDashboardData';
 import Card from '../components/Card';
 
 interface Props {

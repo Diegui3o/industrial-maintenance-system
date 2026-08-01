@@ -8,7 +8,7 @@ import AlarmasPage from './pages/AlarmasPage';
 import EventosPage from './pages/EventosPage';
 import MetricasPage from './pages/MetricasPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
-import NotificacionesPage from './pages/NotificacionesPage';
+import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
 import EquipoEditPage from './pages/EquipoEditPage';
 
 export default function App() {

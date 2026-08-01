@@ -3,9 +3,11 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"backend/models"
@@ -209,10 +211,72 @@ func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
 
 func (h *WhatsAppHandler) Estado(w http.ResponseWriter, r *http.Request) {
 	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
+	qrDisponible := false
+
+	if _, err := os.Stat("whatsapp_qr.png"); err == nil {
+		qrDisponible = true
+	}
 
 	utils.SuccessJSON(w, 200, map[string]interface{}{
 		"conectado":     conectado,
-		"qr_disponible": !conectado,
-		"numero":        "Sin implementar",
+		"qr_disponible": qrDisponible,
+	})
+}
+
+func (h *WhatsAppHandler) ObtenerQR(w http.ResponseWriter, r *http.Request) {
+	qrPath := "whatsapp_qr.png"
+
+	if _, err := os.Stat(qrPath); os.IsNotExist(err) {
+		utils.ErrorJSON(w, http.StatusNotFound, "QR no disponible. Ejecuta el bot en la máquina local.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	http.ServeFile(w, r, qrPath)
+}
+
+func (h *WhatsAppHandler) IniciarBot(w http.ResponseWriter, r *http.Request) {
+	// Si no está conectado, intentamos conectar
+	if h.WhatsAppClient == nil || !h.WhatsAppClient.IsConnected() {
+		err := h.WhatsAppClient.Connect("/app/whatsapp_sessions/session.db")
+		if err != nil {
+			log.Printf("Error conectando bot: %v", err)
+			utils.ErrorJSON(w, 500, "No se pudo iniciar el bot: "+err.Error())
+			return
+		}
+	}
+
+	// Si después de conectar está listo, devolvemos los grupos
+	if h.WhatsAppClient.IsConnected() {
+		groups, err := h.WhatsAppClient.GetGroups()
+		if err == nil {
+			var result []map[string]string
+			for _, g := range groups {
+				result = append(result, map[string]string{
+					"jid":    g.JID.String(),
+					"nombre": g.Name,
+				})
+			}
+			utils.SuccessJSON(w, 200, map[string]interface{}{
+				"conectado": true,
+				"grupos":    result,
+			})
+			return
+		}
+	}
+
+	// Si no hay grupos, devolvemos QR (por si acaso)
+	qrPath := "whatsapp_qr.png"
+	if _, err := os.Stat(qrPath); err == nil {
+		qrData, _ := os.ReadFile(qrPath)
+		qrBase64 := base64.StdEncoding.EncodeToString(qrData)
+		utils.SuccessJSON(w, 200, map[string]string{
+			"qr": "data:image/png;base64," + qrBase64,
+		})
+		return
+	}
+
+	utils.SuccessJSON(w, 200, map[string]string{
+		"mensaje": "Bot conectado, pero no se pudieron obtener los grupos.",
 	})
 }

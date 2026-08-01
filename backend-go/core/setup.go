@@ -9,6 +9,7 @@ import (
 	"backend/repository"
 	"backend/scheduler"
 	"backend/services"
+	"backend/whatsapp"
 )
 
 func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
@@ -43,6 +44,20 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 		EquipoRepo:      equipoRepo,
 		Dispatcher:      dispatcherService,
 	}
+
+	whatsappClient := whatsapp.NewWhatsAppClient()
+
+	go func() {
+		log.Println("🤖 Iniciando bot de WhatsApp...")
+		sessionPath := "/app/whatsapp_sessions/session.db"
+		err := whatsappClient.Connect(sessionPath)
+		if err != nil {
+			log.Printf("⚠️ Error conectando WhatsApp: %v", err)
+			log.Println("💡 El QR se generó en: whatsapp_qr.png")
+		} else {
+			log.Println("✅ Bot de WhatsApp conectado")
+		}
+	}()
 
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
 	log.Println("Scheduler inicializado")

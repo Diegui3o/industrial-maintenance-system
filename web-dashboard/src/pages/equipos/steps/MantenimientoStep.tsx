@@ -1,4 +1,4 @@
-import type { EquipoFormData } from '../hooks/useEquipoForm';
+import type { EquipoFormData } from '../../../hooks/useEquipoForm';
 import { colors } from '../../../theme/colors'
 
 interface Props { form: EquipoFormData; update: (d: Partial<EquipoFormData>) => void }

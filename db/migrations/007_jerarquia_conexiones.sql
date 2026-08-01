@@ -58,7 +58,7 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS api_key TEXT UNIQUE;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'usuario';
 
 -- Generar API Keys para usuarios existentes
-UPDATE usuarios SET api_key = 'mto_' || encode(gen_random_bytes(16), 'hex') WHERE api_key IS NULL;
+UPDATE usuarios SET api_key = 'mto_' || substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) WHERE api_key IS NULL;
 UPDATE usuarios SET rol = 'admin' WHERE id = 1;  -- El primer usuario es admin
 
 -- Ver las keys generadas

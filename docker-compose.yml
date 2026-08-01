@@ -15,8 +15,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d mantenimiento"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 5
+      start_period: 20s
 
   backend:
     build:
@@ -24,6 +25,9 @@ services:
       dockerfile: Dockerfile
     container_name: mantenimiento_backend
     restart: always
+    volumes:
+      - ./whatsapp_data:/app/whatsapp_data
+      - ./whatsapp_sessions:/app/whatsapp_sessions
     ports:
       - "1883:1883"
     environment:
@@ -41,7 +45,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
 
 volumes:
   postgres_data:

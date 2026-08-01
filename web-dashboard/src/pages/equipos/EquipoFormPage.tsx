@@ -7,7 +7,7 @@ import DatosBasicosStep from './steps/DatosBasicosStep'
 import UbicacionStep from './steps/UbicacionStep'
 import MonitoreoStep from './steps/MonitoreoStep'
 import MantenimientoStep from './steps/MantenimientoStep'
-import { type EquipoFormData, emptyForm } from './hooks/useEquipoForm'
+import { type EquipoFormData, emptyForm } from '../../hooks/useEquipoForm'
 import { createEquipo, createDispositivoRed, createConfigFuente, createMantenimiento } from '../../services/api'
 import { colors } from '../../theme/colors'
 

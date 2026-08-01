@@ -1,7 +1,7 @@
-import { useWhatsAppAuth } from './equipos/hooks/useWhatsAppAuth';
-import Layout from '../components/Layout';
-import WhatsAppLogin from '../components/WhatsAppLogin';
-import NotificacionesContent from './notificaciones/NotificacionesContent';
+import { useWhatsAppAuth } from '../../hooks/useWhatsAppAuth';
+import Layout from '../../components/Layout';
+import WhatsAppLogin from '../../components/WhatsAppLogin';
+import NotificacionesContent from './NotificacionesContent';
 
 interface Props {
   onNavigate: (page: string, params?: any) => void;

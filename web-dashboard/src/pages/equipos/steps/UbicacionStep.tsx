@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { EquipoFormData } from '../hooks/useEquipoForm';
+import type { EquipoFormData } from '../../../hooks/useEquipoForm';
 import { getEquipos } from '../../../services/api'
 import { colors } from '../../../theme/colors'
 
