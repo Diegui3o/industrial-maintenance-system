@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"backend/models"
 	"backend/repository"
@@ -299,20 +300,26 @@ func (h *WhatsAppHandler) ReiniciarBot(w http.ResponseWriter, r *http.Request) {
 	sessionPath := "/app/whatsapp_sessions/session.db"
 	qrPath := h.WhatsAppClient.QRPath
 
+	// Desconectar y limpiar archivos de manera segura
+	if h.WhatsAppClient != nil {
+		h.WhatsAppClient.Disconnect()
+		h.WhatsAppClient.LastQR = ""
+	}
 	os.Remove(sessionPath)
 	os.Remove(qrPath)
-	if h.WhatsAppClient != nil {
-		h.WhatsAppClient.LastQR = ""
-		h.WhatsAppClient.Disconnect()
-	}
 
+	// Pequeña pausa para asegurar que se liberen los recursos
+	time.Sleep(500 * time.Millisecond)
+
+	// Intentar reconectar (generará nuevo QR)
 	err := h.WhatsAppClient.Connect(sessionPath)
 	if err != nil {
-		log.Printf("Error conectando bot: %v", err)
-		utils.ErrorJSON(w, 500, "No se pudo iniciar el bot: "+err.Error())
+		log.Printf("Error conectando bot en reinicio: %v", err)
+		utils.ErrorJSON(w, 500, "No se pudo reiniciar el bot: "+err.Error())
 		return
 	}
 
+	// Verificar si se generó un QR nuevo
 	if _, err := os.Stat(qrPath); err == nil {
 		qrData, _ := os.ReadFile(qrPath)
 		qrBase64 := base64.StdEncoding.EncodeToString(qrData)

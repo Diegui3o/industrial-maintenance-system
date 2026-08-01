@@ -22,13 +22,14 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
   const [errorFetch, setErrorFetch] = useState<string | null>(null);
 
   const apiKey = getKey();
+  const llamadoRef = useRef(false);
 
   const refresh = async () => {
     setAccionando(true);
     setErrorFetch(null);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos máximo
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const res = await fetch(`/api/whatsapp/refresh?api_key=${apiKey}`, {
         method: 'POST',
@@ -56,9 +57,12 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
     }
   };
 
-  // Llamar automáticamente al montar
+  // Llamar solo una vez al montar
   useEffect(() => {
-    refresh();
+    if (!llamadoRef.current) {
+      llamadoRef.current = true;
+      refresh();
+    }
   }, []);
 
   // Mostrar QR automáticamente si está disponible y no logueado
@@ -67,6 +71,20 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
       setMostrarVinculacion(true);
     }
   }, [estado.qrDisponible, estado.loggeado]);
+
+  if (cargando) {
+    return (
+      <div style={{ marginBottom: spacing.lg }}>
+        <p style={{ color: colors.text.muted }}>Conectando con el bot…</p>
+        <Button variant="ghost" icon="🔄" onClick={refresh} disabled={accionando}>
+          Reintentar
+        </Button>
+        {errorFetch && (
+          <p style={{ color: colors.status.error, fontSize: 13, marginTop: spacing.sm }}>{errorFetch}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: spacing.lg }}>
@@ -90,64 +108,53 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
         <p style={{ color: colors.status.error, fontSize: 13, marginBottom: spacing.sm }}>{errorFetch}</p>
       )}
 
-      {cargando ? (
+      {mostrarVinculacion && estado.qrDisponible && !estado.loggeado && (
         <div style={{ marginBottom: spacing.md }}>
-          <p style={{ color: colors.text.muted }}>Conectando con el bot…</p>
-          <Button variant="ghost" icon="🔄" onClick={refresh} disabled={accionando}>
-            Reintentar
+          <QRDisplay
+            qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`}
+            onVerificar={refresh}
+            verificando={accionando}
+          />
+        </div>
+      )}
+
+      {estado.loggeado ? (
+        <div style={{ display: 'flex', gap: spacing.sm }}>
+          <Button icon="🔗" onClick={() => setMostrarVinculacion(true)}>
+            Vincular Grupo de WhatsApp
+          </Button>
+          <Button variant="ghost" icon="🔄" onClick={async () => {
+            setAccionando(true);
+            try {
+              await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
+              await new Promise(r => setTimeout(r, 800));
+              await refresh();
+            } finally {
+              setAccionando(false);
+            }
+          }} disabled={accionando}>
+            Reiniciar vinculación
           </Button>
         </div>
       ) : (
-        <>
-          {mostrarVinculacion && estado.qrDisponible && !estado.loggeado && (
-            <div style={{ marginBottom: spacing.md }}>
-              <QRDisplay
-                qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`}
-                onVerificar={refresh}
-                verificando={accionando}
-              />
-            </div>
-          )}
+        !estado.qrDisponible && (
+          <Button icon="📱" onClick={refresh} disabled={accionando}>
+            {accionando ? 'Intentando…' : 'Iniciar Bot WhatsApp'}
+          </Button>
+        )
+      )}
 
-          {estado.loggeado ? (
-            <div style={{ display: 'flex', gap: spacing.sm }}>
-              <Button icon="🔗" onClick={() => setMostrarVinculacion(true)}>
-                Vincular Grupo de WhatsApp
-              </Button>
-              <Button variant="ghost" icon="🔄" onClick={async () => {
-                setAccionando(true);
-                try {
-                  await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
-                  await new Promise(r => setTimeout(r, 800));
-                  await refresh();
-                } finally {
-                  setAccionando(false);
-                }
-              }} disabled={accionando}>
-                Reiniciar vinculación
-              </Button>
-            </div>
-          ) : (
-            !estado.qrDisponible && (
-              <Button icon="📱" onClick={refresh} disabled={accionando}>
-                {accionando ? 'Intentando…' : 'Iniciar Bot WhatsApp'}
-              </Button>
-            )
-          )}
-
-          {mostrarVinculacion && estado.loggeado && (
-            <div style={{ marginTop: spacing.md }}>
-              <GrupoRealSelector
-                grupos={estado.grupos}
-                onVincular={(jid, nombre) => {
-                  onVincular(jid, nombre);
-                  setMostrarVinculacion(false);
-                }}
-                onCerrar={() => setMostrarVinculacion(false)}
-              />
-            </div>
-          )}
-        </>
+      {mostrarVinculacion && estado.loggeado && (
+        <div style={{ marginTop: spacing.md }}>
+          <GrupoRealSelector
+            grupos={estado.grupos}
+            onVincular={(jid, nombre) => {
+              onVincular(jid, nombre);
+              setMostrarVinculacion(false);
+            }}
+            onCerrar={() => setMostrarVinculacion(false)}
+          />
+        </div>
       )}
     </div>
   );
