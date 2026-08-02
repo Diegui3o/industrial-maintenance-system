@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"backend/engine"
+	"backend/notifiers"
 	"backend/repository"
 	"backend/scheduler"
 	"backend/services"
@@ -22,11 +23,15 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	notifRepo := repository.NewNotificacionRepository(db)
 
+	// Crear cliente de WhatsApp una sola vez
+	whatsappClient := whatsapp.NewWhatsAppClient()
+
+	// Servicios base
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
-	eventosService := services.NewEventosService(eventosRepo, equipoRepo, auditoriaService, alarmaService)
 	dispatcherService := services.NewDispatcherService(notifRepo, equipoRepo)
 
+	// Notificaciones existentes (por ahora sin WhatsApp directo)
 	notifierService := &services.NotifierService{
 		WhatsApp:   nil,
 		Email:      nil,
@@ -35,6 +40,26 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 		EquipoRepo: equipoRepo,
 	}
 
+	// Crear el notificador de WhatsApp basado en el cliente
+	whatsappNotifier := notifiers.NewWhatsAppNotifier(whatsappClient)
+
+	// Crear el servicio de notificación de WhatsApp que usará EventosService
+	whatsappNotificationService := services.NewWhatsAppNotificationService(
+		whatsappNotifier,
+		whatsappRepo,
+		equipoRepo,
+	)
+
+	// EventosService con la inyección del nuevo servicio
+	eventosService := services.NewEventosService(
+		eventosRepo,
+		equipoRepo,
+		auditoriaService,
+		alarmaService,
+		whatsappNotificationService,
+	)
+
+	// RuleEngine con el EventosService correcto
 	ruleEngine := &engine.RuleEngine{
 		ConfigRepo:      configRepo,
 		SensorRepo:      sensorRepo,
@@ -45,8 +70,7 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 		Dispatcher:      dispatcherService,
 	}
 
-	whatsappClient := whatsapp.NewWhatsAppClient()
-
+	// Iniciar el bot de WhatsApp en segundo plano
 	go func() {
 		log.Println("🤖 Iniciando bot de WhatsApp...")
 		sessionPath := "/app/whatsapp_sessions/session.db"

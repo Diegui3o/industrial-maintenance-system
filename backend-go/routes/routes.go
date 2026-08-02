@@ -4,6 +4,7 @@ package routes
 import (
 	"backend/engine"
 	"backend/handlers"
+	"backend/notifiers"
 	"backend/repository"
 	"backend/services"
 	"backend/whatsapp"
@@ -16,6 +17,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 
 	r := mux.NewRouter()
 
+	// ============================================
+	// REPOSITORIES
+	// ============================================
 	equipoRepo := &repository.EquipoRepository{DB: db}
 	eventosRepo := &repository.EventosRepository{DB: db}
 	metricaRepo := &repository.MetricaRepository{DB: db}
@@ -29,17 +33,43 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	mantenimientoRepo := repository.NewMantenimientoRepository(db)
 	conexionRepo := repository.NewConexionRepository(db)
 
+	// ============================================
+	// SERVICES
+	// ============================================
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	equipoService := &services.EquipoService{Repo: equipoRepo}
-	eventosService := services.NewEventosService(eventosRepo, equipoRepo, auditoriaService, alarmaService)
+
+	// WhatsApp client y servicios relacionados
+	whatsappClient := whatsapp.NewWhatsAppClient()
+	whatsappNotifier := notifiers.NewWhatsAppNotifier(whatsappClient)
+	whatsappNotificationService := services.NewWhatsAppNotificationService(
+		whatsappNotifier,
+		whatsappRepo,
+		equipoRepo,
+	)
+
+	// EventosService con WhatsAppNotificationService
+	eventosService := services.NewEventosService(
+		eventosRepo,
+		equipoRepo,
+		auditoriaService,
+		alarmaService,
+		whatsappNotificationService,
+	)
+
 	metricaService := &services.MetricaService{Repo: metricaRepo}
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
 	dispositivoService := &services.DispositivoRedService{Repo: dispositivoRepo}
+
+	// ============================================
+	// HANDLERS
+	// ============================================
 	equipoHandler := &handlers.EquipoHandler{
 		Service:    equipoService,
-		ConfigRepo: configRepo}
+		ConfigRepo: configRepo,
+	}
 	eventosHandler := &handlers.EventosHandler{Service: eventosService}
 	metricaHandler := &handlers.MetricaHandler{Service: metricaService}
 	auditoriaHandler := handlers.NewAuditoriaHandler(auditoriaService)
@@ -48,7 +78,6 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	dashboardHandler := &handlers.DashboardHandler{Service: dashboardService}
 	dispositivoHandler := &handlers.DispositivoRedHandler{Service: dispositivoService}
 	configHandler := &handlers.ConfigHandler{Repo: configRepo}
-	whatsappClient := whatsapp.NewWhatsAppClient()
 	whatsappHandler := &handlers.WhatsAppHandler{
 		Repo:           whatsappRepo,
 		WhatsAppClient: whatsappClient,
@@ -58,6 +87,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 
+	// ============================================
+	// RUTAS
+	// ============================================
 	r.HandleFunc("/api/equipos", equipoHandler.GetEquipos).Methods("GET")
 	r.HandleFunc("/api/equipos", equipoHandler.PostEquipos).Methods("POST")
 	r.HandleFunc("/api/equipos/criticos", equipoHandler.ListarCriticos).Methods("GET")
@@ -101,23 +133,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/equipos/{id}/fuentes", configHandler.ListarFuentesPorEquipo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/umbrales", configHandler.ListarUmbrales).Methods("GET")
 
-	r.HandleFunc("/api/grupos", whatsappHandler.ListarGrupos).Methods("GET")
-	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
-	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
-	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
-	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
-	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
-	diagHandler := &handlers.DiagnosticoHandler{}
-	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.Crear).Methods("POST")
-	r.HandleFunc("/api/equipos/{id}/conexiones/{conId}", conexionHandler.Eliminar).Methods("DELETE")
-
-	// Jerarquía
-	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
-
-	// WhatsApp
+	// WhatsApp (única sección)
 	r.HandleFunc("/api/grupos", whatsappHandler.ListarGrupos).Methods("GET")
 	r.HandleFunc("/api/grupos", whatsappHandler.CrearGrupo).Methods("POST")
 	r.HandleFunc("/api/grupos/{id}", whatsappHandler.ActualizarGrupo).Methods("PUT")
@@ -132,6 +148,19 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	r.HandleFunc("/api/whatsapp/iniciar", whatsappHandler.IniciarBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/reiniciar", whatsappHandler.ReiniciarBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/refresh", whatsappHandler.RefreshBot).Methods("POST")
+
+	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
+	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
+	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
+	diagHandler := &handlers.DiagnosticoHandler{}
+	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.Crear).Methods("POST")
+	r.HandleFunc("/api/equipos/{id}/conexiones/{conId}", conexionHandler.Eliminar).Methods("DELETE")
+
+	// Jerarquía
+	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 
 	return r
 }

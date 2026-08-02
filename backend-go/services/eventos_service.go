@@ -7,10 +7,11 @@ import (
 )
 
 type EventosService struct {
-	Repo             *repository.EventosRepository
-	EquipoRepo       *repository.EquipoRepository
-	auditoriaService *AuditoriaService
-	alarmaService    *AlarmaService
+	Repo                        *repository.EventosRepository
+	EquipoRepo                  *repository.EquipoRepository
+	auditoriaService            *AuditoriaService
+	alarmaService               *AlarmaService
+	whatsappNotificationService *WhatsAppNotificationService
 }
 
 func NewEventosService(
@@ -18,12 +19,14 @@ func NewEventosService(
 	equipoRepo *repository.EquipoRepository,
 	auditoriaService *AuditoriaService,
 	alarmaService *AlarmaService,
+	whatsappNotificationService *WhatsAppNotificationService,
 ) *EventosService {
 	return &EventosService{
-		Repo:             repo,
-		EquipoRepo:       equipoRepo,
-		auditoriaService: auditoriaService,
-		alarmaService:    alarmaService,
+		Repo:                        repo,
+		EquipoRepo:                  equipoRepo,
+		auditoriaService:            auditoriaService,
+		alarmaService:               alarmaService,
+		whatsappNotificationService: whatsappNotificationService,
 	}
 }
 
@@ -32,7 +35,6 @@ func (s *EventosService) CambiarEstadoEquipo(
 	nuevoEstado string,
 	motivo string,
 ) error {
-
 	estadoActual, err := s.Repo.ObtenerEstadoActualEquipo(equipoID)
 	if err != nil {
 		return err
@@ -46,6 +48,7 @@ func (s *EventosService) CambiarEstadoEquipo(
 	if err != nil {
 		return err
 	}
+
 	s.auditoriaService.RegistrarCambioEstado(
 		nil,
 		equipoID,
@@ -53,8 +56,14 @@ func (s *EventosService) CambiarEstadoEquipo(
 		nuevoEstado,
 		motivo,
 	)
+
 	if nuevoEstado == "fallo" {
 		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
+
+		// Notificar por WhatsApp a los grupos vinculados
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
+		}
 	}
 
 	return nil

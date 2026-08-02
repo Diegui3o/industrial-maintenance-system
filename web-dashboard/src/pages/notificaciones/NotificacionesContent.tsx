@@ -15,9 +15,9 @@ import {
 } from '../../services/whatsappApi';
 import { getEquiposCriticos } from '../../services/api';
 import GrupoVinculadoLista from './components/GrupoVinculadoLista';
-import EquipoCriticoSelector from './components/EquipoCriticoSelector';
 import WhatsAppPanel from './components/WhatsAppPanel';
 import ChatPanel from './components/ChatPanel';
+import EquipoCriticoManager from './components/EquipoCriticoManager';
 
 interface Props {
   usuarioNombre: string;
@@ -116,10 +116,6 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
     setEquiposGrupo([]);
   };
 
-  const equiposDisponibles = criticos.filter(
-    (c: any) => !equiposGrupo.find((e: any) => e.id === c.id)
-  );
-
   return (
     <Layout
       title="🔔 Notificaciones"
@@ -154,10 +150,10 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
           onEliminar={handleDeleteGrupo}
         />
         <Card padding={20} hover={false}>
-          <EquipoCriticoSelector
+          <EquipoCriticoManager
             grupoNombre={grupoSeleccionado?.nombre}
             equiposAsignados={equiposGrupo}
-            equiposDisponibles={equiposDisponibles}
+            equiposDisponibles={criticos}
             onAsociar={handleAsociar}
             onDesasociar={handleDesasociar}
           />
