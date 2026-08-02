@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import Button from '../../../components/Button';
 import { colors, spacing } from '../../../theme/colors';
 import QRDisplay from './QRDisplay';
@@ -7,9 +7,10 @@ import GrupoRealSelector from './GrupoRealSelector';
 interface Props {
   onVincular: (jid: string, nombre: string) => void;
   getKey: () => string;
+  vinculadosJIDs?: string[];
 }
 
-export default function WhatsAppPanel({ onVincular, getKey }: Props) {
+const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJIDs = [] }, ref) => {
   const [estado, setEstado] = useState({
     conectado: false,
     loggeado: false,
@@ -23,6 +24,9 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
 
   const apiKey = getKey();
   const llamadoRef = useRef(false);
+
+  // Exponer refresh al padre
+  useImperativeHandle(ref, () => ({ refresh }));
 
   const refresh = async () => {
     setAccionando(true);
@@ -57,7 +61,6 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
     }
   };
 
-  // Llamar solo una vez al montar
   useEffect(() => {
     if (!llamadoRef.current) {
       llamadoRef.current = true;
@@ -65,12 +68,14 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
     }
   }, []);
 
-  // Mostrar QR automáticamente si está disponible y no logueado
   useEffect(() => {
     if (estado.qrDisponible && !estado.loggeado) {
       setMostrarVinculacion(true);
     }
   }, [estado.qrDisponible, estado.loggeado]);
+
+  // *** FILTRO CORRECTO ***
+  const gruposFiltrados = estado.grupos.filter(g => !vinculadosJIDs.includes(g.jid));
 
   if (cargando) {
     return (
@@ -119,23 +124,42 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
       )}
 
       {estado.loggeado ? (
-        <div style={{ display: 'flex', gap: spacing.sm }}>
-          <Button icon="🔗" onClick={() => setMostrarVinculacion(true)}>
-            Vincular Grupo de WhatsApp
-          </Button>
-          <Button variant="ghost" icon="🔄" onClick={async () => {
-            setAccionando(true);
-            try {
-              await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
-              await new Promise(r => setTimeout(r, 800));
-              await refresh();
-            } finally {
-              setAccionando(false);
-            }
-          }} disabled={accionando}>
-            Reiniciar vinculación
-          </Button>
-        </div>
+        <>
+          <div style={{ display: 'flex', gap: spacing.sm }}>
+            <Button icon="🔗" onClick={() => setMostrarVinculacion(true)}>
+              Vincular Grupo de WhatsApp
+            </Button>
+            <Button variant="ghost" icon="🔄" onClick={async () => {
+              setAccionando(true);
+              try {
+                await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
+                await new Promise(r => setTimeout(r, 800));
+                await refresh();
+              } finally {
+                setAccionando(false);
+              }
+            }} disabled={accionando}>
+              Reiniciar vinculación
+            </Button>
+          </div>
+
+          {mostrarVinculacion && (
+            <div style={{ marginTop: spacing.md }}>
+              {gruposFiltrados.length === 0 ? (
+                <p style={{ fontSize: 13, color: colors.text.muted }}>No hay grupos disponibles (todos los grupos del bot ya están vinculados).</p>
+              ) : (
+                <GrupoRealSelector
+                  grupos={gruposFiltrados}
+                  onVincular={(jid, nombre) => {
+                    onVincular(jid, nombre);
+                    setMostrarVinculacion(false);
+                  }}
+                  onCerrar={() => setMostrarVinculacion(false)}
+                />
+              )}
+            </div>
+          )}
+        </>
       ) : (
         !estado.qrDisponible && (
           <Button icon="📱" onClick={refresh} disabled={accionando}>
@@ -143,19 +167,9 @@ export default function WhatsAppPanel({ onVincular, getKey }: Props) {
           </Button>
         )
       )}
-
-      {mostrarVinculacion && estado.loggeado && (
-        <div style={{ marginTop: spacing.md }}>
-          <GrupoRealSelector
-            grupos={estado.grupos}
-            onVincular={(jid, nombre) => {
-              onVincular(jid, nombre);
-              setMostrarVinculacion(false);
-            }}
-            onCerrar={() => setMostrarVinculacion(false)}
-          />
-        </div>
-      )}
     </div>
   );
-}
+});
+
+WhatsAppPanel.displayName = 'WhatsAppPanel';
+export default WhatsAppPanel;

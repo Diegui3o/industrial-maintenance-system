@@ -57,8 +57,8 @@ func (r *WhatsAppRepository) ObtenerGruposPorEquipo(equipoID int) ([]models.Grup
 
 func (r *WhatsAppRepository) CrearGrupo(g *models.GrupoWhatsApp) error {
 	return r.DB.QueryRow(`
-        INSERT INTO grupos_whatsapp (nombre, jid) VALUES ($1, $2) RETURNING id
-    `, g.Nombre, g.JID).Scan(&g.ID)
+        INSERT INTO grupos_whatsapp (nombre, jid, usuario_id) VALUES ($1, $2, $3) RETURNING id
+    `, g.Nombre, g.JID, g.UsuarioID).Scan(&g.ID)
 }
 
 func (r *WhatsAppRepository) ListarGrupos() ([]models.GrupoWhatsApp, error) {
@@ -199,4 +199,14 @@ func (r *WhatsAppRepository) CrearGrupoConUsuario(g *models.GrupoWhatsApp) error
 		INSERT INTO grupos_whatsapp (nombre, jid, usuario_id) 
 		VALUES ($1, $2, $3) RETURNING id
 	`, g.Nombre, g.JID, g.UsuarioID).Scan(&g.ID)
+}
+
+func (r *WhatsAppRepository) ObtenerGrupoPorJID(jid string) (*models.GrupoWhatsApp, error) {
+	var g models.GrupoWhatsApp
+	err := r.DB.QueryRow(`SELECT id, nombre, jid, activo, usuario_id FROM grupos_whatsapp WHERE jid = $1`, jid).
+		Scan(&g.ID, &g.Nombre, &g.JID, &g.Activo, &g.UsuarioID)
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
 }

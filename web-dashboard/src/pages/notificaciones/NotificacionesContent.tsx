@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef  } from 'react';
 import Layout from '../../components/Layout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -14,11 +14,10 @@ import {
   getWhatsAppKey,
 } from '../../services/whatsappApi';
 import { getEquiposCriticos } from '../../services/api';
-
 import GrupoVinculadoLista from './components/GrupoVinculadoLista';
 import EquipoCriticoSelector from './components/EquipoCriticoSelector';
-import MensajePruebaInput from './components/MensajePruebaInput';
 import WhatsAppPanel from './components/WhatsAppPanel';
+import ChatPanel from './components/ChatPanel';
 
 interface Props {
   usuarioNombre: string;
@@ -34,7 +33,7 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
   const [equiposGrupo, setEquiposGrupo] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [mensajePrueba, setMensajePrueba] = useState('');
+  const whatsappPanelRef = useRef<{ refresh: () => void }>(null);
 
   const showMsg = (msg: string, isError = false) => {
     if (isError) {
@@ -81,7 +80,8 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
     try {
       await createGrupo({ nombre, jid });
       showMsg('Grupo vinculado exitosamente');
-      cargarDatos();
+      await cargarDatos();
+      whatsappPanelRef.current?.refresh();
     } catch (err: any) {
       showMsg(err.message || 'Error al vincular grupo', true);
     }
@@ -111,15 +111,9 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
     }
   };
 
-  const handleEnviarMensaje = async () => {
-    if (!grupoSeleccionado || !mensajePrueba.trim()) return;
-    try {
-      await enviarMensajeGrupo(grupoSeleccionado.id, mensajePrueba);
-      showMsg('Mensaje enviado');
-      setMensajePrueba('');
-    } catch (err: any) {
-      showMsg(err.message || 'Error al enviar', true);
-    }
+  const handleCerrarGrupo = () => {
+    setGrupoSeleccionado(null);
+    setEquiposGrupo([]);
   };
 
   const equiposDisponibles = criticos.filter(
@@ -145,8 +139,10 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
 
       {/* Panel de WhatsApp */}
       <WhatsAppPanel
+        ref={whatsappPanelRef}
         onVincular={handleVincularGrupo}
         getKey={getWhatsAppKey}
+        vinculadosJIDs={gruposVinculados.map(g => g.jid)}
       />
 
       {/* Grid principal */}
@@ -166,10 +162,13 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
             onDesasociar={handleDesasociar}
           />
           {grupoSeleccionado && (
-            <MensajePruebaInput
-              mensaje={mensajePrueba}
-              onChange={setMensajePrueba}
-              onEnviar={handleEnviarMensaje}
+            <ChatPanel
+              grupoId={grupoSeleccionado.id}
+              grupoNombre={grupoSeleccionado.nombre}
+              onEnviar={async (id, mensaje) => {
+                await enviarMensajeGrupo(id, mensaje);
+              }}
+              onCerrar={handleCerrarGrupo}
             />
           )}
         </Card>

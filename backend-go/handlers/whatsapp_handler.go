@@ -57,11 +57,20 @@ func (h *WhatsAppHandler) CrearGrupo(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorJSON(w, http.StatusBadRequest, "nombre y jid son obligatorios")
 		return
 	}
-	if err := h.Repo.CrearGrupo(&g); err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+
+	// Verificar si el grupo ya existe
+	existing, err := h.Repo.ObtenerGrupoPorJID(g.JID)
+	if err == nil && existing != nil {
+		utils.SuccessJSON(w, http.StatusOK, existing)
 		return
 	}
+
 	g.UsuarioID = usuarioID
+	if err := h.Repo.CrearGrupo(&g); err != nil {
+		log.Printf("ERROR creando grupo: %v", err)
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error al crear grupo")
+		return
+	}
 	utils.SuccessJSON(w, http.StatusCreated, g)
 }
 

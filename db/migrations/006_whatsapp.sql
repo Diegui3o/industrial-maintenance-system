@@ -30,3 +30,10 @@ CREATE TABLE IF NOT EXISTS grupos_whatsapp (
     usuario_id INT REFERENCES usuarios(id),
     creado_en TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS equipo_grupo (
+    id SERIAL PRIMARY KEY,
+    equipo_id INT NOT NULL REFERENCES equipos(id),
+    grupo_id INT NOT NULL REFERENCES grupos_whatsapp(id),
+    UNIQUE(equipo_id, grupo_id)
+);
