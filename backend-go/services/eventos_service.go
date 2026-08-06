@@ -1,0 +1,76 @@
+// services/eventos_service.go
+package services
+
+import (
+	"backend/models"
+	"backend/repository"
+)
+
+type EventosService struct {
+	Repo                        *repository.EventosRepository
+	EquipoRepo                  *repository.EquipoRepository
+	auditoriaService            *AuditoriaService
+	alarmaService               *AlarmaService
+	whatsappNotificationService *WhatsAppNotificationService
+}
+
+func NewEventosService(
+	repo *repository.EventosRepository,
+	equipoRepo *repository.EquipoRepository,
+	auditoriaService *AuditoriaService,
+	alarmaService *AlarmaService,
+	whatsappNotificationService *WhatsAppNotificationService,
+) *EventosService {
+	return &EventosService{
+		Repo:                        repo,
+		EquipoRepo:                  equipoRepo,
+		auditoriaService:            auditoriaService,
+		alarmaService:               alarmaService,
+		whatsappNotificationService: whatsappNotificationService,
+	}
+}
+
+func (s *EventosService) CambiarEstadoEquipo(
+	equipoID int,
+	nuevoEstado string,
+	motivo string,
+) error {
+	estadoActual, err := s.Repo.ObtenerEstadoActualEquipo(equipoID)
+	if err != nil {
+		return err
+	}
+
+	if estadoActual == nuevoEstado {
+		return nil
+	}
+
+	err = s.Repo.CambiarEstadoEquipo(equipoID, nuevoEstado, motivo)
+	if err != nil {
+		return err
+	}
+
+	s.auditoriaService.RegistrarCambioEstado(
+		nil,
+		equipoID,
+		estadoActual,
+		nuevoEstado,
+		motivo,
+	)
+
+	if nuevoEstado == "fallo" {
+		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
+
+		// Notificar por WhatsApp a los grupos vinculados
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
+		}
+	}
+
+	return nil
+}
+
+func (s *EventosService) ObtenerHistorialEquipo(
+	equipoID int,
+) ([]models.EventoEstado, error) {
+	return s.Repo.ObtenerHistorialEquipo(equipoID)
+}

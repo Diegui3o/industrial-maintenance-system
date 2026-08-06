@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_mantenimiento
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: mantenimiento
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d mantenimiento"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend-go
+      dockerfile: Dockerfile
+    container_name: mantenimiento_backend
+    restart: always
+    volumes:
+      - ./whatsapp_data:/app/whatsapp_data
+      - ./whatsapp_sessions:/app/whatsapp_sessions
+    ports:
+      - "1883:1883"
+    environment:
+      DATABASE_URL: "postgres://admin:admin@postgres:5432/mantenimiento?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./web-dashboard
+      dockerfile: Dockerfile
+    container_name: mantenimiento_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
+
+  wireguard:
+      image: ghcr.io/wg-easy/wg-easy
+      container_name: wireguard
+      environment:
+        - WG_HOST=192.168.18.14
+        - WG_DISABLE_PASSWORD=true
+        - WG_DEFAULT_ADDRESS=10.0.0.x
+        - WG_DEFAULT_DNS=1.1.1.1
+        - WG_ALLOWED_IPS=10.30.0.0/16,10.188.0.0/16
+      volumes:
+        - ./wg-data:/etc/wireguard
+      ports:
+        - "51820:51820/udp"
+        - "51821:51821/tcp"
+      cap_add:
+        - NET_ADMIN
+        - SYS_MODULE
+      restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,0 +1,6 @@
+*.exe
+*.db
+*.png
+whatsapp_qr.png
+whatsapp.db
+storage/
