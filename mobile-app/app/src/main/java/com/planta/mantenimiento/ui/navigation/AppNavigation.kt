@@ -1,32 +1,38 @@
 package com.planta.mantenimiento.ui.navigation
 
-import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.*
-
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.planta.mantenimiento.data.local.PreferencesManager
+import com.planta.mantenimiento.ui.screens.*
 import com.planta.mantenimiento.ui.screens.home.HomeScreen
-import com.planta.mantenimiento.ui.screens.EquipoListScreen
-import com.planta.mantenimiento.ui.screens.SettingsScreen
 
 @Composable
-fun AppNavigation(context: Context) {
-
+fun AppNavigation(onConnectVpn: () -> Unit = {}) {
     val navController = rememberNavController()
+    val context = LocalContext.current
     val prefs = PreferencesManager(context)
 
-    NavHost(navController, startDestination = "home") {
-
+    NavHost(navController = navController, startDestination = "home") {
         composable("home") {
-            HomeScreen(navController, prefs)
+            HomeScreen(
+                navController = navController,
+                onConnectVpn = onConnectVpn
+            )
         }
-
         composable("equipos") {
-            EquipoListScreen(navController)
+            EquipoListScreen(navController = navController)
         }
-
+        composable("mantenimientos") {
+            MantenimientoListScreen(navController = navController)
+        }
+        composable("mantenimiento/crear") {
+            MantenimientoFormScreen(navController = navController)
+        }
         composable("settings") {
-            SettingsScreen(navController, prefs)
+            SettingsScreen(navController = navController, prefs = prefs)
         }
     }
 }

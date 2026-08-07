@@ -1,5 +1,7 @@
 package com.planta.mantenimiento.ui.screens.home
 
+import android.app.Activity
+import android.net.VpnService
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -12,28 +14,31 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.planta.mantenimiento.MantenimientoApp
 import com.planta.mantenimiento.data.local.PreferencesManager
 import com.planta.mantenimiento.ui.components.ConnectionBadge
 import com.planta.mantenimiento.ui.components.ErrorCard
 import com.planta.mantenimiento.ui.theme.AppColors
 import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalContext
-import com.planta.mantenimiento.MantenimientoApp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
     prefs: PreferencesManager,
-    onBackToLanding: () -> Unit
+    onBackToLanding: () -> Unit,
+    onConnectVpn: () -> Unit = {}
 ) {
     var state by remember { mutableStateOf(HomeState()) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    // 🔙 Atrás en Dashboard = volver a Landing
     BackHandler(enabled = true) {
         onBackToLanding()
     }
@@ -81,7 +86,8 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -119,15 +125,11 @@ fun DashboardScreen(
                 }
             }
 
-            val context = LocalContext.current
-
             DashboardGrid(
                 onCheckConnection = {
                     scope.launch {
                         state = state.copy(isLoading = true)
-
                         val result = checkServerConnection(prefs)
-
                         state = state.copy(
                             isConnected = result.first,
                             isLoading = false,
@@ -138,20 +140,29 @@ fun DashboardScreen(
                 onNavigateToEquipos = { navController.navigate("equipos") },
                 onNavigateToMantenimientos = { navController.navigate("mantenimientos") },
                 onNavigateToSettings = { navController.navigate("settings") },
-
                 onConnectVpn = {
-                    val intent = android.net.VpnService.prepare(context)
+                    val config = """
+[Interface]
+PrivateKey = kJmGftLQ4w7a5ueBdJtc6qVnWjEr6oXpBFqIWAYmUX0=
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = Vt4ozefu38AA/FWrYof0UwhYkJ4t7vCD7Ms2YOvUDFk=
+PresharedKey = ZTltaIwoTH+ye5tHvPn4i1ZAk3JoLAT9fqDzfLZF5Mg=
+AllowedIPs = 10.30.0.0/16,10.188.0.0/16
+Endpoint = 192.168.18.14:51820
+                    """.trimIndent()
+
+                    val app = context.applicationContext as MantenimientoApp
+                    val intent = VpnService.prepare(context)
 
                     if (intent != null) {
-                        (context as android.app.Activity)
-                            .startActivityForResult(intent, 100)
+                        (context as Activity).startActivityForResult(intent, 100)
                     } else {
-                        (context.applicationContext as MantenimientoApp)
-                            .wireGuardManager
-                            .startTunnel("TU_CONFIG_AQUI")
+                        app.startVpn(config)
                     }
                 },
-
                 isLoading = state.isLoading,
                 isConnected = state.isConnected
             )

@@ -4,5 +4,17 @@
     "publicKey": "Vt4ozefu38AA/FWrYof0UwhYkJ4t7vCD7Ms2YOvUDFk=",
     "address": "10.0.0.1"
   },
-  "clients": {}
+  "clients": {
+    "6b54d586-9581-49b1-9f35-e2adbdfecbe5": {
+      "id": "6b54d586-9581-49b1-9f35-e2adbdfecbe5",
+      "name": "test-app",
+      "address": "10.0.0.2",
+      "privateKey": "kJmGftLQ4w7a5ueBdJtc6qVnWjEr6oXpBFqIWAYmUX0=",
+      "publicKey": "/XeufgHQBoXDNFIxteccxdzjddkCflWd1DaVJndNiEc=",
+      "preSharedKey": "ZTltaIwoTH+ye5tHvPn4i1ZAk3JoLAT9fqDzfLZF5Mg=",
+      "createdAt": "2026-08-06T16:13:31.200Z",
+      "updatedAt": "2026-08-06T16:13:31.200Z",
+      "enabled": true
+    }
+  }
 }

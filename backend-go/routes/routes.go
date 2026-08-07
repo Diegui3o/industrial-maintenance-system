@@ -86,6 +86,11 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
+	vpnHandler := handlers.NewVPNHandler(
+		"Vt4ozefu38AA/FWrYof0UwhYkJ4t7vCD7Ms2YOvUDFk=", // Server Public Key
+		"192.168.18.14", // Endpoint (cambiar según red)
+		"51820",         // Puerto
+	)
 
 	// ============================================
 	// RUTAS
@@ -162,5 +167,6 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	// Jerarquía
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 
+	r.HandleFunc("/api/vpn/config", vpnHandler.GetConfig).Methods("GET")
 	return r
 }

@@ -1,27 +1,33 @@
 package com.planta.mantenimiento.ui.screens.home
 
+import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.planta.mantenimiento.MantenimientoApp
 import com.planta.mantenimiento.data.local.PreferencesManager
 import com.planta.mantenimiento.ui.theme.AppColors
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    prefs: PreferencesManager
+    onConnectVpn: () -> Unit = {}
 ) {
-    // 🔥 rememberSaveable sobrevive a recomposiciones y navegación
+    val context = LocalContext.current
+    val prefs = PreferencesManager(context)
     var showLanding by rememberSaveable { mutableStateOf(true) }
 
     val backgroundBrush = Brush.verticalGradient(
@@ -51,7 +57,8 @@ fun HomeScreen(
                 DashboardScreen(
                     navController = navController,
                     prefs = prefs,
-                    onBackToLanding = { showLanding = true }
+                    onBackToLanding = { showLanding = true },
+                    onConnectVpn = onConnectVpn
                 )
             }
         }
