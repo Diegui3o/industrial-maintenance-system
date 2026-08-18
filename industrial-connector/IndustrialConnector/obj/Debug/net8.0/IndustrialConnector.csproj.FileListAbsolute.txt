@@ -1,0 +1,6 @@
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.csproj.AssemblyReference.cache
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.GeneratedMSBuildEditorConfig.editorconfig
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.AssemblyInfoInputs.cache
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.AssemblyInfo.cs
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.csproj.CoreCompileInputs.cache
+C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\obj\Debug\net8.0\IndustrialConnector.sourcelink.json

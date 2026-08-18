@@ -22,8 +22,10 @@ type WhatsAppInstanciaCompleta struct {
 func (r *WhatsAppRepository) ObtenerGrupoPorID(id int) (*models.GrupoWhatsApp, error) {
 	var g models.GrupoWhatsApp
 	err := r.DB.QueryRow(`
-		SELECT id, nombre, jid, activo FROM grupos_whatsapp WHERE id = $1
-	`, id).Scan(&g.ID, &g.Nombre, &g.JID, &g.Activo)
+        SELECT id, nombre, jid, activo, COALESCE(usuario_id,0)
+        FROM grupos_whatsapp
+        WHERE id = $1
+    `, id).Scan(&g.ID, &g.Nombre, &g.JID, &g.Activo, &g.UsuarioID)
 	if err != nil {
 		return nil, err
 	}

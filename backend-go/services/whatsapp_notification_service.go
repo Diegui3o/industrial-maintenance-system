@@ -1,98 +1,82 @@
 package services
 
 import (
-	"backend/notifiers"
-	"backend/repository"
+	"fmt"
 	"log"
+
+	"backend/repository"
 )
 
 type WhatsAppNotificationService struct {
-	client       *notifiers.WhatsAppNotifier
+	manager      *WhatsAppManager
 	whatsappRepo *repository.WhatsAppRepository
 	equipoRepo   *repository.EquipoRepository
 }
 
-func NewWhatsAppNotificationService(
-	client *notifiers.WhatsAppNotifier,
+func NewWhatsAppNotificationServiceConManager(
+	manager *WhatsAppManager,
 	whatsappRepo *repository.WhatsAppRepository,
 	equipoRepo *repository.EquipoRepository,
 ) *WhatsAppNotificationService {
 	return &WhatsAppNotificationService{
-		client:       client,
+		manager:      manager,
 		whatsappRepo: whatsappRepo,
 		equipoRepo:   equipoRepo,
 	}
 }
 
-// NotificarFallo envía un mensaje a todos los grupos vinculados al equipo
 func (s *WhatsAppNotificationService) NotificarFallo(equipoID int, motivo string) {
-	log.Printf("🔔 NotificarFallo llamado para equipo %d", equipoID)
-
 	equipo, err := s.equipoRepo.ObtenerEquipoPorID(equipoID)
 	if err != nil {
-		log.Printf("❌ Error obteniendo equipo %d: %v", equipoID, err)
+		log.Printf("Error obteniendo equipo %d: %v", equipoID, err)
 		return
 	}
 
 	grupos, err := s.whatsappRepo.ObtenerGruposPorEquipo(equipoID)
-	if err != nil {
-		log.Printf("❌ Error obteniendo grupos para equipo %d: %v", equipoID, err)
+	if err != nil || len(grupos) == 0 {
+		log.Printf("No hay grupos para el equipo %s", equipo.Nombre)
 		return
 	}
 
-	log.Printf("📋 Grupos encontrados para %s: %d", equipo.Nombre, len(grupos))
-	for _, g := range grupos {
-		log.Printf("   - Grupo: %s (JID: %s)", g.Nombre, g.JID)
-	}
+	mensaje := fmt.Sprintf("🚨 *ALERTA DE FALLO*\n\nEquipo: %s\nMotivo: %s", equipo.Nombre, motivo)
 
-	if len(grupos) == 0 {
-		log.Printf("⚠️ No hay grupos vinculados para %s", equipo.Nombre)
-		return
-	}
-
-	mensaje := s.client.SendAlert(equipo.Nombre, motivo, "alta")
-
-	for _, grupo := range grupos {
-		err := s.client.SendToGroup(grupo.JID, mensaje)
-		if err != nil {
-			log.Printf("❌ Error enviando a %s: %v", grupo.Nombre, err)
-		} else {
-			log.Printf("✅ Alerta enviada a %s", grupo.Nombre)
+	for _, cliente := range s.manager.ObtenerTodosClientes() {
+		for _, grupo := range grupos {
+			if cliente.IsLoggedIn() {
+				if err := cliente.SendToGroup(grupo.JID, mensaje); err != nil {
+					log.Printf("Error enviando a %s: %v", grupo.Nombre, err)
+				} else {
+					log.Printf("✅ Alerta enviada a %s", grupo.Nombre)
+				}
+			}
 		}
 	}
 }
 
-// NotificarRecuperacion envía un mensaje cuando el equipo se recupera
 func (s *WhatsAppNotificationService) NotificarRecuperacion(equipoID int, motivo string) {
-	log.Printf("🔔 NotificarRecuperacion llamado para equipo %d", equipoID)
-
 	equipo, err := s.equipoRepo.ObtenerEquipoPorID(equipoID)
 	if err != nil {
-		log.Printf("❌ Error obteniendo equipo %d: %v", equipoID, err)
+		log.Printf("Error obteniendo equipo %d: %v", equipoID, err)
 		return
 	}
 
 	grupos, err := s.whatsappRepo.ObtenerGruposPorEquipo(equipoID)
-	if err != nil {
-		log.Printf("❌ Error obteniendo grupos para equipo %d: %v", equipoID, err)
+	if err != nil || len(grupos) == 0 {
+		log.Printf("No hay grupos para el equipo %s", equipo.Nombre)
 		return
 	}
 
-	log.Printf("📋 Grupos encontrados para %s: %d", equipo.Nombre, len(grupos))
+	mensaje := fmt.Sprintf("✅ *EQUIPO RECUPERADO*\n\nEquipo: %s\nMotivo: %s", equipo.Nombre, motivo)
 
-	if len(grupos) == 0 {
-		log.Printf("⚠️ No hay grupos vinculados para %s", equipo.Nombre)
-		return
-	}
-
-	// Formato para recuperación (usamos SendAlert con severidad "info")
-	mensaje := s.client.SendAlert(equipo.Nombre, motivo, "info")
-
-	for _, grupo := range grupos {
-		if err := s.client.SendToGroup(grupo.JID, mensaje); err != nil {
-			log.Printf("❌ Error enviando a %s: %v", grupo.Nombre, err)
-		} else {
-			log.Printf("✅ Recuperación enviada a %s", grupo.Nombre)
+	for _, cliente := range s.manager.ObtenerTodosClientes() {
+		for _, grupo := range grupos {
+			if cliente.IsLoggedIn() {
+				if err := cliente.SendToGroup(grupo.JID, mensaje); err != nil {
+					log.Printf("Error enviando recuperación a %s: %v", grupo.Nombre, err)
+				} else {
+					log.Printf("✅ Recuperación enviada a %s", grupo.Nombre)
+				}
+			}
 		}
 	}
 }

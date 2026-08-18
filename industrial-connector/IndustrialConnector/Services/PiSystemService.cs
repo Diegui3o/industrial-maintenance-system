@@ -1,4 +1,5 @@
-using System.Reflection;
+using Aveva.AF;
+using Aveva.AF.PI;
 using IndustrialConnector.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -9,15 +10,11 @@ public class PiSystemService : IDisposable
 {
     private readonly ILogger<PiSystemService> _logger;
     private readonly PiSystemConfig _config;
-    private object? _piSystem;
-    private object? _server;
+    private PISystem? _piSystem;
+    private PIServer? _server;
+    private AFDatabase? _database;
+    private AFElement? _rootElement;
     private bool _connected;
-
-    private static readonly string[] AfSdkPaths = new[]
-    {
-        @"C:\Program Files (x86)\PIPC\AF\PublicAssemblies\4.0\OSIsoft.AFSDK.dll",
-        @"C:\Program Files\PIPC\AF\PublicAssemblies\4.0\OSIsoft.AFSDK.dll"
-    };
 
     public PiSystemService(ILogger<PiSystemService> logger, IOptions<PiSystemConfig> options)
     {
@@ -29,99 +26,143 @@ public class PiSystemService : IDisposable
     {
         try
         {
-            var dllPath = AfSdkPaths.FirstOrDefault(File.Exists);
-            if (dllPath == null)
-            {
-                _logger.LogError("AF SDK no encontrado en las rutas conocidas");
-                return false;
-            }
+            _logger.LogInformation($"🔌 Conectando a PI Server: {_config.Server} usando Aveva.AFSDK");
 
-            _logger.LogInformation("AF SDK encontrado: " + dllPath);
-
-            var assembly = Assembly.LoadFrom(dllPath);
-            var piSystemsType = assembly.GetType("OSIsoft.AF.PISystems");
-            _piSystem = Activator.CreateInstance(piSystemsType!);
+            // Crear instancia de PISystem
+            _piSystem = new PISystem();
             
-            _server = piSystemsType!.GetMethod("get_Item", new[] { typeof(string) })!
-                .Invoke(_piSystem, new[] { _config.Server });
-
+            // Conectar al servidor por nombre o IP
+            _server = _piSystem.GetPIServer(_config.Server);
             if (_server == null)
             {
-                _logger.LogWarning("Servidor no encontrado: " + _config.Server);
-                _server = piSystemsType.GetMethod("get_Item", new[] { typeof(string) })!
-                    .Invoke(_piSystem, new[] { "10.30.33.81" });
-            }
-
-            if (_server == null)
-            {
-                _logger.LogError("No se pudo conectar al servidor PI");
+                _logger.LogError($"❌ Servidor no encontrado: {_config.Server}");
                 return false;
             }
 
-            var afServerProp = _server.GetType().GetProperty("AFServer");
-            var afServer = afServerProp!.GetValue(_server);
-            var versionProp = afServer!.GetType().GetProperty("Version");
-            var version = versionProp!.GetValue(afServer);
-
-            var serverVersionProp = _server.GetType().GetProperty("ServerVersion");
-            var serverVersion = serverVersionProp!.GetValue(_server);
-
-            _logger.LogInformation("CONECTADO a PI System. AF SDK: " + version + ", Archive: " + serverVersion);
-
-            // Listar bases de datos
-            try
+            // Conectar
+            _server.Connect();
+            if (!_server.IsConnected)
             {
-                var databasesProp = _server.GetType().GetProperty("Databases");
-                var databases = databasesProp!.GetValue(_server) as System.Collections.IEnumerable;
-                if (databases != null)
-                {
-                    _logger.LogInformation("Bases de datos:");
-                    foreach (var db in databases)
-                    {
-                        var nameProp = db.GetType().GetProperty("Name");
-                        var dbName = nameProp!.GetValue(db)?.ToString() ?? "?";
-                        _logger.LogInformation("  - " + dbName);
-                    }
-                }
+                _logger.LogError($"❌ No se pudo conectar al servidor: {_config.Server}");
+                return false;
             }
-            catch { }
 
+            _logger.LogInformation($"✅ Conectado a PI Server: {_config.Server}");
+            _logger.LogInformation($"📌 Versión: {_server.ServerVersion}");
+
+            // Obtener la base de datos
+            _database = _server.Databases.FirstOrDefault(db => db.Name == _config.Database);
+            if (_database == null)
+            {
+                _logger.LogWarning($"⚠️ Base de datos '{_config.Database}' no encontrada. Usando la primera disponible.");
+                _database = _server.Databases.FirstOrDefault();
+            }
+
+            if (_database == null)
+            {
+                _logger.LogError("❌ No se encontró ninguna base de datos");
+                return false;
+            }
+
+            _logger.LogInformation($"✅ Base de datos: {_database.Name}");
+
+            // Obtener el elemento raíz
+            _rootElement = _database.Elements.FirstOrDefault(e => e.Name == _config.RootElement);
+            if (_rootElement == null)
+            {
+                _logger.LogWarning($"⚠️ Elemento raíz '{_config.RootElement}' no encontrado. Usando el primer elemento.");
+                _rootElement = _database.Elements.FirstOrDefault();
+            }
+
+            if (_rootElement == null)
+            {
+                _logger.LogError("❌ No se encontró ningún elemento raíz");
+                return false;
+            }
+
+            _logger.LogInformation($"✅ Elemento raíz: {_rootElement.Name}");
             _connected = true;
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error conectando a PI System");
+            _logger.LogError(ex, "❌ Error conectando a PI System");
             return false;
         }
     }
 
-    public async Task<double> ReadValueAsync(TagConfig tag)
+    public async Task<double?> ReadAttributeValue(string elementPath, string attributeName)
     {
-        if (!_connected || _server == null)
+        if (!_connected || _rootElement == null)
         {
-            return Math.Round(50 + Random.Shared.NextDouble() * 30, 2);
+            return null;
         }
 
         try
         {
-            var piPointType = _server.GetType().Assembly.GetType("OSIsoft.AF.PI.PIPoint");
-            var findMethod = piPointType!.GetMethod("FindPIPoint", new[] { _server.GetType(), typeof(string) });
-            var point = findMethod!.Invoke(null, new[] { _server, tag.Path });
+            // Buscar el elemento hijo por nombre
+            AFElement? targetElement = null;
+            foreach (var child in _rootElement.Elements)
+            {
+                if (child.Name == elementPath)
+                {
+                    targetElement = child;
+                    break;
+                }
+            }
 
-            if (point == null) return 0;
+            if (targetElement == null)
+            {
+                _logger.LogWarning($"⚠️ Elemento no encontrado: {elementPath}");
+                return null;
+            }
 
-            var snapshotMethod = point.GetType().GetMethod("Snapshot");
-            var snapshot = snapshotMethod!.Invoke(point, null);
-            var valueProp = snapshot!.GetType().GetProperty("Value");
-            var value = valueProp!.GetValue(snapshot);
+            // Buscar el atributo
+            AFAttribute? attribute = null;
+            foreach (var attr in targetElement.Attributes)
+            {
+                if (attr.Name == attributeName)
+                {
+                    attribute = attr;
+                    break;
+                }
+            }
 
-            _logger.LogTrace("Tag " + tag.Name + " = " + value);
-            return Convert.ToDouble(value);
+            if (attribute == null)
+            {
+                _logger.LogWarning($"⚠️ Atributo no encontrado: {attributeName} en {elementPath}");
+                return null;
+            }
+
+            // Obtener el valor actual (snapshot)
+            var value = attribute.GetValue();
+            if (value == null)
+            {
+                _logger.LogWarning($"⚠️ No se pudo obtener valor de {attributeName}");
+                return null;
+            }
+
+            // Verificar calidad si es posible
+            if (value is AFValue afValue)
+            {
+                if (afValue.IsGood && afValue.Value != null)
+                {
+                    _logger.LogDebug($"📊 {elementPath}/{attributeName} = {afValue.Value}");
+                    return Convert.ToDouble(afValue.Value);
+                }
+                else
+                {
+                    _logger.LogWarning($"⚠️ Calidad no buena para {attributeName}: {afValue.Quality}");
+                    return null;
+                }
+            }
+
+            return null;
         }
-        catch
+        catch (Exception ex)
         {
-            return 0;
+            _logger.LogError(ex, $"❌ Error leyendo {elementPath}/{attributeName}");
+            return null;
         }
     }
 
@@ -129,8 +170,13 @@ public class PiSystemService : IDisposable
 
     public void Dispose()
     {
-        _piSystem = null;
-        _server = null;
+        try
+        {
+            _server?.Disconnect();
+            _server?.Dispose();
+            _piSystem?.Dispose();
+        }
+        catch { }
         _connected = false;
     }
 }

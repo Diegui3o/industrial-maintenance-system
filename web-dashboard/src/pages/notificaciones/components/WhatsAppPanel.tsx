@@ -6,11 +6,11 @@ import GrupoRealSelector from './GrupoRealSelector';
 
 interface Props {
   onVincular: (jid: string, nombre: string) => void;
-  getKey: () => string;
+  apiKey: string;
   vinculadosJIDs?: string[];
 }
 
-const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJIDs = [] }, ref) => {
+const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJIDs = [] }, ref) => {
   const [estado, setEstado] = useState({
     conectado: false,
     loggeado: false,
@@ -21,11 +21,9 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJI
   const [mostrarVinculacion, setMostrarVinculacion] = useState(false);
   const [accionando, setAccionando] = useState(false);
   const [errorFetch, setErrorFetch] = useState<string | null>(null);
-
-  const apiKey = getKey();
+  const [qrImage, setQrImage] = useState<string | null>(null);
   const llamadoRef = useRef(false);
 
-  // Exponer refresh al padre
   useImperativeHandle(ref, () => ({ refresh }));
 
   const refresh = async () => {
@@ -74,7 +72,6 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJI
     }
   }, [estado.qrDisponible, estado.loggeado]);
 
-  // *** FILTRO CORRECTO ***
   const gruposFiltrados = estado.grupos.filter(g => !vinculadosJIDs.includes(g.jid));
 
   if (cargando) {
@@ -115,11 +112,11 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJI
 
       {mostrarVinculacion && estado.qrDisponible && !estado.loggeado && (
         <div style={{ marginBottom: spacing.md }}>
-          <QRDisplay
-            qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`}
-            onVerificar={refresh}
-            verificando={accionando}
-          />
+          {qrImage ? (
+            <img src={qrImage} alt="QR" style={{ width: 250, height: 250 }} />
+          ) : (
+            <QRDisplay qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`} onVerificar={refresh} verificando={accionando} />
+          )}
         </div>
       )}
 
@@ -162,8 +159,42 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, getKey, vinculadosJI
         </>
       ) : (
         !estado.qrDisponible && (
-          <Button icon="📱" onClick={refresh} disabled={accionando}>
-            {accionando ? 'Intentando…' : 'Iniciar Bot WhatsApp'}
+          <Button
+            icon="📱"
+            onClick={async () => {
+              setAccionando(true);
+              setErrorFetch(null);
+              try {
+                const res = await fetch(`/api/whatsapp/iniciar?api_key=${apiKey}`, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.qr) {
+                  // El backend devuelve un QR en base64
+                  setEstado(prev => ({ ...prev, qrDisponible: true }));
+                  // Guardar la imagen en un estado local para QRDisplay
+                  setQrImage(data.qr); // 👈 agrega un nuevo estado `qrImage`
+                  setMostrarVinculacion(true);
+                } else if (data.grupos) {
+                  setEstado({
+                    conectado: true,
+                    loggeado: true,
+                    qrDisponible: false,
+                    grupos: data.grupos,
+                  });
+                  setMostrarVinculacion(false);
+                  setQrImage(null);
+                } else {
+                  await refresh();
+                }
+              } catch (err: any) {
+                setErrorFetch(err.message || 'Error al iniciar bot');
+              } finally {
+                setAccionando(false);
+              }
+            }}
+            disabled={accionando}
+          >
+            {accionando ? 'Iniciando…' : 'Iniciar Bot WhatsApp'}
           </Button>
         )
       )}

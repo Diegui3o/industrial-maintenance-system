@@ -123,6 +123,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	r.HandleFunc("/api/grupos/{id}/equipos", whatsappHandler.ListarEquiposPorGrupo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.AsociarGrupo).Methods("POST")
 	r.HandleFunc("/api/equipos/{id}/grupos/{grupoId}", whatsappHandler.DesasociarGrupo).Methods("DELETE")
+	r.HandleFunc("/api/equipos/{id}/grupos", whatsappHandler.ListarGruposPorEquipo).Methods("GET")
 	r.HandleFunc("/api/grupos/{id}/enviar", whatsappHandler.EnviarMensajePrueba).Methods("POST")
 	r.HandleFunc("/api/whatsapp/grupos", whatsappHandler.ListarGruposReales).Methods("GET")
 	r.HandleFunc("/api/whatsapp/estado_completo", whatsappHandler.EstadoCompleto).Methods("GET")

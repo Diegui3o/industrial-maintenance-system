@@ -3,49 +3,42 @@ using IndustrialConnector.Models;
 
 namespace IndustrialConnector.Services;
 
-/// <summary>
-/// Buffer en memoria. Si el backend Go no responde, los datos quedan aquí.
-/// NADA se escribe a disco. Solo lectura del buffer.
-/// </summary>
 public class BufferService
 {
-    private readonly ConcurrentQueue<SensorReading> _buffer = new();
+    private readonly ConcurrentQueue<SensorReading> _queue = new();
     private readonly int _maxSize;
+    private readonly ILogger<BufferService> _logger;
 
-    public BufferService(int maxSize = 10000)
+    public BufferService(ILogger<BufferService> logger, int maxSize = 10000)
     {
+        _logger = logger;
         _maxSize = maxSize;
     }
 
     public void Store(SensorReading reading)
     {
-        _buffer.Enqueue(reading);
-        
-        // Si el buffer crece demasiado, elimina los más viejos
-        while (_buffer.Count > _maxSize)
+        if (_queue.Count >= _maxSize)
         {
-            _buffer.TryDequeue(out _);
+            _logger.LogWarning("⚠️ Buffer lleno ({MaxSize}), descartando lectura más antigua", _maxSize);
+            _queue.TryDequeue(out _);
         }
+        _queue.Enqueue(reading);
     }
 
-    public List<SensorReading> Flush(int batchSize)
+    public List<SensorReading> GetBatch(int batchSize)
     {
         var batch = new List<SensorReading>();
-        
-        for (int i = 0; i < batchSize; i++)
+        for (int i = 0; i < batchSize && _queue.TryDequeue(out var item); i++)
         {
-            if (_buffer.TryDequeue(out var reading))
-            {
-                batch.Add(reading);
-            }
-            else
-            {
-                break;
-            }
+            batch.Add(item);
         }
-        
         return batch;
     }
 
-    public int Count => _buffer.Count;
+    public int Count => _queue.Count;
+    
+    public void Clear()
+    {
+        while (_queue.TryDequeue(out _)) { }
+    }
 }

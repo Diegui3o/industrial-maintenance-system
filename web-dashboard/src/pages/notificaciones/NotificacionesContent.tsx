@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef  } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -10,39 +10,32 @@ import {
   getEquiposDeGrupo,
   asociarEquipoAGrupo,
   desasociarEquipoDeGrupo,
-  enviarMensajeGrupo,
-  getWhatsAppKey,
 } from '../../services/whatsappApi';
 import { getEquiposCriticos } from '../../services/api';
+
 import GrupoVinculadoLista from './components/GrupoVinculadoLista';
+import EquipoCriticoManager from './components/EquipoCriticoManager'; // 👈 reemplazado
 import WhatsAppPanel from './components/WhatsAppPanel';
-import ChatPanel from './components/ChatPanel';
-import EquipoCriticoManager from './components/EquipoCriticoManager';
 
 interface Props {
   usuarioNombre: string;
+  apiKey: string;
   onLogout: () => void;
   onNavigate: (page: string, params?: any) => void;
   onBack?: () => void;
 }
 
-export default function NotificacionesContent({ usuarioNombre, onLogout, onNavigate, onBack }: Props) {
+export default function NotificacionesContent({ usuarioNombre, apiKey, onLogout, onNavigate, onBack }: Props) {
   const [gruposVinculados, setGruposVinculados] = useState<any[]>([]);
   const [criticos, setCriticos] = useState<any[]>([]);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<any>(null);
   const [equiposGrupo, setEquiposGrupo] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const whatsappPanelRef = useRef<{ refresh: () => void }>(null);
 
   const showMsg = (msg: string, isError = false) => {
-    if (isError) {
-      setError(msg);
-      setTimeout(() => setError(null), 4000);
-    } else {
-      setSuccess(msg);
-      setTimeout(() => setSuccess(null), 3000);
-    }
+    if (isError) { setError(msg); setTimeout(() => setError(null), 4000); }
+    else { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); }
   };
 
   const cargarDatos = useCallback(async () => {
@@ -51,9 +44,7 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
     setCriticos(c);
   }, []);
 
-  useEffect(() => {
-    cargarDatos();
-  }, [cargarDatos]);
+  useEffect(() => { cargarDatos(); }, [cargarDatos]);
 
   const handleSelectGrupo = async (grupo: any) => {
     setGrupoSeleccionado(grupo);
@@ -66,25 +57,17 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
     try {
       await deleteGrupo(id);
       showMsg('Grupo eliminado');
-      if (grupoSeleccionado?.id === id) {
-        setGrupoSeleccionado(null);
-        setEquiposGrupo([]);
-      }
+      if (grupoSeleccionado?.id === id) { setGrupoSeleccionado(null); setEquiposGrupo([]); }
       cargarDatos();
-    } catch (err: any) {
-      showMsg(err.message || 'Error al eliminar', true);
-    }
+    } catch (err: any) { showMsg(err.message || 'Error al eliminar', true); }
   };
 
   const handleVincularGrupo = async (jid: string, nombre: string) => {
     try {
       await createGrupo({ nombre, jid });
       showMsg('Grupo vinculado exitosamente');
-      await cargarDatos();
-      whatsappPanelRef.current?.refresh();
-    } catch (err: any) {
-      showMsg(err.message || 'Error al vincular grupo', true);
-    }
+      cargarDatos();
+    } catch (err: any) { showMsg(err.message || 'Error al vincular grupo', true); }
   };
 
   const handleAsociar = async (equipoId: number) => {
@@ -94,9 +77,7 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       showMsg('Equipo asociado');
       const data = await getEquiposDeGrupo(grupoSeleccionado.id);
       setEquiposGrupo(data);
-    } catch (err: any) {
-      showMsg(err.message || 'Error al asociar', true);
-    }
+    } catch (err: any) { showMsg(err.message || 'Error al asociar', true); }
   };
 
   const handleDesasociar = async (equipoId: number) => {
@@ -106,15 +87,12 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       showMsg('Equipo desasociado');
       const data = await getEquiposDeGrupo(grupoSeleccionado.id);
       setEquiposGrupo(data);
-    } catch (err: any) {
-      showMsg(err.message || 'Error al desasociar', true);
-    }
+    } catch (err: any) { showMsg(err.message || 'Error al desasociar', true); }
   };
 
-  const handleCerrarGrupo = () => {
-    setGrupoSeleccionado(null);
-    setEquiposGrupo([]);
-  };
+  const equiposDisponibles = criticos.filter(
+    (c: any) => !equiposGrupo.find((e: any) => e.id === c.id)
+  );
 
   return (
     <Layout
@@ -122,7 +100,6 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       subtitle="Grupos de WhatsApp y alertas por equipo"
       onBack={onBack || (() => onNavigate('dashboard'))}
     >
-      {/* Barra de usuario */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: colors.status.success, background: colors.status.successBg, padding: '4px 10px', borderRadius: 20 }}>
           ● {usuarioNombre}
@@ -133,15 +110,12 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
       {error && <div style={{ padding: spacing.sm, marginBottom: spacing.md, background: colors.status.errorBg, color: colors.status.error, borderRadius: 6, fontSize: 13 }}>{error}</div>}
       {success && <div style={{ padding: spacing.sm, marginBottom: spacing.md, background: colors.status.successBg, color: colors.status.success, borderRadius: 6, fontSize: 13 }}>{success}</div>}
 
-      {/* Panel de WhatsApp */}
       <WhatsAppPanel
-        ref={whatsappPanelRef}
+        apiKey={apiKey}
         onVincular={handleVincularGrupo}
-        getKey={getWhatsAppKey}
         vinculadosJIDs={gruposVinculados.map(g => g.jid)}
       />
 
-      {/* Grid principal */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.lg }}>
         <GrupoVinculadoLista
           grupos={gruposVinculados}
@@ -153,20 +127,10 @@ export default function NotificacionesContent({ usuarioNombre, onLogout, onNavig
           <EquipoCriticoManager
             grupoNombre={grupoSeleccionado?.nombre}
             equiposAsignados={equiposGrupo}
-            equiposDisponibles={criticos}
+            equiposDisponibles={equiposDisponibles}
             onAsociar={handleAsociar}
             onDesasociar={handleDesasociar}
           />
-          {grupoSeleccionado && (
-            <ChatPanel
-              grupoId={grupoSeleccionado.id}
-              grupoNombre={grupoSeleccionado.nombre}
-              onEnviar={async (id, mensaje) => {
-                await enviarMensajeGrupo(id, mensaje);
-              }}
-              onCerrar={handleCerrarGrupo}
-            />
-          )}
         </Card>
       </div>
     </Layout>

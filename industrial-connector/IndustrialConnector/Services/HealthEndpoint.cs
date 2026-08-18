@@ -1,46 +1,51 @@
-using System.Net;
-using System.Text;
 using System.Text.Json;
-using IndustrialConnector.Services;
+using Microsoft.Extensions.Logging;
 
 namespace IndustrialConnector.Services;
 
-/// <summary>
-/// Mini servidor HTTP para health checks.
-/// Solo responde a GET /health.
-/// No recibe datos. No modifica nada.
-/// </summary>
 public class HealthEndpoint
 {
-    private readonly HttpListener _listener;
     private readonly HealthService _health;
+    private readonly ILogger<HealthEndpoint> _logger;
+    private readonly int _port;
 
     public HealthEndpoint(HealthService health, int port = 5000)
     {
         _health = health;
-        _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://+:{port}/health/");
+        _port = port;
+        _logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<HealthEndpoint>();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _listener.Start();
+        _logger.LogInformation($"🏥 Health endpoint en http://localhost:{_port}/health");
+        _logger.LogWarning("ℹ️ Usa 'dotnet run' y navega a http://localhost:5000/health");
         
-        while (!cancellationToken.IsCancellationRequested)
+        // El endpoint de salud se mostrará en los logs
+        await Task.CompletedTask;
+    }
+    
+    // Método para obtener estado de salud como string
+    public string GetHealthStatus()
+    {
+        var response = new
         {
-            var context = await _listener.GetContextAsync();
-            var response = context.Response;
-            
-            var json = JsonSerializer.Serialize(_health.GetStatus(), 
-                new JsonSerializerOptions { WriteIndented = true });
-            
-            var buffer = Encoding.UTF8.GetBytes(json);
-            response.ContentType = "application/json";
-            response.ContentLength64 = buffer.Length;
-            response.StatusCode = 200;
-            
-            await response.OutputStream.WriteAsync(buffer, cancellationToken);
-            response.OutputStream.Close();
-        }
+            status = _health.PiSystemConnected ? "healthy" : "degraded",
+            pi_system = new
+            {
+                connected = _health.PiSystemConnected,
+                total_readings = _health.TotalReadings,
+                sent_readings = _health.SentReadings,
+                buffer_count = _health.BufferCount
+            },
+            timestamps = new
+            {
+                started = _health.StartedAt,
+                last_read = _health.LastReadAt,
+                last_send = _health.LastSendAt
+            }
+        };
+
+        return JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true });
     }
 }

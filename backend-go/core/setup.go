@@ -6,11 +6,9 @@ import (
 	"log"
 
 	"backend/engine"
-	"backend/notifiers"
 	"backend/repository"
 	"backend/scheduler"
 	"backend/services"
-	"backend/whatsapp"
 )
 
 func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *services.WhatsAppManager) {
@@ -23,15 +21,15 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	notifRepo := repository.NewNotificacionRepository(db)
 
-	// Crear cliente de WhatsApp una sola vez
-	whatsappClient := whatsapp.NewWhatsAppClient()
+	// Crear manager de WhatsApp (multi‑instancia)
+	whatsappManager := services.NewWhatsAppManager(db, whatsappRepo)
+	whatsappManager.CargarInstancias()
 
 	// Servicios base
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	dispatcherService := services.NewDispatcherService(notifRepo, equipoRepo)
 
-	// Notificaciones existentes (por ahora sin WhatsApp directo)
 	notifierService := &services.NotifierService{
 		WhatsApp:   nil,
 		Email:      nil,
@@ -40,17 +38,13 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		EquipoRepo: equipoRepo,
 	}
 
-	// Crear el notificador de WhatsApp basado en el cliente
-	whatsappNotifier := notifiers.NewWhatsAppNotifier(whatsappClient)
-
-	// Crear el servicio de notificación de WhatsApp que usará EventosService
-	whatsappNotificationService := services.NewWhatsAppNotificationService(
-		whatsappNotifier,
+	// Servicio de notificación que recorre todos los clientes del manager
+	whatsappNotificationService := services.NewWhatsAppNotificationServiceConManager(
+		whatsappManager,
 		whatsappRepo,
 		equipoRepo,
 	)
 
-	// EventosService con la inyección del nuevo servicio
 	eventosService := services.NewEventosService(
 		eventosRepo,
 		equipoRepo,
@@ -59,7 +53,6 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		whatsappNotificationService,
 	)
 
-	// RuleEngine con el EventosService correcto
 	ruleEngine := &engine.RuleEngine{
 		ConfigRepo:      configRepo,
 		SensorRepo:      sensorRepo,
@@ -70,24 +63,8 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		Dispatcher:      dispatcherService,
 	}
 
-	// Iniciar el bot de WhatsApp en segundo plano
-	go func() {
-		log.Println("🤖 Iniciando bot de WhatsApp...")
-		sessionPath := "/app/whatsapp_sessions/session.db"
-		err := whatsappClient.Connect(sessionPath)
-		if err != nil {
-			log.Printf("⚠️ Error conectando WhatsApp: %v", err)
-			log.Println("💡 El QR se generó en: whatsapp_qr.png")
-		} else {
-			log.Println("✅ Bot de WhatsApp conectado")
-		}
-	}()
-
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
 	log.Println("Scheduler inicializado")
-
-	whatsappManager := services.NewWhatsAppManager(db, whatsappRepo)
-	whatsappManager.CargarInstancias()
 
 	return sched, ruleEngine, whatsappManager
 }

@@ -28,9 +28,10 @@ export default function NotificacionesPage({ onNavigate, onBack }: Props) {
   return (
     <NotificacionesContent
       usuarioNombre={auth.usuarioNombre}
-      onLogout={handleBack}
+      apiKey={auth.apiKey}
+      onLogout={auth.logout}
       onNavigate={onNavigate}
-      onBack={handleBack}
+      onBack={onBack}
     />
   );
 }

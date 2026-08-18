@@ -1,5 +1,9 @@
-using IndustrialConnector.Services;
+// Workers/PiSystemWorker.cs
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using IndustrialConnector.Models;
+using IndustrialConnector.Services;
 
 namespace IndustrialConnector.Workers;
 
@@ -9,64 +13,93 @@ public class PiSystemWorker : BackgroundService
     private readonly BufferService _buffer;
     private readonly HealthService _health;
     private readonly ILogger<PiSystemWorker> _logger;
+    private readonly PiSystemConfig _config;
+    private int _errorCount = 0;
+    private const int MaxErrors = 3;
 
     public PiSystemWorker(
         PiSystemService pi,
         BufferService buffer,
         HealthService health,
-        ILogger<PiSystemWorker> logger)
+        ILogger<PiSystemWorker> logger,
+        IOptions<PiSystemConfig> config)
     {
         _pi = pi;
         _buffer = buffer;
         _health = health;
         _logger = logger;
+        _config = config.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("PI System Worker iniciado (SOLO LECTURA)");
+        _logger.LogInformation("🔌 PI System Worker iniciado");
 
-        // Intentar conectar al AF Server
+        // Intentar conectar a PI Web API
         var connected = _pi.Connect();
         _health.PiSystemConnected = connected;
 
         if (!connected)
         {
-            _logger.LogWarning("Usando modo simulación hasta que se restaure la conexión");
+            _logger.LogError("❌ No se pudo conectar a PI Web API. El worker se detendrá.");
+            return;
         }
+
+        if (_config.Tags == null || !_config.Tags.Any())
+        {
+            _logger.LogWarning("⚠️ No hay tags configurados en appsettings.json");
+            return;
+        }
+
+        _logger.LogInformation($"📊 Monitoreando {_config.Tags.Count} tags configurados");
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var value = await _pi.ReadValueAsync(new TagConfig { 
-                    Name = "sinusoid", 
-                    Path = @"\\PEELPWVPIAP01NX\sinusoid" 
-                });
+                var readings = await _pi.ReadAllTagsAsync();
 
-                var reading = new SensorReading
+                if (readings.Any())
                 {
-                    EquipmentId = 1,
-                    TagName = "sinusoid",
-                    Value = value,
-                    Unit = "°C",
-                    Quality = "Good",
-                    Source = "PI_System",
-                    Timestamp = DateTime.UtcNow
-                };
+                    foreach (var reading in readings)
+                    {
+                        _buffer.Store(reading);
+                    }
+                    
+                    _health.TotalReadings += readings.Count;
+                    _health.LastReadAt = DateTime.UtcNow;
+                    _health.BufferCount = _buffer.Count;
+                    _errorCount = 0;
 
-                _buffer.Store(reading);
-                _health.TotalReadings++;
-                _health.LastReadAt = DateTime.UtcNow;
-                _health.BufferCount = _buffer.Count;
+                    _logger.LogDebug("📦 {Count} lecturas almacenadas en buffer", readings.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ No se obtuvieron lecturas en este ciclo");
+                }
+
+                await Task.Delay(5000, stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error leyendo PI System");
-                _health.PiSystemConnected = false;
-            }
+                _errorCount++;
+                _logger.LogError(ex, $"❌ Error en ciclo ({_errorCount}/{MaxErrors})");
 
-            await Task.Delay(5000, stoppingToken);
+                if (_errorCount >= MaxErrors)
+                {
+                    _logger.LogCritical("💀 Demasiados errores. Reintentando conexión...");
+                    _health.PiSystemConnected = false;
+                    
+                    await Task.Delay(10000, stoppingToken);
+                    connected = _pi.Connect();
+                    _health.PiSystemConnected = connected;
+                    _errorCount = 0;
+                }
+
+                await Task.Delay(5000, stoppingToken);
+            }
         }
+        
+        _logger.LogInformation("🛑 PI System Worker detenido");
     }
 }
