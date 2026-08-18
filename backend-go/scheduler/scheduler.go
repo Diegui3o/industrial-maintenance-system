@@ -13,10 +13,14 @@ type Scheduler struct {
 	ConfigRepo *repository.ConfigRepository
 	RuleEngine *engine.RuleEngine
 
-	// Estados de ping
-	PingState         map[int]int // fallos consecutivos actuales
+	PingState         map[int]int
 	RecoveryMode      map[int]bool
-	RecoverySuccesses map[int]int // cuántos pings exitosos seguidos en modo recuperación
+	RecoverySuccesses map[int]int
+	reloadChan        chan bool
+}
+
+func (s *Scheduler) RecargarFuentes() {
+	s.reloadChan <- true
 }
 
 func NewScheduler(configRepo *repository.ConfigRepository, ruleEngine *engine.RuleEngine) *Scheduler {
@@ -26,6 +30,7 @@ func NewScheduler(configRepo *repository.ConfigRepository, ruleEngine *engine.Ru
 		PingState:         make(map[int]int),
 		RecoveryMode:      make(map[int]bool),
 		RecoverySuccesses: make(map[int]int),
+		reloadChan:        make(chan bool),
 	}
 }
 
@@ -38,6 +43,7 @@ func (s *Scheduler) Start() {
 
 func (s *Scheduler) pingLoop() {
 	for {
+		// Leer fuentes SIEMPRE desde la base de datos (sin caché)
 		fuentes, err := s.ConfigRepo.ObtenerFuentesActivas("ping")
 		if err != nil {
 			log.Printf("❌ Error obteniendo fuentes ping: %v", err)
@@ -48,27 +54,23 @@ func (s *Scheduler) pingLoop() {
 		for _, fuente := range fuentes {
 			equipoID := fuente.EquipoID
 
-			// Saltar equipos en mantenimiento o inactivos
 			estado, _ := s.RuleEngine.EquipoRepo.ObtenerEstadoActualEquipo(equipoID)
 			if estado == "inactivo" || estado == "mantenimiento" {
 				continue
 			}
 
-			// Determinar el intervalo a usar
 			intervalo := time.Duration(fuente.IntervaloSegundos) * time.Second
 			if s.RecoveryMode[equipoID] {
-				// En modo recuperación usamos un intervalo corto fijo (10 s)
 				intervalo = 10 * time.Second
 			}
 
-			// Ráfaga de pings (intento inicial + reintentos)
 			totalIntentos := fuente.Reintentos + 1
 			success := false
 			for intento := 0; intento < totalIntentos; intento++ {
 				ok, latency := collectors.PingWithRetries(
 					fuente.Endpoint,
 					time.Duration(fuente.TimeoutSegundos)*time.Second,
-					1, // un solo intento por ping
+					1,
 				)
 				if ok {
 					log.Printf("🟢 PING OK | Equipo %d | IP: %s | Latencia: %.0fms (intento %d/%d)",
@@ -81,38 +83,29 @@ func (s *Scheduler) pingLoop() {
 						equipoID, fuente.Endpoint, intento+1, totalIntentos)
 					s.PingState[equipoID]++
 					if intento < totalIntentos-1 {
-						time.Sleep(2 * time.Second) // breve pausa entre intentos de la ráfaga
+						time.Sleep(2 * time.Second)
 					}
 				}
 			}
 
-			// Evaluar resultado de la ráfaga
 			if !success {
-				// Todos los intentos fallaron → fallo confirmado
 				s.RuleEngine.ProcessPingResult(equipoID, s.PingState[equipoID], totalIntentos)
-				// Activar modo recuperación
 				s.RecoveryMode[equipoID] = true
 				s.RecoverySuccesses[equipoID] = 0
 			} else {
-				// Al menos un ping exitoso
 				if s.RecoveryMode[equipoID] {
-					// Estamos en modo recuperación
 					s.RecoverySuccesses[equipoID]++
 					if s.RecoverySuccesses[equipoID] >= 2 {
-						// Dos éxitos seguidos → equipo recuperado
 						s.RecoveryMode[equipoID] = false
 						s.RecoverySuccesses[equipoID] = 0
-						// Notificar recuperación al engine (cambia estado a "activo", cierra alarmas, etc.)
 						s.RuleEngine.ProcessPingRecovery(equipoID, 0)
 						log.Printf("✅ Equipo %d recuperado tras monitoreo adaptativo", equipoID)
 					}
 				} else {
-					// No estaba en fallo, operación normal
 					s.RuleEngine.ProcessPingRecovery(equipoID, 0)
 				}
 			}
 
-			// Esperar el intervalo correspondiente (normal o corto)
 			time.Sleep(intervalo)
 		}
 	}

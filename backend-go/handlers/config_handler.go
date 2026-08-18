@@ -2,18 +2,21 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
 	"backend/models"
 	"backend/repository"
+	"backend/scheduler"
 	"backend/utils"
 
 	"github.com/gorilla/mux"
 )
 
 type ConfigHandler struct {
-	Repo *repository.ConfigRepository
+	Repo      *repository.ConfigRepository
+	Scheduler *scheduler.Scheduler
 }
 
 func (h *ConfigHandler) CrearUmbral(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +83,28 @@ func (h *ConfigHandler) ObtenerFuente(w http.ResponseWriter, r *http.Request) {
 
 func (h *ConfigHandler) ActualizarFuente(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	log.Printf("📥 PUT fuente id=%d", id)
+
 	var f models.ConfigFuente
 	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
+		log.Printf("❌ Error decodificando JSON: %v", err)
 		utils.ErrorJSON(w, 400, "JSON inválido")
 		return
 	}
+	log.Printf("📦 Datos recibidos: %+v", f)
+
 	if err := h.Repo.ActualizarFuente(id, &f); err != nil {
+		log.Printf("❌ Error actualizando fuente en repo: %v", err)
 		utils.ErrorJSON(w, 500, err.Error())
 		return
 	}
+
+	log.Printf("✅ Fuente id=%d actualizada correctamente", id)
+
+	if h.Scheduler != nil {
+		go h.Scheduler.RecargarFuentes()
+	}
+
 	utils.SuccessJSON(w, 200, map[string]string{"mensaje": "Fuente actualizada"})
 }
 

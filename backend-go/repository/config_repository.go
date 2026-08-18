@@ -123,9 +123,9 @@ func (r *ConfigRepository) ListarFuentes() ([]models.ConfigFuente, error) {
 func (r *ConfigRepository) ActualizarFuente(id int, f *models.ConfigFuente) error {
 	result, err := r.DB.Exec(`
         UPDATE config_fuentes
-        SET intervalo_segundos = $1, timeout_segundos = $2, reintentos = $3, activo = $4
-        WHERE id = $5
-    `, f.IntervaloSegundos, f.TimeoutSegundos, f.Reintentos, f.Activo, id)
+        SET endpoint = $1, intervalo_segundos = $2, timeout_segundos = $3, reintentos = $4, activo = $5
+        WHERE id = $6
+    `, f.Endpoint, f.IntervaloSegundos, f.TimeoutSegundos, f.Reintentos, f.Activo, id)
 	if err != nil {
 		return err
 	}

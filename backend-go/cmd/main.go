@@ -16,7 +16,7 @@ func main() {
 	sched, ruleEngine := core.InitScheduler(db)
 	go sched.Start()
 
-	r := routes.SetupRoutes(db, ruleEngine)
+	r := routes.SetupRoutes(db, ruleEngine, sched)
 
 	log.Println("🚀 Servidor corriendo en :1883")
 	log.Fatal(http.ListenAndServe("0.0.0.0:1883", r))

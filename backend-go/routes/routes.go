@@ -6,6 +6,7 @@ import (
 	"backend/handlers"
 	"backend/notifiers"
 	"backend/repository"
+	"backend/scheduler"
 	"backend/services"
 	"backend/whatsapp"
 	"database/sql"
@@ -13,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
+func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler) *mux.Router {
 
 	r := mux.NewRouter()
 
@@ -77,7 +78,10 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine) *mux.Router {
 	alarmaHandler := &handlers.AlarmaHandler{Service: alarmaService}
 	dashboardHandler := &handlers.DashboardHandler{Service: dashboardService}
 	dispositivoHandler := &handlers.DispositivoRedHandler{Service: dispositivoService}
-	configHandler := &handlers.ConfigHandler{Repo: configRepo}
+	configHandler := &handlers.ConfigHandler{
+		Repo:      configRepo,
+		Scheduler: sched,
+	}
 	whatsappHandler := &handlers.WhatsAppHandler{
 		Repo:           whatsappRepo,
 		WhatsAppClient: whatsappClient,
