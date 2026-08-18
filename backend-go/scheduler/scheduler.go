@@ -17,6 +17,7 @@ type Scheduler struct {
 	RecoveryMode      map[int]bool
 	RecoverySuccesses map[int]int
 	reloadChan        chan bool
+	intervaloActual   map[int]time.Duration
 }
 
 func (s *Scheduler) RecargarFuentes() {
@@ -30,7 +31,8 @@ func NewScheduler(configRepo *repository.ConfigRepository, ruleEngine *engine.Ru
 		PingState:         make(map[int]int),
 		RecoveryMode:      make(map[int]bool),
 		RecoverySuccesses: make(map[int]int),
-		reloadChan:        make(chan bool),
+		reloadChan:        make(chan bool, 1),
+		intervaloActual:   make(map[int]time.Duration),
 	}
 }
 
@@ -43,7 +45,6 @@ func (s *Scheduler) Start() {
 
 func (s *Scheduler) pingLoop() {
 	for {
-		// Leer fuentes SIEMPRE desde la base de datos (sin caché)
 		fuentes, err := s.ConfigRepo.ObtenerFuentesActivas("ping")
 		if err != nil {
 			log.Printf("❌ Error obteniendo fuentes ping: %v", err)
@@ -59,11 +60,14 @@ func (s *Scheduler) pingLoop() {
 				continue
 			}
 
-			intervalo := time.Duration(fuente.IntervaloSegundos) * time.Second
-			if s.RecoveryMode[equipoID] {
-				intervalo = 10 * time.Second
+			// Intervalo actual (si no existe, usar el configurado)
+			intervalo, existe := s.intervaloActual[equipoID]
+			if !existe {
+				intervalo = time.Duration(fuente.IntervaloSegundos) * time.Second
+				s.intervaloActual[equipoID] = intervalo
 			}
 
+			// Realizar ráfaga de pings
 			totalIntentos := fuente.Reintentos + 1
 			success := false
 			for intento := 0; intento < totalIntentos; intento++ {
@@ -88,25 +92,40 @@ func (s *Scheduler) pingLoop() {
 				}
 			}
 
+			// Evaluar resultado
 			if !success {
+				// Confirmar fallo
 				s.RuleEngine.ProcessPingResult(equipoID, s.PingState[equipoID], totalIntentos)
+				// Activar modo recuperación con intervalo corto
 				s.RecoveryMode[equipoID] = true
 				s.RecoverySuccesses[equipoID] = 0
+				s.intervaloActual[equipoID] = 10 * time.Second
 			} else {
 				if s.RecoveryMode[equipoID] {
+					// En recuperación, aumentar backoff
 					s.RecoverySuccesses[equipoID]++
-					if s.RecoverySuccesses[equipoID] >= 2 {
+					if s.RecoverySuccesses[equipoID] >= 3 {
+						// Tres éxitos consecutivos: declarar recuperado
 						s.RecoveryMode[equipoID] = false
 						s.RecoverySuccesses[equipoID] = 0
+						s.intervaloActual[equipoID] = time.Duration(fuente.IntervaloSegundos) * time.Second
 						s.RuleEngine.ProcessPingRecovery(equipoID, 0)
-						log.Printf("✅ Equipo %d recuperado tras monitoreo adaptativo", equipoID)
+						log.Printf("✅ Equipo %d recuperado tras backoff", equipoID)
+					} else {
+						// Duplicar intervalo (máximo el configurado)
+						s.intervaloActual[equipoID] *= 2
+						maxIntervalo := time.Duration(fuente.IntervaloSegundos) * time.Second
+						if s.intervaloActual[equipoID] > maxIntervalo {
+							s.intervaloActual[equipoID] = maxIntervalo
+						}
 					}
 				} else {
+					// Operación normal
 					s.RuleEngine.ProcessPingRecovery(equipoID, 0)
 				}
 			}
 
-			time.Sleep(intervalo)
+			time.Sleep(s.intervaloActual[equipoID])
 		}
 	}
 }
