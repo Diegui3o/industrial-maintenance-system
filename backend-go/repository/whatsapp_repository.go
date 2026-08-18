@@ -3,6 +3,7 @@ package repository
 import (
 	"backend/models"
 	"database/sql"
+	"log"
 )
 
 type WhatsAppRepository struct {
@@ -33,6 +34,8 @@ func NewWhatsAppRepository(db *sql.DB) *WhatsAppRepository {
 }
 
 func (r *WhatsAppRepository) ObtenerGruposPorEquipo(equipoID int) ([]models.GrupoWhatsApp, error) {
+	log.Printf("🔍 Buscando grupos para equipo %d", equipoID)
+
 	rows, err := r.DB.Query(`
         SELECT g.id, g.nombre, g.jid, g.activo
         FROM grupos_whatsapp g
@@ -40,6 +43,7 @@ func (r *WhatsAppRepository) ObtenerGruposPorEquipo(equipoID int) ([]models.Grup
         WHERE eg.equipo_id = $1 AND g.activo = true
     `, equipoID)
 	if err != nil {
+		log.Printf("❌ Error SQL: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -52,6 +56,7 @@ func (r *WhatsAppRepository) ObtenerGruposPorEquipo(equipoID int) ([]models.Grup
 		}
 		grupos = append(grupos, g)
 	}
+	log.Printf("📊 Filas obtenidas: %d", len(grupos))
 	return grupos, rows.Err()
 }
 

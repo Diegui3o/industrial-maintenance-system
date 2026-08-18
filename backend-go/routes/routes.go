@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler) *mux.Router {
+func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler, whatsappClient *whatsapp.WhatsAppClient) *mux.Router {
 
 	r := mux.NewRouter()
 
@@ -42,7 +42,6 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	equipoService := &services.EquipoService{Repo: equipoRepo}
 
 	// WhatsApp client y servicios relacionados
-	whatsappClient := whatsapp.NewWhatsAppClient()
 	whatsappNotifier := notifiers.NewWhatsAppNotifier(whatsappClient)
 	whatsappNotificationService := services.NewWhatsAppNotificationService(
 		whatsappNotifier,

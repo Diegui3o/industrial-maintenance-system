@@ -37,3 +37,6 @@ CREATE TABLE IF NOT EXISTS equipo_grupo (
     grupo_id INT NOT NULL REFERENCES grupos_whatsapp(id),
     UNIQUE(equipo_id, grupo_id)
 );
+
+ALTER TABLE whatsapp_instancias ADD COLUMN usuario_id INT REFERENCES usuarios(id);
+ALTER TABLE whatsapp_instancias ADD COLUMN ruta_sesion TEXT NOT NULL UNIQUE;

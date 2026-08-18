@@ -13,7 +13,7 @@ import (
 	"backend/whatsapp"
 )
 
-func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
+func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *whatsapp.WhatsAppClient) {
 	configRepo := repository.NewConfigRepository(db)
 	sensorRepo := repository.NewSensorRepository(db)
 	alarmaRepo := &repository.AlarmaRepository{DB: db}
@@ -86,5 +86,5 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine) {
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
 	log.Println("Scheduler inicializado")
 
-	return sched, ruleEngine
+	return sched, ruleEngine, whatsappClient
 }

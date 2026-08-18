@@ -83,17 +83,7 @@ func (h *EventosHandler) CambiarEstado(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Service.CambiarEstadoEquipo(
-		id,
-		body.Estado,
-		body.Motivo,
-	)
-
-	err = h.Service.CambiarEstadoEquipo(
-		id,
-		body.Estado,
-		body.Motivo,
-	)
+	err = h.Service.CambiarEstadoEquipo(id, body.Estado, body.Motivo)
 
 	if err != nil {
 
