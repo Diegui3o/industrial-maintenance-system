@@ -72,6 +72,17 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
     }
   }, [estado.qrDisponible, estado.loggeado]);
 
+  useEffect(() => {
+    if (estado.qrDisponible && !estado.loggeado) {
+      const interval = setInterval(async () => {
+        await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
+        await new Promise(r => setTimeout(r, 500));
+        await refresh();
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [estado.qrDisponible, estado.loggeado]);
+
   const gruposFiltrados = estado.grupos.filter(g => !vinculadosJIDs.includes(g.jid));
 
   if (cargando) {
@@ -117,6 +128,27 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
           ) : (
             <QRDisplay qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`} onVerificar={refresh} verificando={accionando} />
           )}
+
+          {/* Botón para forzar un QR nuevo */}
+          <Button
+            variant="ghost"
+            icon="🔄"
+            onClick={async () => {
+              setAccionando(true);
+              try {
+                await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
+                await new Promise(r => setTimeout(r, 500));
+                await refresh();
+              } catch (err) {
+                setErrorFetch('Error al regenerar QR');
+              } finally {
+                setAccionando(false);
+              }
+            }}
+            disabled={accionando}
+          >
+            Generar nuevo QR
+          </Button>
         </div>
       )}
 

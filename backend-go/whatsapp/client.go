@@ -71,6 +71,7 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 		}
 	})
 
+	// ==== CASO 1: Primera conexión, generar QR sin bloquear ====
 	if w.Client.Store.ID == nil {
 		fmt.Println("📱 Primera conexión, generando QR")
 
@@ -79,43 +80,46 @@ func (w *WhatsAppClient) Connect(sessionPath string) error {
 			return fmt.Errorf("error creando QR: %w", err)
 		}
 
-		if err = w.Client.Connect(); err != nil {
-			return fmt.Errorf("error conectando WhatsApp: %w", err)
-		}
-
-		for qrEvent := range qrChan {
-			switch qrEvent.Event {
-			case "code":
-				w.LastQR = qrEvent.Code
-				os.Remove(w.QRPath)
-				err := qrcode.WriteFile(qrEvent.Code, qrcode.Medium, 300, w.QRPath)
-				if err != nil {
-					fmt.Println("❌ Error guardando QR:", err)
-				} else {
-					fmt.Println("✅ QR generado correctamente en:", w.QRPath)
-				}
-			case "success":
-				fmt.Println("✅ WhatsApp vinculado correctamente")
-				w.LastQR = ""
-				os.Remove(w.QRPath)
-				return nil
-			case "timeout":
-				w.LastQR = ""
-				os.Remove(w.QRPath)
-				return fmt.Errorf("QR expirado")
+		// Lanzar la conexión en una goroutine (NO bloquea)
+		go func() {
+			if err := w.Client.Connect(); err != nil {
+				fmt.Println("❌ Error conectando WhatsApp:", err)
+				return
 			}
-		}
+		}()
 
-	} else {
-		fmt.Println("♻️ Restaurando sesión existente")
-		if err = w.Client.Connect(); err != nil {
-			return fmt.Errorf("error conectando sesión: %w", err)
-		}
-		fmt.Println("✅ Sesión restaurada")
-		w.LastQR = ""
-		os.Remove(w.QRPath)
+		// Procesar los eventos del QR en otra goroutine (NO bloquea)
+		go func() {
+			for qrEvent := range qrChan {
+				switch qrEvent.Event {
+				case "code":
+					w.LastQR = qrEvent.Code
+					os.Remove(w.QRPath)
+					qrcode.WriteFile(qrEvent.Code, qrcode.Medium, 300, w.QRPath)
+					fmt.Println("✅ QR generado correctamente en:", w.QRPath)
+				case "success":
+					fmt.Println("✅ WhatsApp vinculado correctamente")
+					w.LastQR = ""
+					os.Remove(w.QRPath)
+				case "timeout":
+					fmt.Println("QR expirado")
+					w.LastQR = ""
+					os.Remove(w.QRPath)
+				}
+			}
+		}()
+
+		return nil
 	}
 
+	// ==== CASO 2: Sesión existente, conectar normal ====
+	fmt.Println("♻️ Restaurando sesión existente")
+	if err := w.Client.Connect(); err != nil {
+		return fmt.Errorf("error conectando sesión: %w", err)
+	}
+	fmt.Println("✅ Sesión restaurada")
+	w.LastQR = ""
+	os.Remove(w.QRPath)
 	return nil
 }
 
