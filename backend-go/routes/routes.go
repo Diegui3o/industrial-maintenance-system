@@ -4,25 +4,21 @@ package routes
 import (
 	"backend/engine"
 	"backend/handlers"
-	"backend/notifiers"
 	"backend/repository"
 	"backend/scheduler"
 	"backend/services"
-	"backend/whatsapp"
 	"database/sql"
 
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler, whatsappClient *whatsapp.WhatsAppClient) *mux.Router {
-
+func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler, whatsappManager *services.WhatsAppManager) *mux.Router {
 	r := mux.NewRouter()
 
 	// ============================================
 	// REPOSITORIES
 	// ============================================
 	equipoRepo := &repository.EquipoRepository{DB: db}
-	eventosRepo := &repository.EventosRepository{DB: db}
 	metricaRepo := &repository.MetricaRepository{DB: db}
 	auditoriaRepo := repository.NewAuditoriaRepository(db)
 	alarmaRepo := &repository.AlarmaRepository{DB: db}
@@ -41,23 +37,6 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	equipoService := &services.EquipoService{Repo: equipoRepo}
 
-	// WhatsApp client y servicios relacionados
-	whatsappNotifier := notifiers.NewWhatsAppNotifier(whatsappClient)
-	whatsappNotificationService := services.NewWhatsAppNotificationService(
-		whatsappNotifier,
-		whatsappRepo,
-		equipoRepo,
-	)
-
-	// EventosService con WhatsAppNotificationService
-	eventosService := services.NewEventosService(
-		eventosRepo,
-		equipoRepo,
-		auditoriaService,
-		alarmaService,
-		whatsappNotificationService,
-	)
-
 	metricaService := &services.MetricaService{Repo: metricaRepo}
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
@@ -70,7 +49,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 		Service:    equipoService,
 		ConfigRepo: configRepo,
 	}
-	eventosHandler := &handlers.EventosHandler{Service: eventosService}
+	eventosHandler := &handlers.EventosHandler{Service: ruleEngine.EventoService}
 	metricaHandler := &handlers.MetricaHandler{Service: metricaService}
 	auditoriaHandler := handlers.NewAuditoriaHandler(auditoriaService)
 	usuarioHandler := &handlers.UsuarioHandler{Service: usuarioService}
@@ -82,9 +61,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 		Scheduler: sched,
 	}
 	whatsappHandler := &handlers.WhatsAppHandler{
-		Repo:           whatsappRepo,
-		WhatsAppClient: whatsappClient,
-		DB:             db,
+		Repo:    whatsappRepo,
+		Manager: whatsappManager,
+		DB:      db,
 	}
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}

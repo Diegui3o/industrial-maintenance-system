@@ -1,24 +1,16 @@
+-- =====================================================
+-- CREACIÓN DE TABLAS PARA WHATSAPP MULTI-INSTANCIA
+-- =====================================================
+
 CREATE TABLE IF NOT EXISTS whatsapp_instancias (
     id SERIAL PRIMARY KEY,
-
     nombre TEXT NOT NULL,
-
     telefono TEXT UNIQUE,
-
     estado TEXT NOT NULL DEFAULT 'pendiente'
-        CHECK (
-            estado IN (
-                'pendiente',
-                'conectado',
-                'desconectado',
-                'error'
-            )
-        ),
-
-    ruta_sesion TEXT NOT NULL,
-
+        CHECK (estado IN ('pendiente', 'conectado', 'desconectado', 'error')),
+    ruta_sesion TEXT NOT NULL UNIQUE,
+    usuario_id INT REFERENCES usuarios(id),
     creado_en TIMESTAMPTZ DEFAULT NOW(),
-
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -38,5 +30,14 @@ CREATE TABLE IF NOT EXISTS equipo_grupo (
     UNIQUE(equipo_id, grupo_id)
 );
 
-ALTER TABLE whatsapp_instancias ADD COLUMN usuario_id INT REFERENCES usuarios(id);
-ALTER TABLE whatsapp_instancias ADD COLUMN ruta_sesion TEXT NOT NULL UNIQUE;
+-- =====================================================
+-- INSERT DE INSTANCIA PARA EL ADMINISTRADOR
+-- =====================================================
+INSERT INTO whatsapp_instancias (nombre, telefono, estado, ruta_sesion, usuario_id)
+VALUES ('Bot Administrador', NULL, 'pendiente', 'session_admin.db', 1)
+ON CONFLICT (usuario_id) DO NOTHING;
+
+-- Actualizar cualquier instancia sin usuario_id asignado
+UPDATE whatsapp_instancias
+SET usuario_id = 1
+WHERE usuario_id IS NULL;

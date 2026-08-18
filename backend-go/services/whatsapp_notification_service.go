@@ -61,3 +61,38 @@ func (s *WhatsAppNotificationService) NotificarFallo(equipoID int, motivo string
 		}
 	}
 }
+
+// NotificarRecuperacion envía un mensaje cuando el equipo se recupera
+func (s *WhatsAppNotificationService) NotificarRecuperacion(equipoID int, motivo string) {
+	log.Printf("🔔 NotificarRecuperacion llamado para equipo %d", equipoID)
+
+	equipo, err := s.equipoRepo.ObtenerEquipoPorID(equipoID)
+	if err != nil {
+		log.Printf("❌ Error obteniendo equipo %d: %v", equipoID, err)
+		return
+	}
+
+	grupos, err := s.whatsappRepo.ObtenerGruposPorEquipo(equipoID)
+	if err != nil {
+		log.Printf("❌ Error obteniendo grupos para equipo %d: %v", equipoID, err)
+		return
+	}
+
+	log.Printf("📋 Grupos encontrados para %s: %d", equipo.Nombre, len(grupos))
+
+	if len(grupos) == 0 {
+		log.Printf("⚠️ No hay grupos vinculados para %s", equipo.Nombre)
+		return
+	}
+
+	// Formato para recuperación (usamos SendAlert con severidad "info")
+	mensaje := s.client.SendAlert(equipo.Nombre, motivo, "info")
+
+	for _, grupo := range grupos {
+		if err := s.client.SendToGroup(grupo.JID, mensaje); err != nil {
+			log.Printf("❌ Error enviando a %s: %v", grupo.Nombre, err)
+		} else {
+			log.Printf("✅ Recuperación enviada a %s", grupo.Nombre)
+		}
+	}
+}

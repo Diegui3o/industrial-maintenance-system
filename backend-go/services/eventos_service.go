@@ -60,9 +60,20 @@ func (s *EventosService) CambiarEstadoEquipo(
 	if nuevoEstado == "fallo" {
 		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
 
-		// Notificar por WhatsApp a los grupos vinculados
 		if s.whatsappNotificationService != nil {
 			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
+		}
+	}
+	if nuevoEstado == "fallo" {
+		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
+		}
+	}
+
+	if estadoActual == "fallo" && nuevoEstado == "activo" {
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarRecuperacion(equipoID, motivo)
 		}
 	}
 

@@ -10,6 +10,15 @@ type WhatsAppRepository struct {
 	DB *sql.DB
 }
 
+type WhatsAppInstanciaCompleta struct {
+	ID         int
+	UsuarioID  int
+	Nombre     string
+	Telefono   string
+	Estado     string
+	RutaSesion string
+}
+
 func (r *WhatsAppRepository) ObtenerGrupoPorID(id int) (*models.GrupoWhatsApp, error) {
 	var g models.GrupoWhatsApp
 	err := r.DB.QueryRow(`
@@ -214,4 +223,44 @@ func (r *WhatsAppRepository) ObtenerGrupoPorJID(jid string) (*models.GrupoWhatsA
 		return nil, err
 	}
 	return &g, nil
+}
+
+func (r *WhatsAppRepository) ListarInstancias() ([]WhatsAppInstanciaCompleta, error) {
+	rows, err := r.DB.Query(`SELECT id, usuario_id, nombre, telefono, estado, ruta_sesion FROM whatsapp_instancias`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var instancias []WhatsAppInstanciaCompleta
+	for rows.Next() {
+		var i WhatsAppInstanciaCompleta
+		if err := rows.Scan(&i.ID, &i.UsuarioID, &i.Nombre, &i.Telefono, &i.Estado, &i.RutaSesion); err != nil {
+			return nil, err
+		}
+		instancias = append(instancias, i)
+	}
+	return instancias, rows.Err()
+}
+
+func (r *WhatsAppRepository) ObtenerInstanciaPorUsuario(usuarioID int) (*WhatsAppInstanciaCompleta, error) {
+	var inst WhatsAppInstanciaCompleta
+	err := r.DB.QueryRow(`
+        SELECT id, usuario_id, nombre, telefono, estado, ruta_sesion
+        FROM whatsapp_instancias
+        WHERE usuario_id = $1
+    `, usuarioID).Scan(&inst.ID, &inst.UsuarioID, &inst.Nombre, &inst.Telefono, &inst.Estado, &inst.RutaSesion)
+	if err != nil {
+		return nil, err
+	}
+	return &inst, nil
+}
+
+func (r *WhatsAppRepository) CrearInstancia(usuarioID int, rutaSesion string) error {
+	_, err := r.DB.Exec(`
+        INSERT INTO whatsapp_instancias (usuario_id, nombre, ruta_sesion)
+        VALUES ($1, 'Bot WhatsApp', $2)
+        ON CONFLICT (usuario_id) DO UPDATE SET ruta_sesion = EXCLUDED.ruta_sesion
+    `, usuarioID, rutaSesion)
+	return err
 }

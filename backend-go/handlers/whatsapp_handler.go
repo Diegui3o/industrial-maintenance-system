@@ -1,18 +1,18 @@
-// handlers/whatsapp_handler.go
 package handlers
 
 import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"backend/models"
 	"backend/repository"
+	"backend/services"
 	"backend/utils"
 	"backend/whatsapp"
 
@@ -20,15 +20,46 @@ import (
 )
 
 type WhatsAppHandler struct {
-	Repo           *repository.WhatsAppRepository
-	WhatsAppClient *whatsapp.WhatsAppClient
-	DB             *sql.DB
+	Repo    *repository.WhatsAppRepository
+	Manager *services.WhatsAppManager
+	DB      *sql.DB
 }
+
+// =========================================================
+// HELPERS
+// =========================================================
+
+// requireUsuario extrae el usuarioID desde la API Key
+func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
+	apiKey := utils.GetAPIKey(r)
+	usuarioID := utils.GetUsuarioIDFromKey(h.DB, apiKey)
+	if usuarioID == 0 {
+		return 0
+	}
+	return usuarioID
+}
+
+// getCliente obtiene el cliente de WhatsApp para el usuario autenticado
+func (h *WhatsAppHandler) getCliente(r *http.Request) (*whatsapp.WhatsAppClient, int) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		return nil, 0
+	}
+	cliente, err := h.Manager.GetClient(usuarioID)
+	if err != nil || !cliente.IsLoggedIn() {
+		return nil, usuarioID
+	}
+	return cliente, usuarioID
+}
+
+// =========================================================
+// GRUPOS VINCULADOS (BASE DE DATOS)
+// =========================================================
 
 func (h *WhatsAppHandler) ListarGrupos(w http.ResponseWriter, r *http.Request) {
 	usuarioID := h.requireUsuario(r)
 	if usuarioID == 0 {
-		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida. Usa ?api_key=TU_KEY")
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
 		return
 	}
 	grupos, err := h.Repo.ListarGruposPorUsuario(usuarioID)
@@ -58,9 +89,10 @@ func (h *WhatsAppHandler) CrearGrupo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verificar si el grupo ya existe
+	// Verificar si ya existe
 	existing, err := h.Repo.ObtenerGrupoPorJID(g.JID)
 	if err == nil && existing != nil {
+		// Si ya existe, devolver el existente (aunque pertenezca a otro usuario, no lo sobreescribimos)
 		utils.SuccessJSON(w, http.StatusOK, existing)
 		return
 	}
@@ -74,70 +106,21 @@ func (h *WhatsAppHandler) CrearGrupo(w http.ResponseWriter, r *http.Request) {
 	utils.SuccessJSON(w, http.StatusCreated, g)
 }
 
-func (h *WhatsAppHandler) AsociarGrupo(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	equipoID, _ := strconv.Atoi(vars["id"])
-
-	var body struct {
-		GrupoID int `json:"grupo_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
-		return
-	}
-
-	if err := h.Repo.AsociarEquipoGrupo(equipoID, body.GrupoID); err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo asociado al equipo"})
-}
-
-// DesasociarGrupo: DELETE /api/equipos/{id}/grupos/{grupoId}
-func (h *WhatsAppHandler) DesasociarGrupo(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	equipoID, _ := strconv.Atoi(vars["id"])
-	grupoID, _ := strconv.Atoi(vars["grupoId"])
-
-	if err := h.Repo.DesasociarEquipoGrupo(equipoID, grupoID); err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Equipo desasociado del grupo"})
-}
-
-// ListarEquiposPorGrupo: GET /api/grupos/{id}/equipos
-func (h *WhatsAppHandler) ListarEquiposPorGrupo(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	grupoID, _ := strconv.Atoi(vars["id"])
-
-	equipos, err := h.Repo.ObtenerEquiposPorGrupo(grupoID)
-	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if equipos == nil {
-		equipos = []models.Equipo{}
-	}
-	utils.SuccessJSON(w, http.StatusOK, equipos)
-}
-
-// EliminarGrupo: DELETE /api/grupos/{id}
-func (h *WhatsAppHandler) EliminarGrupo(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
-
-	if err := h.Repo.EliminarGrupo(id); err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo eliminado"})
-}
-
-// ActualizarGrupo: PUT /api/grupos/{id}
 func (h *WhatsAppHandler) ActualizarGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
+
+	// Verificar que el grupo pertenezca al usuario
+	grupo, err := h.Repo.ObtenerGrupoPorID(id)
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para modificar este grupo")
+		return
+	}
 
 	var body struct {
 		Nombre string `json:"nombre"`
@@ -155,7 +138,147 @@ func (h *WhatsAppHandler) ActualizarGrupo(w http.ResponseWriter, r *http.Request
 	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo actualizado"})
 }
 
+func (h *WhatsAppHandler) EliminarGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	grupo, err := h.Repo.ObtenerGrupoPorID(id)
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para eliminar este grupo")
+		return
+	}
+
+	if err := h.Repo.EliminarGrupo(id); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo eliminado"})
+}
+
+func (h *WhatsAppHandler) ListarEquiposPorGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+	vars := mux.Vars(r)
+	grupoID, _ := strconv.Atoi(vars["id"])
+
+	// Verificar que el grupo pertenezca al usuario
+	grupo, err := h.Repo.ObtenerGrupoPorID(grupoID)
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para ver este grupo")
+		return
+	}
+
+	equipos, err := h.Repo.ObtenerEquiposPorGrupo(grupoID)
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if equipos == nil {
+		equipos = []models.Equipo{}
+	}
+	utils.SuccessJSON(w, http.StatusOK, equipos)
+}
+
+func (h *WhatsAppHandler) AsociarGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+	vars := mux.Vars(r)
+	equipoID, _ := strconv.Atoi(vars["id"])
+
+	var body struct {
+		GrupoID int `json:"grupo_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	// Verificar que el grupo pertenezca al usuario
+	grupo, err := h.Repo.ObtenerGrupoPorID(body.GrupoID)
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para asociar equipos a este grupo")
+		return
+	}
+
+	if err := h.Repo.AsociarEquipoGrupo(equipoID, body.GrupoID); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Grupo asociado al equipo"})
+}
+
+func (h *WhatsAppHandler) DesasociarGrupo(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+	vars := mux.Vars(r)
+	equipoID, _ := strconv.Atoi(vars["id"])
+	grupoID, _ := strconv.Atoi(vars["grupoId"])
+
+	// Verificar que el grupo pertenezca al usuario
+	grupo, err := h.Repo.ObtenerGrupoPorID(grupoID)
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para desasociar este grupo")
+		return
+	}
+
+	if err := h.Repo.DesasociarEquipoGrupo(equipoID, grupoID); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Equipo desasociado del grupo"})
+}
+
+// =========================================================
+// WHATSAPP (BOT POR USUARIO)
+// =========================================================
+
+// ListarGruposReales obtiene los grupos reales del bot del usuario
+func (h *WhatsAppHandler) ListarGruposReales(w http.ResponseWriter, r *http.Request) {
+	cliente, usuarioID := h.getCliente(r)
+	if cliente == nil {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "No hay bot de WhatsApp vinculado para este usuario")
+		return
+	}
+	_ = usuarioID
+
+	groups, err := cliente.GetGroups()
+	if err != nil {
+		log.Printf("ERROR obteniendo grupos de WhatsApp: %v", err)
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo grupos")
+		return
+	}
+
+	var result []map[string]string
+	for _, g := range groups {
+		result = append(result, map[string]string{
+			"jid":    g.JID.String(),
+			"nombre": g.Name,
+		})
+	}
+	utils.SuccessJSON(w, http.StatusOK, result)
+}
+
+// EnviarMensajePrueba envía un mensaje a un grupo del usuario
 func (h *WhatsAppHandler) EnviarMensajePrueba(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
@@ -167,70 +290,52 @@ func (h *WhatsAppHandler) EnviarMensajePrueba(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Obtener grupo
+	// Obtener el grupo y verificar propiedad
 	grupo, err := h.Repo.ObtenerGrupoPorID(id)
-	if err != nil {
-		log.Printf("ERROR: grupo %d no encontrado: %v", id, err)
-		utils.ErrorJSON(w, http.StatusNotFound, "Grupo no encontrado")
+	if err != nil || grupo.UsuarioID != usuarioID {
+		utils.ErrorJSON(w, http.StatusForbidden, "No tienes permiso para enviar mensajes a este grupo")
 		return
 	}
 
-	// Enviar mensaje
-	err = h.WhatsAppClient.SendToGroup(grupo.JID, body.Mensaje)
-	if err != nil {
+	// Obtener cliente de WhatsApp del usuario
+	cliente, err := h.Manager.GetClient(usuarioID)
+	if err != nil || !cliente.IsLoggedIn() {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "No hay bot de WhatsApp vinculado para este usuario")
+		return
+	}
+
+	if err := cliente.SendToGroup(grupo.JID, body.Mensaje); err != nil {
 		log.Printf("ERROR enviando mensaje a grupo %d: %v", id, err)
 		utils.ErrorJSON(w, http.StatusInternalServerError, "Error enviando mensaje")
 		return
 	}
-
 	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Mensaje enviado"})
 }
-func (h *WhatsAppHandler) ListarGruposReales(w http.ResponseWriter, r *http.Request) {
-	if h.WhatsAppClient == nil || !h.WhatsAppClient.IsConnected() {
-		utils.ErrorJSON(w, http.StatusServiceUnavailable, "WhatsApp no conectado. Vincule primero.")
-		return
-	}
 
-	groups, err := h.WhatsAppClient.GetGroups()
-	if err != nil {
-		log.Printf("ERROR obteniendo grupos de WhatsApp: %v", err)
-		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo grupos")
-		return
-	}
-
-	// Convertir a JSON ligero
-	var result []map[string]string
-	for _, g := range groups {
-		result = append(result, map[string]string{
-			"jid":    g.JID.String(),
-			"nombre": g.Name,
-		})
-	}
-
-	utils.SuccessJSON(w, http.StatusOK, result)
-}
-
-func (h *WhatsAppHandler) requireUsuario(r *http.Request) int {
-	apiKey := utils.GetAPIKey(r)
-	usuarioID := utils.GetUsuarioIDFromKey(h.DB, apiKey)
-	if usuarioID == 0 {
-		return 0
-	}
-	return usuarioID
-}
-
+// EstadoCompleto devuelve el estado del bot del usuario
 func (h *WhatsAppHandler) EstadoCompleto(w http.ResponseWriter, r *http.Request) {
-	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
-	loggedIn := h.WhatsAppClient != nil && h.WhatsAppClient.IsLoggedIn()
-	qrDisponible := h.WhatsAppClient != nil && h.WhatsAppClient.LastQR != ""
+	cliente, _ := h.getCliente(r)
+	if cliente == nil {
+		utils.SuccessJSON(w, 200, map[string]interface{}{
+			"conectado":     false,
+			"loggeado":      false,
+			"qr_disponible": false,
+			"grupos":        []map[string]string{},
+		})
+		return
+	}
+
+	conectado := cliente.IsConnected()
+	loggedIn := cliente.IsLoggedIn()
+	qrDisponible := cliente.LastQR != ""
 	var grupos []map[string]string
 
-	if _, err := os.Stat(h.WhatsAppClient.QRPath); err == nil {
+	if _, err := os.Stat(cliente.QRPath); err == nil {
 		qrDisponible = true
 	}
 
 	if conectado && loggedIn {
-		groups, err := h.WhatsAppClient.GetGroups()
+		groups, err := cliente.GetGroups()
 		if err == nil {
 			for _, g := range groups {
 				grupos = append(grupos, map[string]string{
@@ -249,127 +354,143 @@ func (h *WhatsAppHandler) EstadoCompleto(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+// ObtenerQR devuelve el QR del bot del usuario
 func (h *WhatsAppHandler) ObtenerQR(w http.ResponseWriter, r *http.Request) {
-	qrPath := h.WhatsAppClient.QRPath
+	cliente, _ := h.getCliente(r)
+	if cliente == nil {
+		utils.ErrorJSON(w, http.StatusNotFound, "No hay QR disponible")
+		return
+	}
 
-	if _, err := os.Stat(qrPath); os.IsNotExist(err) {
+	if _, err := os.Stat(cliente.QRPath); os.IsNotExist(err) {
 		utils.ErrorJSON(w, http.StatusNotFound, "QR no disponible.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/png")
-	http.ServeFile(w, r, qrPath)
+	http.ServeFile(w, r, cliente.QRPath)
 }
+
+// IniciarBot inicia o genera QR para el bot del usuario
 func (h *WhatsAppHandler) IniciarBot(w http.ResponseWriter, r *http.Request) {
-	// Si no está conectado, intentamos conectar
-	if h.WhatsAppClient == nil || !h.WhatsAppClient.IsConnected() {
-		err := h.WhatsAppClient.Connect("/app/whatsapp_sessions/session.db")
-		if err != nil {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+
+	// Verificar si ya existe instancia para el usuario
+	_, err := h.Repo.ObtenerInstanciaPorUsuario(usuarioID)
+	if err != nil {
+		// No existe, crear una nueva
+		rutaSesion := fmt.Sprintf("/app/whatsapp_sessions/session_usuario_%d.db", usuarioID)
+		if err := h.Manager.CrearInstancia(usuarioID, rutaSesion); err != nil {
+			log.Printf("Error creando instancia: %v", err)
+			utils.ErrorJSON(w, 500, "No se pudo crear la instancia")
+			return
+		}
+	}
+
+	cliente, err := h.Manager.GetClient(usuarioID)
+	if err != nil || !cliente.IsLoggedIn() {
+		// Si no está logueado, intentar conectar (generará QR)
+		if cliente == nil {
+			cliente = whatsapp.NewWhatsAppClient()
+		}
+		ruta := fmt.Sprintf("/app/whatsapp_sessions/session_usuario_%d.db", usuarioID)
+		if err := cliente.Connect(ruta); err != nil {
 			log.Printf("Error conectando bot: %v", err)
 			utils.ErrorJSON(w, 500, "No se pudo iniciar el bot: "+err.Error())
 			return
 		}
+		h.Manager.UpdateClient(usuarioID, cliente)
 	}
 
-	// Si después de conectar está listo, devolvemos los grupos
-	if h.WhatsAppClient.IsConnected() {
-		groups, err := h.WhatsAppClient.GetGroups()
-		if err == nil {
-			var result []map[string]string
-			for _, g := range groups {
-				result = append(result, map[string]string{
-					"jid":    g.JID.String(),
-					"nombre": g.Name,
-				})
-			}
-			utils.SuccessJSON(w, 200, map[string]interface{}{
-				"conectado": true,
-				"grupos":    result,
-			})
-			return
+	// Devolver estado o QR
+	if cliente.IsLoggedIn() {
+		groups, _ := cliente.GetGroups()
+		var result []map[string]string
+		for _, g := range groups {
+			result = append(result, map[string]string{"jid": g.JID.String(), "nombre": g.Name})
 		}
-	}
-
-	// Si no hay grupos, devolvemos QR (por si acaso)
-	qrPath := "whatsapp_qr.png"
-	if _, err := os.Stat(qrPath); err == nil {
-		qrData, _ := os.ReadFile(qrPath)
-		qrBase64 := base64.StdEncoding.EncodeToString(qrData)
-		utils.SuccessJSON(w, 200, map[string]string{
-			"qr": "data:image/png;base64," + qrBase64,
-		})
+		utils.SuccessJSON(w, 200, map[string]interface{}{"conectado": true, "grupos": result})
 		return
 	}
 
-	utils.SuccessJSON(w, 200, map[string]string{
-		"mensaje": "Bot conectado, pero no se pudieron obtener los grupos.",
-	})
-}
-func (h *WhatsAppHandler) ReiniciarBot(w http.ResponseWriter, r *http.Request) {
-	sessionPath := "/app/whatsapp_sessions/session.db"
-	qrPath := h.WhatsAppClient.QRPath
-
-	// Desconectar y limpiar archivos de manera segura
-	if h.WhatsAppClient != nil {
-		h.WhatsAppClient.Disconnect()
-		h.WhatsAppClient.LastQR = ""
+	if cliente.LastQR != "" {
+		qrData, _ := os.ReadFile(cliente.QRPath)
+		qrBase64 := base64.StdEncoding.EncodeToString(qrData)
+		utils.SuccessJSON(w, 200, map[string]string{"qr": "data:image/png;base64," + qrBase64})
+		return
 	}
-	os.Remove(sessionPath)
-	os.Remove(qrPath)
 
-	// Pequeña pausa para asegurar que se liberen los recursos
-	time.Sleep(500 * time.Millisecond)
+	utils.SuccessJSON(w, 200, map[string]string{"mensaje": "Bot iniciado, escanea el QR"})
+}
 
-	// Intentar reconectar (generará nuevo QR)
-	err := h.WhatsAppClient.Connect(sessionPath)
+// ReiniciarBot reinicia la sesión del usuario (para escanear nuevo QR)
+func (h *WhatsAppHandler) ReiniciarBot(w http.ResponseWriter, r *http.Request) {
+	usuarioID := h.requireUsuario(r)
+	if usuarioID == 0 {
+		utils.ErrorJSON(w, http.StatusUnauthorized, "API Key requerida")
+		return
+	}
+
+	ruta := fmt.Sprintf("/app/whatsapp_sessions/session_usuario_%d.db", usuarioID)
+	os.Remove(ruta)
+	os.Remove(ruta + "-wal")
+	os.Remove(ruta + "-shm")
+
+	cliente, err := h.Manager.GetClient(usuarioID)
 	if err != nil {
+		cliente = whatsapp.NewWhatsAppClient()
+	}
+	cliente.Disconnect()
+	cliente.LastQR = ""
+	os.Remove(cliente.QRPath)
+
+	if err := cliente.Connect(ruta); err != nil {
 		log.Printf("Error conectando bot en reinicio: %v", err)
 		utils.ErrorJSON(w, 500, "No se pudo reiniciar el bot: "+err.Error())
 		return
 	}
+	h.Manager.UpdateClient(usuarioID, cliente)
 
-	// Verificar si se generó un QR nuevo
-	if _, err := os.Stat(qrPath); err == nil {
-		qrData, _ := os.ReadFile(qrPath)
+	if cliente.LastQR != "" {
+		qrData, _ := os.ReadFile(cliente.QRPath)
 		qrBase64 := base64.StdEncoding.EncodeToString(qrData)
-		utils.SuccessJSON(w, 200, map[string]string{
-			"qr": "data:image/png;base64," + qrBase64,
-		})
+		utils.SuccessJSON(w, 200, map[string]string{"qr": "data:image/png;base64," + qrBase64})
 		return
 	}
-
-	utils.SuccessJSON(w, 200, map[string]string{
-		"mensaje": "Bot reiniciado. Escanea el nuevo QR.",
-	})
+	utils.SuccessJSON(w, 200, map[string]string{"mensaje": "Bot reiniciado"})
 }
 
+// RefreshBot refresca el estado del bot del usuario
 func (h *WhatsAppHandler) RefreshBot(w http.ResponseWriter, r *http.Request) {
-	// Solo conecta si NO está conectado ni logueado
-	if h.WhatsAppClient == nil || (!h.WhatsAppClient.IsConnected() && !h.WhatsAppClient.IsLoggedIn()) {
-		_ = h.WhatsAppClient.Connect("/app/whatsapp_sessions/session.db")
+	cliente, usuarioID := h.getCliente(r)
+	if cliente == nil {
+		utils.SuccessJSON(w, 200, map[string]interface{}{"conectado": false, "loggeado": false})
+		return
+	}
+	_ = usuarioID
+
+	if !cliente.IsConnected() && !cliente.IsLoggedIn() {
+		ruta := fmt.Sprintf("/app/whatsapp_sessions/session_usuario_%d.db", usuarioID)
+		_ = cliente.Connect(ruta)
 	}
 
-	conectado := h.WhatsAppClient != nil && h.WhatsAppClient.IsConnected()
-	loggedIn := h.WhatsAppClient != nil && h.WhatsAppClient.IsLoggedIn()
-	qrDisponible := h.WhatsAppClient != nil && h.WhatsAppClient.LastQR != ""
+	conectado := cliente.IsConnected()
+	loggedIn := cliente.IsLoggedIn()
+	qrDisponible := cliente.LastQR != ""
 	var grupos []map[string]string
-
-	if _, err := os.Stat(h.WhatsAppClient.QRPath); err == nil {
+	if _, err := os.Stat(cliente.QRPath); err == nil {
 		qrDisponible = true
 	}
-
 	if conectado && loggedIn {
-		groups, err := h.WhatsAppClient.GetGroups()
-		if err == nil {
-			for _, g := range groups {
-				grupos = append(grupos, map[string]string{
-					"jid":    g.JID.String(),
-					"nombre": g.Name,
-				})
-			}
+		groups, _ := cliente.GetGroups()
+		for _, g := range groups {
+			grupos = append(grupos, map[string]string{"jid": g.JID.String(), "nombre": g.Name})
 		}
 	}
-
 	utils.SuccessJSON(w, 200, map[string]interface{}{
 		"conectado":     conectado,
 		"loggeado":      loggedIn,

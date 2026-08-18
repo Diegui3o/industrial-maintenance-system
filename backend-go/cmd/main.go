@@ -13,10 +13,10 @@ import (
 func main() {
 	db := config.ConnectDB()
 
-	sched, ruleEngine, whatsappClient := core.InitScheduler(db)
+	sched, ruleEngine, whatsappManager := core.InitScheduler(db)
 	go sched.Start()
 
-	r := routes.SetupRoutes(db, ruleEngine, sched, whatsappClient)
+	r := routes.SetupRoutes(db, ruleEngine, sched, whatsappManager)
 
 	log.Println("🚀 Servidor corriendo en :1883")
 	log.Fatal(http.ListenAndServe("0.0.0.0:1883", r))
