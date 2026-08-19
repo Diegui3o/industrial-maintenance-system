@@ -291,7 +291,21 @@ namespace IndustrialConnector.Services
                 return null;
             }
         }
+        public AFElement? RootElement
+        {
+            get
+            {
+                return _rootElement;
+            }
+        }
 
+        public AFDatabase? Database
+        {
+            get
+            {
+                return _database;
+            }
+        }
         public bool IsConnected
         {
             get

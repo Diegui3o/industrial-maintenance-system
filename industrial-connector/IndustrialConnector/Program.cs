@@ -8,6 +8,7 @@ using IndustrialConnector.Services;
 using IndustrialConnector.Workers;
 using Serilog;
 using Microsoft.Extensions.Logging;
+using IndustrialConnector.Services.PI;
 
 namespace IndustrialConnector
 {
@@ -28,6 +29,10 @@ namespace IndustrialConnector
             // ============================================
             // SERVICIOS
             // ============================================
+            builder.Services.AddSingleton<PiConnectionService>();
+            builder.Services.AddSingleton<PiDatabaseService>();
+            builder.Services.AddSingleton<PiDiscoveryService>();
+
             builder.Services.AddSingleton<PiSystemService>();
             builder.Services.AddSingleton<BufferService>(sp => new BufferService(10000));
             builder.Services.AddSingleton<HealthService>();
@@ -66,6 +71,59 @@ namespace IndustrialConnector
 
             var host = builder.Build();
 
+            // =========================================================
+            // PRUEBA TEMPORAL - PI DISCOVERY
+            // =========================================================
+
+            using (var scope = host.Services.CreateScope())
+            {
+                var discovery = scope.ServiceProvider
+                    .GetRequiredService<IndustrialConnector.Services.PI.PiDiscoveryService>();
+
+                var connection = scope.ServiceProvider
+                    .GetRequiredService<IndustrialConnector.Services.PI.PiConnectionService>();
+
+                var config = scope.ServiceProvider
+                    .GetRequiredService<Microsoft.Extensions.Options.IOptions<IndustrialConnector.Models.PiSystemConfig>>()
+                    .Value;
+
+                if (!connection.IsConnected)
+                {
+                    connection.Connect();
+                }
+
+                var elements = discovery.DiscoverElements(
+                    config.Database,
+                    config.RootElement);
+
+                Console.WriteLine("");
+                Console.WriteLine("==========================================");
+                Console.WriteLine(" PI DISCOVERY TEST");
+                Console.WriteLine("==========================================");
+                Console.WriteLine($"Elementos encontrados: {elements.Count}");
+
+                foreach (var element in elements)
+                {
+                    if (element.Name.Contains("SE138"))
+                    {
+                        Console.WriteLine("");
+                        Console.WriteLine($"ELEMENTO: {element.Name}");
+                        Console.WriteLine($"RUTA: {element.GetPath()}");
+
+                        var attributes = discovery.GetAttributes(element);
+
+                        Console.WriteLine($"ATRIBUTOS: {attributes.Count}");
+
+                        foreach (var attribute in attributes)
+                        {
+                            Console.WriteLine($"  - {attribute.Name}");
+                        }
+                    }
+                }
+
+                Console.WriteLine("==========================================");
+                Console.WriteLine("");
+            }
             // ============================================
             // INICIAR
             // ============================================
