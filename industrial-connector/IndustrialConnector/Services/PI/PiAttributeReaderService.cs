@@ -6,11 +6,10 @@ using OSIsoft.AF.Asset;
 namespace IndustrialConnector.Services.PI
 {
     /// <summary>
-    /// Lee valores actuales de atributos PI.
+    /// Convierte un AFValue recibido desde PI/DataPipe
+    /// en nuestro modelo SensorReading.
     ///
-    /// Este servicio NO descubre elementos ni atributos.
-    /// Su única responsabilidad es convertir un AFAttribute
-    /// en una lectura de nuestro modelo SensorReading.
+    /// Este servicio NO consulta nuevamente PI.
     /// </summary>
     public class PiAttributeReaderService
     {
@@ -23,38 +22,25 @@ namespace IndustrialConnector.Services.PI
         }
 
         /// <summary>
-        /// Lee un atributo PI y genera una lectura de sensor.
+        /// Convierte un evento de DataPipe en SensorReading.
         /// </summary>
         public SensorReading? Read(
-            AFElement element,
             AFAttribute attribute,
+            AFValue value,
             string piServer,
             string database)
         {
-            if (element == null || attribute == null)
+            if (attribute == null || value == null)
             {
                 return null;
             }
 
             try
             {
-                var value = attribute.GetValue();
-
-                if (value == null)
-                {
-                    _logger.LogWarning(
-                        "⚠️ Valor nulo: {Element}/{Attribute}",
-                        element.Name,
-                        attribute.Name);
-
-                    return null;
-                }
-
                 if (!value.IsGood)
                 {
                     _logger.LogWarning(
-                        "⚠️ Calidad no válida: {Element}/{Attribute} | Value={Value} | Timestamp={Timestamp} | Status={Status}",
-                        element.Name,
+                        "⚠️ Calidad no válida: {Attribute} | Value={Value} | Timestamp={Timestamp} | Status={Status}",
                         attribute.Name,
                         value.Value,
                         value.Timestamp,
@@ -67,18 +53,21 @@ namespace IndustrialConnector.Services.PI
 
                 try
                 {
-                    numericValue = Convert.ToDouble(value.Value);
+                    numericValue =
+                        Convert.ToDouble(value.Value);
                 }
                 catch
                 {
                     _logger.LogWarning(
-                        "⚠️ Valor no numérico: {Element}/{Attribute} = {Value}",
-                        element.Name,
+                        "⚠️ Valor no numérico: {Attribute} = {Value}",
                         attribute.Name,
                         value.Value);
 
                     return null;
                 }
+
+                var element =
+                    attribute.Element;
 
                 var reading = new SensorReading
                 {
@@ -90,26 +79,39 @@ namespace IndustrialConnector.Services.PI
 
                     RootElement = string.Empty,
 
-                    ElementName = element.Name,
+                    ElementName =
+                        element?.Name ?? string.Empty,
 
-                    ElementPath = element.GetPath(),
+                    ElementPath =
+                        element?.GetPath() ?? string.Empty,
 
-                    AttributeName = attribute.Name,
+                    AttributeName =
+                        attribute.Name,
 
-                    Value = numericValue,
+                    Value =
+                        numericValue,
 
-                    Unit = attribute.DefaultUOM?.Abbreviation,
+                    Unit =
+                        attribute.DefaultUOM?.Abbreviation,
 
-                    Timestamp = value.Timestamp,
+                    Timestamp =
+                        value.Timestamp,
 
-                    Quality = "Good"
+                    Quality =
+                        "Good",
+
+                    PIPointName =
+                        GetPIPointName(attribute),
+
+                    ValueType =
+                        value.Value?.GetType().Name
                 };
 
                 _logger.LogDebug(
-                    "📊 PI {Element}/{Attribute} = {Value}",
-                    element.Name,
-                    attribute.Name,
-                    numericValue);
+                    "📊 PI EVENT {Element}/{Attribute} = {Value}",
+                    reading.ElementName,
+                    reading.AttributeName,
+                    reading.Value);
 
                 return reading;
             }
@@ -117,10 +119,25 @@ namespace IndustrialConnector.Services.PI
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error leyendo {Element}/{Attribute}",
-                    element.Name,
+                    "❌ Error convirtiendo evento PI: {Attribute}",
                     attribute.Name);
 
+                return null;
+            }
+        }
+
+        private string? GetPIPointName(
+            AFAttribute attribute)
+        {
+            try
+            {
+                return attribute
+                    .DataReference?
+                    .PIPoint?
+                    .Name;
+            }
+            catch
+            {
                 return null;
             }
         }

@@ -44,7 +44,8 @@ namespace IndustrialConnector
             builder.Services.AddSingleton<PiAttributeClassifierService>();
 
             builder.Services.AddSingleton<PiAttributeReaderService>();
-
+            
+            builder.Services.AddSingleton<PiDataPipeService>();
 
             // ============================================
             // SERVICIOS GENERALES

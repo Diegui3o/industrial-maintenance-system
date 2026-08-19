@@ -37,7 +37,7 @@ namespace IndustrialConnector.Workers
         private readonly HealthService _health;
         private readonly ILogger<PiSystemWorker> _logger;
         private readonly PiSystemConfig _config;
-
+        private readonly PiDataPipeService _dataPipe;
         private int _errorCount = 0;
 
         private const int MaxErrors = 3;
@@ -49,6 +49,7 @@ namespace IndustrialConnector.Workers
             PiAttributeDiscoveryService attributeDiscovery,
             PiAttributeClassifierService classifier,
             PiAttributeReaderService reader,
+            PiDataPipeService dataPipe,
             BufferService buffer,
             HealthService health,
             ILogger<PiSystemWorker> logger,
@@ -60,6 +61,7 @@ namespace IndustrialConnector.Workers
             _attributeDiscovery = attributeDiscovery;
             _classifier = classifier;
             _reader = reader;
+            _dataPipe = dataPipe;
             _buffer = buffer;
             _health = health;
             _logger = logger;
@@ -193,102 +195,130 @@ namespace IndustrialConnector.Workers
                 monitoredPaths.Count);
 
             // =====================================================
-            // 7. CICLO DE MONITOREO
+            // 7. CONSTRUIR LISTA REAL DE ATRIBUTOS
+            // =====================================================
+
+            var monitoredAttributes =
+                new List<AFAttribute>();
+
+            foreach (var element in elements)
+            {
+                foreach (AFAttribute attribute in element.Attributes)
+                {
+                    if (attribute.DataReference == null)
+                    {
+                        continue;
+                    }
+
+                    var fullPath =
+                        $"{element.GetPath()}/{attribute.Name}";
+
+                    if (!monitoredPaths.Contains(fullPath))
+                    {
+                        continue;
+                    }
+
+                    monitoredAttributes.Add(attribute);
+                }
+            }
+
+            _logger.LogInformation(
+                "👁️ Atributos enviados a DataPipe: {Count}",
+                monitoredAttributes.Count);
+
+            // =====================================================
+            // 8. INICIALIZAR DATAPIPE
+            // =====================================================
+
+            if (!_dataPipe.Initialize(monitoredAttributes))
+            {
+                _logger.LogError(
+                    "❌ No se pudo inicializar AFDataPipe.");
+
+                _health.SetPiSystemConnected(false);
+
+                return;
+            }
+
+            _logger.LogInformation(
+                "🚀 Monitoreo PI mediante AFDataPipe iniciado.");
+
+            // =====================================================
+            // 9. CICLO DE EVENTOS
             // =====================================================
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    var events =
+                        _dataPipe.GetEvents();
+
                     var readings =
                         new List<SensorReading>();
 
-                    foreach (var element in elements)
+                    foreach (var dataPipeEvent in events)
                     {
-                        foreach (AFAttribute attribute in element.Attributes)
+                        try
                         {
-                            try
+                            var attribute =
+                                dataPipeEvent.Value?.Attribute;
+
+                            var value =
+                                dataPipeEvent.Value;
+
+                            if (attribute == null ||
+                                value == null)
                             {
-                                // -------------------------------------------------
-                                // Solo procesar atributos con referencia de datos.
-                                // -------------------------------------------------
-
-                                if (attribute.DataReference == null)
-                                {
-                                    continue;
-                                }
-
-                                // -------------------------------------------------
-                                // Construir la misma ruta utilizada durante
-                                // el discovery.
-                                // -------------------------------------------------
-
-                                var fullPath =
-                                    $"{element.GetPath()}/{attribute.Name}";
-
-                                // -------------------------------------------------
-                                // Ignorar atributos que el clasificador
-                                // determinó que no deben monitorearse.
-                                // -------------------------------------------------
-
-                                if (!monitoredPaths.Contains(fullPath))
-                                {
-                                    continue;
-                                }
-
-                                // -------------------------------------------------
-                                // Leer valor.
-                                // -------------------------------------------------
-
-                                var reading =
-                                    _reader.Read(
-                                        element,
-                                        attribute,
-                                        _config.Server,
-                                        _config.Database);
-
-                                if (reading != null)
-                                {
-                                    readings.Add(reading);
-                                }
+                                continue;
                             }
-                            catch (Exception ex)
+
+                            var reading =
+                                _reader.Read(
+                                    attribute,
+                                    value,
+                                    _config.Server,
+                                    _config.Database);
+
+                            if (reading != null)
                             {
-                                _logger.LogWarning(
-                                    ex,
-                                    "⚠️ Error procesando {Element}/{Attribute}",
-                                    element.Name,
-                                    attribute.Name);
+                                readings.Add(reading);
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(
+                                ex,
+                                "⚠️ Error procesando evento DataPipe.");
+                        }
                     }
-
-                    // =================================================
-                    // 8. ENVIAR AL BUFFER
-                    // =================================================
 
                     foreach (var reading in readings)
                     {
                         _buffer.Store(reading);
                     }
 
-                    _health.RegisterReadings(
-                        readings.Count,
-                        _buffer.Count);
+                    if (readings.Count > 0)
+                    {
+                        _health.RegisterReadings(
+                            readings.Count,
+                            _buffer.Count);
 
-                    _logger.LogInformation(
-                        "📊 Lecturas obtenidas: {Count} | Buffer: {Buffer}",
-                        readings.Count,
-                        _buffer.Count);
+                        _logger.LogInformation(
+                            "📡 Eventos PI recibidos: {Count} | Buffer: {Buffer}",
+                            readings.Count,
+                            _buffer.Count);
+                    }
 
                     _errorCount = 0;
 
-                    // =================================================
-                    // 9. ESPERAR SIGUIENTE CICLO
-                    // =================================================
+                    // -------------------------------------------------
+                    // El DataPipe se consulta periódicamente.
+                    // No se vuelve a consultar el valor del atributo.
+                    // -------------------------------------------------
 
                     await Task.Delay(
-                        TimeSpan.FromSeconds(5),
+                        TimeSpan.FromMilliseconds(500),
                         stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -301,7 +331,7 @@ namespace IndustrialConnector.Workers
 
                     _logger.LogError(
                         ex,
-                        "❌ Error en ciclo PI. Intento {Count}/{Max}",
+                        "❌ Error en DataPipe PI. Intento {Count}/{Max}",
                         _errorCount,
                         MaxErrors);
 
@@ -310,7 +340,7 @@ namespace IndustrialConnector.Workers
                         _health.SetPiSystemConnected(false);
 
                         _logger.LogError(
-                            "❌ Demasiados errores consecutivos en PI.");
+                            "❌ Demasiados errores consecutivos en DataPipe.");
                     }
 
                     await Task.Delay(
