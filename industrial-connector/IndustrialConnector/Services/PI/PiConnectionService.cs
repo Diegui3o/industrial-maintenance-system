@@ -1,20 +1,25 @@
 using System;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OSIsoft.AF;
+using IndustrialConnector.Models;
 
 namespace IndustrialConnector.Services.PI
 {
     public class PiConnectionService : IDisposable
     {
         private readonly ILogger<PiConnectionService> _logger;
+        private readonly PiSystemConfig _config;
 
         private PISystems? _piSystems;
         private PISystem? _piSystem;
 
         public PiConnectionService(
-            ILogger<PiConnectionService> logger)
+            ILogger<PiConnectionService> logger,
+            IOptions<PiSystemConfig> options)
         {
             _logger = logger;
+            _config = options.Value;
         }
 
         /// <summary>
@@ -25,18 +30,12 @@ namespace IndustrialConnector.Services.PI
         /// <summary>
         /// Indica si existe una conexión activa con AF Server.
         /// </summary>
-        public bool IsConnected
-        {
-            get
-            {
-                return _piSystem != null &&
-                       _piSystem.ConnectionInfo.IsConnected;
-            }
-        }
+        public bool IsConnected =>
+            _piSystem != null &&
+            _piSystem.ConnectionInfo.IsConnected;
 
         /// <summary>
-        /// Conecta al PI System configurado como predeterminado
-        /// en el AF SDK instalado en Windows.
+        /// Conecta al AF Server indicado en la configuración.
         /// </summary>
         public bool Connect()
         {
@@ -50,7 +49,7 @@ namespace IndustrialConnector.Services.PI
                 if (_piSystems.Count == 0)
                 {
                     _logger.LogError(
-                        "❌ No se encontraron PI Systems configurados en el AF SDK.");
+                        "❌ No se encontraron PI Systems configurados en AF SDK.");
 
                     return false;
                 }
@@ -59,21 +58,29 @@ namespace IndustrialConnector.Services.PI
                     "PI Systems encontrados: {Count}",
                     _piSystems.Count);
 
-                _piSystem = _piSystems.DefaultPISystem;
+                // ============================================
+                // BUSCAR SERVIDOR CONFIGURADO
+                // ============================================
+
+                _piSystem = _piSystems[_config.Server];
 
                 if (_piSystem == null)
                 {
                     _logger.LogError(
-                        "❌ No existe un PI System predeterminado.");
+                        "❌ No se encontró el AF Server configurado: {Server}",
+                        _config.Server);
 
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "AF Server seleccionado: {Name}",
+                    "AF Server seleccionado: {Server}",
                     _piSystem.Name);
 
-                // Conectar solamente si todavía no está conectado.
+                // ============================================
+                // CONECTAR
+                // ============================================
+
                 if (!_piSystem.ConnectionInfo.IsConnected)
                 {
                     _piSystem.Connect();
@@ -82,14 +89,14 @@ namespace IndustrialConnector.Services.PI
                 if (!_piSystem.ConnectionInfo.IsConnected)
                 {
                     _logger.LogError(
-                        "❌ No se pudo establecer conexión con AF Server: {Name}",
+                        "❌ No se pudo establecer conexión con AF Server: {Server}",
                         _piSystem.Name);
 
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "✅ AF Server conectado: {Name} - versión {Version}",
+                    "✅ AF Server conectado: {Server} - versión {Version}",
                     _piSystem.Name,
                     _piSystem.ServerVersion);
 
@@ -99,7 +106,10 @@ namespace IndustrialConnector.Services.PI
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error conectando a PI System.");
+                    "❌ Error conectando al AF Server: {Server}",
+                    _config.Server);
+
+                _piSystem = null;
 
                 return false;
             }
@@ -107,20 +117,21 @@ namespace IndustrialConnector.Services.PI
 
         /// <summary>
         /// Obtiene el PI System conectado.
-        /// Lanza excepción si no existe conexión.
         /// </summary>
         public PISystem GetPiSystem()
         {
-            if (_piSystem == null ||
-                !_piSystem.ConnectionInfo.IsConnected)
+            if (!IsConnected)
             {
                 throw new InvalidOperationException(
                     "PI System no está conectado.");
             }
 
-            return _piSystem;
+            return _piSystem!;
         }
 
+        /// <summary>
+        /// Desconecta del AF Server.
+        /// </summary>
         public void Disconnect()
         {
             try

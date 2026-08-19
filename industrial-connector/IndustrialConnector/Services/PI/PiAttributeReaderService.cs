@@ -1,9 +1,17 @@
 using System;
 using Microsoft.Extensions.Logging;
+using IndustrialConnector.Models;
 using OSIsoft.AF.Asset;
 
-namespace IndustrialConnector.Services
+namespace IndustrialConnector.Services.PI
 {
+    /// <summary>
+    /// Lee valores actuales de atributos PI.
+    ///
+    /// Este servicio NO descubre elementos ni atributos.
+    /// Su única responsabilidad es convertir un AFAttribute
+    /// en una lectura de nuestro modelo SensorReading.
+    /// </summary>
     public class PiAttributeReaderService
     {
         private readonly ILogger<PiAttributeReaderService> _logger;
@@ -14,9 +22,16 @@ namespace IndustrialConnector.Services
             _logger = logger;
         }
 
-        public AFValue? Read(AFAttribute attribute)
+        /// <summary>
+        /// Lee un atributo PI y genera una lectura de sensor.
+        /// </summary>
+        public SensorReading? Read(
+            AFElement element,
+            AFAttribute attribute,
+            string piServer,
+            string database)
         {
-            if (attribute == null)
+            if (element == null || attribute == null)
             {
                 return null;
             }
@@ -28,7 +43,8 @@ namespace IndustrialConnector.Services
                 if (value == null)
                 {
                     _logger.LogWarning(
-                        "⚠️ Valor nulo para atributo: {Attribute}",
+                        "⚠️ Valor nulo: {Element}/{Attribute}",
+                        element.Name,
                         attribute.Name);
 
                     return null;
@@ -37,25 +53,72 @@ namespace IndustrialConnector.Services
                 if (!value.IsGood)
                 {
                     _logger.LogWarning(
-                        "⚠️ Calidad no válida para atributo: {Attribute}",
-                        attribute.Name);
+                        "⚠️ Calidad no válida: {Element}/{Attribute} | Value={Value} | Timestamp={Timestamp} | Status={Status}",
+                        element.Name,
+                        attribute.Name,
+                        value.Value,
+                        value.Timestamp,
+                        value.Status);
 
                     return null;
                 }
 
-                _logger.LogDebug(
-                    "📊 PI {Attribute} = {Value} @ {Timestamp}",
-                    attribute.Name,
-                    value.Value,
-                    value.Timestamp);
+                double numericValue;
 
-                return value;
+                try
+                {
+                    numericValue = Convert.ToDouble(value.Value);
+                }
+                catch
+                {
+                    _logger.LogWarning(
+                        "⚠️ Valor no numérico: {Element}/{Attribute} = {Value}",
+                        element.Name,
+                        attribute.Name,
+                        value.Value);
+
+                    return null;
+                }
+
+                var reading = new SensorReading
+                {
+                    Source = "PI_System",
+
+                    PiServer = piServer,
+
+                    Database = database,
+
+                    RootElement = string.Empty,
+
+                    ElementName = element.Name,
+
+                    ElementPath = element.GetPath(),
+
+                    AttributeName = attribute.Name,
+
+                    Value = numericValue,
+
+                    Unit = attribute.DefaultUOM?.Abbreviation,
+
+                    Timestamp = value.Timestamp,
+
+                    Quality = "Good"
+                };
+
+                _logger.LogDebug(
+                    "📊 PI {Element}/{Attribute} = {Value}",
+                    element.Name,
+                    attribute.Name,
+                    numericValue);
+
+                return reading;
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error leyendo atributo: {Attribute}",
+                    "❌ Error leyendo {Element}/{Attribute}",
+                    element.Name,
                     attribute.Name);
 
                 return null;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using OSIsoft.AF;
 using OSIsoft.AF.Asset;
 
 namespace IndustrialConnector.Services.PI
@@ -21,6 +22,9 @@ namespace IndustrialConnector.Services.PI
             _logger = logger;
         }
 
+        /// <summary>
+        /// Descubre todos los elementos debajo de una raíz.
+        /// </summary>
         public List<AFElement> DiscoverElements(
             string databaseName,
             string rootElementName)
@@ -45,7 +49,8 @@ namespace IndustrialConnector.Services.PI
                     return elements;
                 }
 
-                var root = database.Elements[rootElementName];
+                var root =
+                    database.Elements[rootElementName];
 
                 if (root == null)
                 {
@@ -68,35 +73,30 @@ namespace IndustrialConnector.Services.PI
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error realizando discovery de PI System.");
+                    "❌ Error durante discovery de PI.");
 
                 return elements;
             }
         }
 
-        public AFElement? FindElement(
-            string databaseName,
-            string rootElementName,
-            string elementName)
+        /// <summary>
+        /// Recorre recursivamente todo el árbol AF.
+        /// </summary>
+        private void Traverse(
+            AFElement element,
+            List<AFElement> elements)
         {
-            var elements = DiscoverElements(
-                databaseName,
-                rootElementName);
+            elements.Add(element);
 
-            foreach (var element in elements)
+            foreach (AFElement child in element.Elements)
             {
-                if (string.Equals(
-                    element.Name,
-                    elementName,
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    return element;
-                }
+                Traverse(child, elements);
             }
-
-            return null;
         }
 
+        /// <summary>
+        /// Obtiene todos los atributos de un elemento.
+        /// </summary>
         public List<AFAttribute> GetAttributes(
             AFElement element)
         {
@@ -112,24 +112,7 @@ namespace IndustrialConnector.Services.PI
                 attributes.Add(attribute);
             }
 
-            _logger.LogDebug(
-                "📋 Elemento {Element} tiene {Count} atributos.",
-                element.Name,
-                attributes.Count);
-
             return attributes;
-        }
-
-        private void Traverse(
-            AFElement element,
-            List<AFElement> elements)
-        {
-            elements.Add(element);
-
-            foreach (AFElement child in element.Elements)
-            {
-                Traverse(child, elements);
-            }
         }
     }
 }
