@@ -1,12 +1,10 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using OSIsoft.AF;
-using OSIsoft.AF.PI;
-using OSIsoft.AF.Asset;
-using IndustrialConnector.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OSIsoft.AF;
+using OSIsoft.AF.Asset;
+using IndustrialConnector.Models;
 
 namespace IndustrialConnector.Services
 {
@@ -15,12 +13,9 @@ namespace IndustrialConnector.Services
         private readonly ILogger<PiSystemService> _logger;
         private readonly PiSystemConfig _config;
 
-        private PISystems? _piSystems;
         private PISystem? _piSystem;
-        private PIServer? _server;
         private AFDatabase? _database;
         private AFElement? _rootElement;
-
         private bool _connected;
 
         public PiSystemService(
@@ -36,211 +31,110 @@ namespace IndustrialConnector.Services
             try
             {
                 _logger.LogInformation(
-                    "Conectando a PI System mediante AF SDK...");
+                    "🔌 Conectando a PI System mediante AF SDK...");
 
-                // =====================================================
-                // 1. Obtener la colección de PI Systems conocidos
-                // =====================================================
-                _piSystems = new PISystems();
+                // -------------------------------------------------
+                // 1. Obtener los PI Systems conocidos por AF SDK
+                // -------------------------------------------------
 
-                if (_piSystems.Count == 0)
-                {
-                    _logger.LogError(
-                        "No se encontraron PI Systems configurados en esta PC.");
-                    return false;
-                }
+                var systems = new PISystems();
 
                 _logger.LogInformation(
                     "PI Systems encontrados: {Count}",
-                    _piSystems.Count);
+                    systems.Count);
 
-                // =====================================================
-                // 2. Buscar el AF Server
-                // =====================================================
-                _piSystem = null;
-
-                foreach (PISystem system in _piSystems)
+                if (systems.Count == 0)
                 {
-                    _logger.LogInformation(
-                        "PI System disponible: {Name}",
-                        system.Name);
+                    _logger.LogError(
+                        "❌ No se encontraron PI Systems configurados.");
 
-                    if (string.Equals(
-                        system.Name,
-                        _config.Server,
-                        StringComparison.OrdinalIgnoreCase))
-                    {
-                        _piSystem = system;
-                        break;
-                    }
+                    return false;
                 }
 
-                // Si no encontró el configurado, utilizar DefaultPISystem
-                if (_piSystem == null)
-                {
-                    _logger.LogWarning(
-                        "No se encontró el PI System '{Server}'. " +
-                        "Se utilizará DefaultPISystem.",
-                        _config.Server);
+                // -------------------------------------------------
+                // 2. Buscar el AF Server configurado
+                // -------------------------------------------------
 
-                    _piSystem = _piSystems.DefaultPISystem;
-                }
+                _piSystem = systems[_config.Server];
 
                 if (_piSystem == null)
                 {
                     _logger.LogError(
-                        "No se pudo obtener un PISystem.");
+                        "❌ No se encontró el AF Server: {Server}",
+                        _config.Server);
+
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "AF Server seleccionado: {Name}",
+                    "AF Server seleccionado: {Server}",
                     _piSystem.Name);
 
-                // =====================================================
+                // -------------------------------------------------
                 // 3. Conectar al AF Server
-                // =====================================================
-                if (!_piSystem.IsConnected)
+                // -------------------------------------------------
+
+                if (!_piSystem.ConnectionInfo.IsConnected)
                 {
                     _piSystem.Connect();
                 }
 
-                if (!_piSystem.IsConnected)
+                if (!_piSystem.ConnectionInfo.IsConnected)
                 {
                     _logger.LogError(
-                        "No se pudo conectar al AF Server: {Name}",
+                        "❌ No se pudo conectar al AF Server: {Server}",
                         _piSystem.Name);
+
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "AF Server conectado: {Name} - versión {Version}",
+                    "✅ AF Server conectado: {Server} - versión {Version}",
                     _piSystem.Name,
-                    _piSystem.Version);
+                    _piSystem.ServerVersion);
 
-                // =====================================================
-                // 4. Buscar PI Data Archive
-                // =====================================================
-                try
-                {
-                    _server = PIServer.FindPIServer(
-                        _piSystem,
-                        _config.Server);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(
-                        ex,
-                        "No se pudo encontrar el PI Server '{Server}' " +
-                        "usando el nombre configurado.",
-                        _config.Server);
-                }
+                // -------------------------------------------------
+                // 4. Obtener AF Database
+                // -------------------------------------------------
 
-                // Si no lo encontró por nombre, intentar con
-                // DefaultPIServerName del AF Server.
-                if (_server == null &&
-                    !string.IsNullOrWhiteSpace(_piSystem.DefaultPIServerName))
-                {
-                    try
-                    {
-                        _server = PIServer.FindPIServer(
-                            _piSystem,
-                            _piSystem.DefaultPIServerName);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(
-                            ex,
-                            "No se pudo encontrar el PI Server por " +
-                            "DefaultPIServerName.");
-                    }
-                }
-
-                if (_server == null)
-                {
-                    _logger.LogError(
-                        "No se pudo encontrar ningún PI Data Archive.");
-                    return false;
-                }
-
-                // =====================================================
-                // 5. Conectar al PI Data Archive
-                // =====================================================
-                _server.Connect();
-
-                _logger.LogInformation(
-                    "PI Data Archive conectado: {Server} - versión {Version}",
-                    _server.Name,
-                    _server.ServerVersion);
-
-                // =====================================================
-                // 6. Buscar AF Database
-                // =====================================================
-                _database = null;
-
-                if (!string.IsNullOrWhiteSpace(_config.Database))
-                {
-                    _database = _piSystem.Databases[_config.Database];
-                }
+                _database = _piSystem.Databases[_config.Database];
 
                 if (_database == null)
                 {
-                    _logger.LogWarning(
-                        "No se encontró la AF Database '{Database}'. " +
-                        "Se utilizará la primera disponible.",
+                    _logger.LogError(
+                        "❌ No se encontró la AF Database: {Database}",
                         _config.Database);
 
-                    _database = _piSystem.Databases.FirstOrDefault();
-                }
-
-                if (_database == null)
-                {
-                    _logger.LogError(
-                        "No se encontró ninguna AF Database.");
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "AF Database seleccionada: {Database}",
+                    "✅ AF Database seleccionada: {Database}",
                     _database.Name);
 
-                // =====================================================
-                // 7. Buscar elemento raíz
-                // =====================================================
-                _rootElement = null;
+                // -------------------------------------------------
+                // 5. Obtener elemento raíz
+                // -------------------------------------------------
 
-                if (!string.IsNullOrWhiteSpace(_config.RootElement))
-                {
-                    _rootElement =
-                        _database.Elements[_config.RootElement];
-                }
-
-                if (_rootElement == null)
-                {
-                    _logger.LogWarning(
-                        "No se encontró el elemento raíz '{Element}'. " +
-                        "Se utilizará el primer elemento disponible.",
-                        _config.RootElement);
-
-                    _rootElement =
-                        _database.Elements.FirstOrDefault();
-                }
+                _rootElement = _database.Elements[_config.RootElement];
 
                 if (_rootElement == null)
                 {
                     _logger.LogError(
-                        "No se encontró ningún elemento en la AF Database.");
+                        "❌ No se encontró el elemento raíz: {RootElement}",
+                        _config.RootElement);
+
                     return false;
                 }
 
                 _logger.LogInformation(
-                    "Elemento raíz: {Element}",
-                    _rootElement.Name);
+                    "✅ Elemento raíz: {RootElement}",
+                    _rootElement.GetPath());
 
                 _connected = true;
 
                 _logger.LogInformation(
-                    "PI System conectado correctamente.");
+                    "✅ PI System conectado correctamente mediante AF SDK.");
 
                 return true;
             }
@@ -248,7 +142,7 @@ namespace IndustrialConnector.Services
             {
                 _logger.LogError(
                     ex,
-                    "Error conectando a PI System.");
+                    "❌ Error conectando a PI System.");
 
                 _connected = false;
 
@@ -256,139 +150,141 @@ namespace IndustrialConnector.Services
             }
         }
 
+        // =========================================================
+        // BUSCAR ELEMENTO RECURSIVAMENTE
+        // =========================================================
+
+        private AFElement? FindElementRecursive(
+            AFElement parent,
+            string elementName)
+        {
+            // Buscar hijos directos
+            foreach (AFElement child in parent.Elements)
+            {
+                if (string.Equals(
+                    child.Name,
+                    elementName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return child;
+                }
+            }
+
+            // Buscar recursivamente
+            foreach (AFElement child in parent.Elements)
+            {
+                var result = FindElementRecursive(
+                    child,
+                    elementName);
+
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        // =========================================================
+        // LEER ATRIBUTO
+        // =========================================================
+
         public async Task<double?> ReadAttributeValue(
             string elementPath,
             string attributeName)
         {
-            if (!_connected ||
-                _piSystem == null ||
-                _database == null)
+            await Task.CompletedTask;
+
+            if (!_connected || _rootElement == null)
             {
                 _logger.LogWarning(
-                    "PI System no está conectado.");
+                    "⚠️ PI System no está conectado.");
 
                 return null;
             }
 
             try
             {
-                AFElement? targetElement = null;
+                // -------------------------------------------------
+                // Buscar elemento recursivamente
+                // -------------------------------------------------
 
-                // =====================================================
-                // Buscar primero desde el elemento raíz
-                // =====================================================
-                if (_rootElement != null)
-                {
-                    if (string.Equals(
-                        _rootElement.Name,
-                        elementPath,
-                        StringComparison.OrdinalIgnoreCase))
-                    {
-                        targetElement = _rootElement;
-                    }
-                    else
-                    {
-                        foreach (AFElement child in _rootElement.Elements)
-                        {
-                            if (string.Equals(
-                                child.Name,
-                                elementPath,
-                                StringComparison.OrdinalIgnoreCase))
-                            {
-                                targetElement = child;
-                                break;
-                            }
-                        }
-                    }
-                }
+                var element = FindElementRecursive(
+                    _rootElement,
+                    elementPath);
 
-                // =====================================================
-                // Si no está directamente debajo del raíz,
-                // intentar buscar por ruta/nombre dentro de la DB.
-                // =====================================================
-                if (targetElement == null)
-                {
-                    try
-                    {
-                        targetElement =
-                            _database.Elements[elementPath];
-                    }
-                    catch
-                    {
-                        // Se mantiene null y se informa abajo.
-                    }
-                }
-
-                if (targetElement == null)
+                if (element == null)
                 {
                     _logger.LogWarning(
-                        "Elemento no encontrado: {Element}",
+                        "⚠️ Elemento no encontrado: {Element}",
                         elementPath);
 
                     return null;
                 }
 
-                // =====================================================
+                // -------------------------------------------------
                 // Buscar atributo
-                // =====================================================
-                AFAttribute? attribute =
-                    targetElement.Attributes[attributeName];
+                // -------------------------------------------------
+
+                var attribute = element.Attributes[attributeName];
 
                 if (attribute == null)
                 {
                     _logger.LogWarning(
-                        "Atributo no encontrado: {Element}/{Attribute}",
-                        elementPath,
+                        "⚠️ Atributo no encontrado: {Element}/{Attribute}",
+                        element.Name,
                         attributeName);
 
                     return null;
                 }
 
-                // =====================================================
-                // Leer valor actual
-                // =====================================================
+                // -------------------------------------------------
+                // Obtener valor mediante AF SDK
+                // -------------------------------------------------
+
                 AFValue value = attribute.GetValue();
 
                 if (value == null)
                 {
                     _logger.LogWarning(
-                        "El atributo devolvió un valor nulo: {Attribute}",
+                        "⚠️ Valor nulo: {Element}/{Attribute}",
+                        element.Name,
                         attributeName);
 
                     return null;
                 }
 
-                // =====================================================
-                // AF SDK 4.0: comprobar IsGood
-                // =====================================================
+                // -------------------------------------------------
+                // Verificar calidad
+                // -------------------------------------------------
+
                 if (!value.IsGood)
                 {
                     _logger.LogWarning(
-                        "Valor no válido para {Element}/{Attribute}. " +
-                        "Status: {Status}",
-                        elementPath,
-                        attributeName,
-                        value.Status);
-
-                    return null;
-                }
-
-                if (value.Value == null)
-                {
-                    _logger.LogWarning(
-                        "El valor del atributo es nulo: {Attribute}",
+                        "⚠️ Calidad no válida: {Element}/{Attribute}",
+                        element.Name,
                         attributeName);
 
                     return null;
                 }
 
-                return Convert.ToDouble(value.Value);
+                var numericValue = Convert.ToDouble(value.Value);
+
+                _logger.LogDebug(
+                    "📊 PI {Element}/{Attribute} = {Value} @ {Timestamp}",
+                    element.Name,
+                    attributeName,
+                    numericValue,
+                    value.Timestamp);
+
+                return numericValue;
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "Error leyendo {Element}/{Attribute}",
+                    "❌ Error leyendo {Element}/{Attribute}",
                     elementPath,
                     attributeName);
 
@@ -408,40 +304,21 @@ namespace IndustrialConnector.Services
         {
             try
             {
-                if (_server != null)
-                {
-                    try
-                    {
-                        _server.Disconnect();
-                    }
-                    catch
-                    {
-                        // Ignorar errores durante la desconexión.
-                    }
-                }
-
                 if (_piSystem != null &&
-                    _piSystem.IsConnected)
+                    _piSystem.ConnectionInfo.IsConnected)
                 {
-                    try
-                    {
-                        _piSystem.Disconnect();
-                    }
-                    catch
-                    {
-                        // Ignorar errores durante la desconexión.
-                    }
+                    _piSystem.Disconnect();
                 }
             }
-            finally
+            catch
             {
-                _server = null;
-                _database = null;
-                _rootElement = null;
-                _piSystem = null;
-                _piSystems = null;
-                _connected = false;
+                // No hacer fallar el cierre de la aplicación
             }
+
+            _piSystem = null;
+            _database = null;
+            _rootElement = null;
+            _connected = false;
         }
     }
 }
