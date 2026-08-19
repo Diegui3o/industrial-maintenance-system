@@ -131,6 +131,7 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	r.HandleFunc("/api/whatsapp/iniciar", whatsappHandler.IniciarBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/reiniciar", whatsappHandler.ReiniciarBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/refresh", whatsappHandler.RefreshBot).Methods("POST")
+	r.HandleFunc("/api/whatsapp/asegurar-instancia", whatsappHandler.AsegurarInstancia).Methods("POST")
 
 	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
 	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")

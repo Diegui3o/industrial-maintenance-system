@@ -1,13 +1,10 @@
 const BASE = '/api';
 
-let apiKey = '';
-
-export const setWhatsAppKey = (key: string) => { apiKey = key; };
-export const getWhatsAppKey = () => apiKey;
-export const clearWhatsAppKey = () => { apiKey = ''; };
+export const getWhatsAppKey = () => localStorage.getItem('api_key') || '';
 export const getWhatsAppQR = () => `/api/whatsapp/qr`;
 
 async function fetchWithKey<T>(url: string, options?: RequestInit): Promise<T> {
+  const apiKey = getWhatsAppKey();
   if (!apiKey) throw new Error('API Key no configurada');
 
   const res = await fetch(`${BASE}${url}?api_key=${apiKey}`, {
@@ -15,16 +12,8 @@ async function fetchWithKey<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
 
-  if (res.status === 401) {
-    clearWhatsAppKey();
-    throw new Error('Sesión expirada');
-  }
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as any).error || `${res.status}`);
-  }
-
+  if (res.status === 401) throw new Error('No autorizado');
+  if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();
 }
 
@@ -50,7 +39,19 @@ export const desasociarEquipoDeGrupo = (equipoId: number, grupoId: number) =>
 // WhatsApp
 export const getGruposReales = () => fetchWithKey<any[]>('/whatsapp/grupos');
 export const enviarMensajeGrupo = (grupoId: number, mensaje: string) =>
-  fetchWithKey<any>(`/grupos/${grupoId}/enviar`, { method: 'POST', body: JSON.stringify({ mensaje }) });
+  fetchWithKey<any>(`/grupos/${grupoId}/enviar`, {
+    method: 'POST',
+    body: JSON.stringify({ mensaje }),
+  });
 
 export const getWhatsAppStatus = () =>
   fetchWithKey<any>('/whatsapp/status').catch(() => ({ conectado: false }));
+
+export const setWhatsAppKey = (_key: string) => {
+  // No es necesario guardar en variable, usamos localStorage
+  localStorage.setItem('api_key', _key);
+};
+
+export const clearWhatsAppKey = () => {
+  localStorage.removeItem('api_key');
+};

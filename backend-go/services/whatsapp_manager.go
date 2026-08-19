@@ -14,7 +14,7 @@ type WhatsAppManager struct {
 	db      *sql.DB
 	repo    *repository.WhatsAppRepository
 	mu      sync.RWMutex
-	clients map[int]*whatsapp.WhatsAppClient // key: usuarioID
+	clients map[int]*whatsapp.WhatsAppClient
 }
 
 func NewWhatsAppManager(db *sql.DB, repo *repository.WhatsAppRepository) *WhatsAppManager {
@@ -46,18 +46,25 @@ func (m *WhatsAppManager) CargarInstancias() error {
 	return nil
 }
 
-// GetClient devuelve el cliente para un usuario, o lo carga desde BD si no está en memoria
+// GetClient devuelve el cliente para un usuario, creándolo si no existe
 func (m *WhatsAppManager) GetClient(usuarioID int) (*whatsapp.WhatsAppClient, error) {
+	if m == nil || m.clients == nil {
+		return nil, fmt.Errorf("manager no inicializado")
+	}
+
 	m.mu.RLock()
 	cliente, ok := m.clients[usuarioID]
 	m.mu.RUnlock()
-	if ok && cliente.IsLoggedIn() {
+	if ok && cliente != nil && cliente.IsLoggedIn() {
 		return cliente, nil
 	}
 
 	instancia, err := m.repo.ObtenerInstanciaPorUsuario(usuarioID)
 	if err != nil {
-		return nil, fmt.Errorf("no hay instancia para usuario %d", usuarioID)
+		return nil, fmt.Errorf("no hay instancia para usuario %d: %w", usuarioID, err)
+	}
+	if instancia == nil {
+		return nil, fmt.Errorf("instancia nula para usuario %d", usuarioID)
 	}
 
 	nuevoCliente := whatsapp.NewWhatsAppClient()
@@ -71,25 +78,12 @@ func (m *WhatsAppManager) GetClient(usuarioID int) (*whatsapp.WhatsAppClient, er
 	return nuevoCliente, nil
 }
 
-// CrearInstancia crea o actualiza la instancia de un usuario y la conecta
+// CrearInstancia crea una nueva instancia con ruta automática
 func (m *WhatsAppManager) CrearInstancia(usuarioID int, rutaSesion string) error {
-	err := m.repo.CrearInstancia(usuarioID, rutaSesion)
-	if err != nil {
-		return err
-	}
-
-	cliente := whatsapp.NewWhatsAppClient()
-	if err := cliente.Connect(rutaSesion); err != nil {
-		return fmt.Errorf("error conectando nueva instancia: %w", err)
-	}
-
-	m.mu.Lock()
-	m.clients[usuarioID] = cliente
-	m.mu.Unlock()
-	return nil
+	return m.repo.CrearInstancia(usuarioID, rutaSesion)
 }
 
-// ObtenerTodosClientes devuelve todos los clientes autenticados (para notificaciones)
+// ObtenerTodosClientes devuelve todos los clientes autenticados
 func (m *WhatsAppManager) ObtenerTodosClientes() []*whatsapp.WhatsAppClient {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -102,8 +96,26 @@ func (m *WhatsAppManager) ObtenerTodosClientes() []*whatsapp.WhatsAppClient {
 	return lista
 }
 
+// UpdateClient actualiza un cliente en el mapa
 func (m *WhatsAppManager) UpdateClient(usuarioID int, cliente *whatsapp.WhatsAppClient) {
 	m.mu.Lock()
 	m.clients[usuarioID] = cliente
 	m.mu.Unlock()
+}
+
+func (m *WhatsAppManager) GenerarQR(usuarioID int) error {
+	instancia, err := m.repo.ObtenerInstanciaPorUsuario(usuarioID)
+	if err != nil {
+		return fmt.Errorf("no hay instancia para usuario %d", usuarioID)
+	}
+
+	cliente := whatsapp.NewWhatsAppClient()
+	if err := cliente.Connect(instancia.RutaSesion); err != nil {
+		return err
+	}
+
+	m.mu.Lock()
+	m.clients[usuarioID] = cliente
+	m.mu.Unlock()
+	return nil
 }

@@ -10,12 +10,14 @@ import {
   getEquiposDeGrupo,
   asociarEquipoAGrupo,
   desasociarEquipoDeGrupo,
+  enviarMensajeGrupo,
 } from '../../services/whatsappApi';
 import { getEquiposCriticos } from '../../services/api';
 
 import GrupoVinculadoLista from './components/GrupoVinculadoLista';
-import EquipoCriticoManager from './components/EquipoCriticoManager'; // 👈 reemplazado
+import EquipoCriticoManager from './components/EquipoCriticoManager';
 import WhatsAppPanel from './components/WhatsAppPanel';
+import ChatPanel from './components/ChatPanel';
 
 interface Props {
   usuarioNombre: string;
@@ -40,8 +42,8 @@ export default function NotificacionesContent({ usuarioNombre, apiKey, onLogout,
 
   const cargarDatos = useCallback(async () => {
     const [g, c] = await Promise.all([getGrupos(), getEquiposCriticos()]);
-    setGruposVinculados(g);
-    setCriticos(c);
+    setGruposVinculados(Array.isArray(g) ? g : []);
+    setCriticos(Array.isArray(c) ? c : []);
   }, []);
 
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
@@ -49,7 +51,7 @@ export default function NotificacionesContent({ usuarioNombre, apiKey, onLogout,
   const handleSelectGrupo = async (grupo: any) => {
     setGrupoSeleccionado(grupo);
     const data = await getEquiposDeGrupo(grupo.id);
-    setEquiposGrupo(data);
+    setEquiposGrupo(Array.isArray(data) ? data : []);
   };
 
   const handleDeleteGrupo = async (id: number) => {
@@ -131,6 +133,15 @@ export default function NotificacionesContent({ usuarioNombre, apiKey, onLogout,
             onAsociar={handleAsociar}
             onDesasociar={handleDesasociar}
           />
+          {grupoSeleccionado && (
+            <ChatPanel
+              grupoId={grupoSeleccionado.id}
+              grupoNombre={grupoSeleccionado.nombre}
+              onEnviar={async (grupoId, mensaje) => {
+                await enviarMensajeGrupo(grupoId, mensaje);
+              }}
+            />
+          )}
         </Card>
       </div>
     </Layout>

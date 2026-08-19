@@ -38,6 +38,15 @@ export function useWhatsAppAuth() {
       const usuario = usuarios[0];
       setWhatsAppKey(trimmedKey);
 
+      // 🔁 Llamada al backend para asegurar que exista la instancia
+      try {
+        await fetch(`/api/whatsapp/asegurar-instancia?api_key=${trimmedKey}`, {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.warn('No se pudo asegurar la instancia', err);
+      }
+
       setState({
         autenticado: true,
         usuarioNombre: usuario.nombre || usuario.username || 'Usuario',

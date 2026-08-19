@@ -14,7 +14,7 @@ type WhatsAppInstanciaCompleta struct {
 	ID         int
 	UsuarioID  int
 	Nombre     string
-	Telefono   string
+	Telefono   sql.NullString
 	Estado     string
 	RutaSesion string
 }
@@ -248,10 +248,17 @@ func (r *WhatsAppRepository) ListarInstancias() ([]WhatsAppInstanciaCompleta, er
 func (r *WhatsAppRepository) ObtenerInstanciaPorUsuario(usuarioID int) (*WhatsAppInstanciaCompleta, error) {
 	var inst WhatsAppInstanciaCompleta
 	err := r.DB.QueryRow(`
-        SELECT id, usuario_id, nombre, telefono, estado, ruta_sesion
-        FROM whatsapp_instancias
-        WHERE usuario_id = $1
-    `, usuarioID).Scan(&inst.ID, &inst.UsuarioID, &inst.Nombre, &inst.Telefono, &inst.Estado, &inst.RutaSesion)
+    SELECT id, usuario_id, nombre, telefono, estado, ruta_sesion
+    FROM whatsapp_instancias
+    WHERE usuario_id = $1
+`, usuarioID).Scan(
+		&inst.ID,
+		&inst.UsuarioID,
+		&inst.Nombre,
+		&inst.Telefono,
+		&inst.Estado,
+		&inst.RutaSesion,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +268,7 @@ func (r *WhatsAppRepository) ObtenerInstanciaPorUsuario(usuarioID int) (*WhatsAp
 func (r *WhatsAppRepository) CrearInstancia(usuarioID int, rutaSesion string) error {
 	_, err := r.DB.Exec(`
         INSERT INTO whatsapp_instancias (usuario_id, nombre, ruta_sesion)
-        VALUES ($1, 'Bot WhatsApp', $2)
+        VALUES ($1, 'Bot Usuario', $2)
         ON CONFLICT (usuario_id) DO UPDATE SET ruta_sesion = EXCLUDED.ruta_sesion
     `, usuarioID, rutaSesion)
 	return err

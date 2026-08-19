@@ -21,7 +21,7 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
   const [mostrarVinculacion, setMostrarVinculacion] = useState(false);
   const [accionando, setAccionando] = useState(false);
   const [errorFetch, setErrorFetch] = useState<string | null>(null);
-  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [qrNonce, setQrNonce] = useState(Date.now());
   const llamadoRef = useRef(false);
 
   useImperativeHandle(ref, () => ({ refresh }));
@@ -47,6 +47,7 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
         qrDisponible: data.qr_disponible ?? false,
         grupos: data.grupos || [],
       });
+      setQrNonce(Date.now());
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setErrorFetch('La solicitud tardó demasiado. Reintenta.');
@@ -69,17 +70,6 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
   useEffect(() => {
     if (estado.qrDisponible && !estado.loggeado) {
       setMostrarVinculacion(true);
-    }
-  }, [estado.qrDisponible, estado.loggeado]);
-
-  useEffect(() => {
-    if (estado.qrDisponible && !estado.loggeado) {
-      const interval = setInterval(async () => {
-        await fetch(`/api/whatsapp/reiniciar?api_key=${apiKey}`, { method: 'POST' });
-        await new Promise(r => setTimeout(r, 500));
-        await refresh();
-      }, 15000);
-      return () => clearInterval(interval);
     }
   }, [estado.qrDisponible, estado.loggeado]);
 
@@ -123,13 +113,12 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
 
       {mostrarVinculacion && estado.qrDisponible && !estado.loggeado && (
         <div style={{ marginBottom: spacing.md }}>
-          {qrImage ? (
-            <img src={qrImage} alt="QR" style={{ width: 250, height: 250 }} />
-          ) : (
-            <QRDisplay qrUrl={`/api/whatsapp/qr?api_key=${apiKey}`} onVerificar={refresh} verificando={accionando} />
-          )}
+          <QRDisplay
+            qrUrl={`/api/whatsapp/qr?api_key=${apiKey}&t=${qrNonce}`}
+            onVerificar={refresh}
+            verificando={accionando}
+          />
 
-          {/* Botón para forzar un QR nuevo */}
           <Button
             variant="ghost"
             icon="🔄"
@@ -201,10 +190,8 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
                 const data = await res.json();
 
                 if (data.qr) {
-                  // El backend devuelve un QR en base64
                   setEstado(prev => ({ ...prev, qrDisponible: true }));
-                  // Guardar la imagen en un estado local para QRDisplay
-                  setQrImage(data.qr); // 👈 agrega un nuevo estado `qrImage`
+                  setQrNonce(Date.now());
                   setMostrarVinculacion(true);
                 } else if (data.grupos) {
                   setEstado({
@@ -214,7 +201,6 @@ const WhatsAppPanel = forwardRef<any, Props>(({ onVincular, apiKey, vinculadosJI
                     grupos: data.grupos,
                   });
                   setMostrarVinculacion(false);
-                  setQrImage(null);
                 } else {
                   await refresh();
                 }
