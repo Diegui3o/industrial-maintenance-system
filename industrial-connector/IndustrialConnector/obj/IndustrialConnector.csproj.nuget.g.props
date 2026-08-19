@@ -13,12 +13,6 @@
     <SourceRoot Include="C:\Users\marcoc3\.nuget\packages\" />
   </ItemGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Import Project="$(NuGetPackageRoot)microsoft.net.illink.tasks\8.0.30\build\Microsoft.NET.ILLink.Tasks.props" Condition="Exists('$(NuGetPackageRoot)microsoft.net.illink.tasks\8.0.30\build\Microsoft.NET.ILLink.Tasks.props')" />
-    <Import Project="$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\8.0.0\buildTransitive\net6.0\Microsoft.Extensions.Configuration.UserSecrets.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\8.0.0\buildTransitive\net6.0\Microsoft.Extensions.Configuration.UserSecrets.props')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\8.0.0\buildTransitive\net462\Microsoft.Extensions.Configuration.UserSecrets.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\8.0.0\buildTransitive\net462\Microsoft.Extensions.Configuration.UserSecrets.props')" />
   </ImportGroup>
-  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgMicrosoft_NET_ILLink_Tasks Condition=" '$(PkgMicrosoft_NET_ILLink_Tasks)' == '' ">C:\Users\marcoc3\.nuget\packages\microsoft.net.illink.tasks\8.0.30</PkgMicrosoft_NET_ILLink_Tasks>
-    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\marcoc3\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.3</PkgMicrosoft_CodeAnalysis_Analyzers>
-    <PkgAveva_AFSDK Condition=" '$(PkgAveva_AFSDK)' == '' ">C:\Users\marcoc3\.nuget\packages\aveva.afsdk\3.2.1</PkgAveva_AFSDK>
-  </PropertyGroup>
 </Project>

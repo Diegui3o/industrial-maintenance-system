@@ -1,0 +1,8 @@
+is_global = true
+build_property.RootNamespace = IndustrialConnector
+build_property.ProjectDir = C:\MTTO\industrial-maintenance-system-main\industrial-connector\IndustrialConnector\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 

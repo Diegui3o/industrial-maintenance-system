@@ -1,44 +1,41 @@
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using IndustrialConnector.Models;
 
-namespace IndustrialConnector.Services;
-
-public class BufferService
+namespace IndustrialConnector.Services
 {
-    private readonly ConcurrentQueue<SensorReading> _queue = new();
-    private readonly int _maxSize;
-    private readonly ILogger<BufferService> _logger;
-
-    public BufferService(ILogger<BufferService> logger, int maxSize = 10000)
+    public class BufferService
     {
-        _logger = logger;
-        _maxSize = maxSize;
-    }
+        private readonly ConcurrentQueue<SensorReading> _queue =
+        new ConcurrentQueue<SensorReading>();
+        private readonly int _maxSize;
 
-    public void Store(SensorReading reading)
-    {
-        if (_queue.Count >= _maxSize)
+        public BufferService(int maxSize = 10000)
         {
-            _logger.LogWarning("⚠️ Buffer lleno ({MaxSize}), descartando lectura más antigua", _maxSize);
-            _queue.TryDequeue(out _);
+            _maxSize = maxSize;
         }
-        _queue.Enqueue(reading);
-    }
 
-    public List<SensorReading> GetBatch(int batchSize)
-    {
-        var batch = new List<SensorReading>();
-        for (int i = 0; i < batchSize && _queue.TryDequeue(out var item); i++)
+        public void Store(SensorReading reading)
         {
-            batch.Add(item);
+            if (_queue.Count >= _maxSize)
+            {
+                Console.WriteLine($"⚠️ Buffer lleno ({_maxSize}), descartando lectura más antigua");
+                _queue.TryDequeue(out _);
+            }
+            _queue.Enqueue(reading);
         }
-        return batch;
-    }
 
-    public int Count => _queue.Count;
-    
-    public void Clear()
-    {
-        while (_queue.TryDequeue(out _)) { }
+        public List<SensorReading> GetBatch(int batchSize)
+        {
+            var batch = new List<SensorReading>();
+            for (int i = 0; i < batchSize && _queue.TryDequeue(out var item); i++)
+            {
+                batch.Add(item);
+            }
+            return batch;
+        }
+
+        public int Count => _queue.Count;
     }
 }
