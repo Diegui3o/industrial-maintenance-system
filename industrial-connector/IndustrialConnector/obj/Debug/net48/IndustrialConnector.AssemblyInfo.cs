@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IndustrialConnector")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+47035f474b55616d18798e99fcc97c8695b9a34d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+029aeff5d2cc167c90c170ba5bdfac2a6140a502")]
 [assembly: System.Reflection.AssemblyProductAttribute("IndustrialConnector")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IndustrialConnector")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

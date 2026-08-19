@@ -18,9 +18,15 @@ type RuleEngine struct {
 	Dispatcher      *services.DispatcherService
 }
 
-func (e *RuleEngine) ProcessSensorData(equipoID int, parametro string, valor float64, unidad string) {
+func (e *RuleEngine) ProcessSensorData(
+	equipoID int,
+	parametro string,
+	valor float64,
+	unidad string,
+	fuente string,
+) {
 
-	e.SensorRepo.GuardarDato(equipoID, parametro, valor, unidad, "sensor")
+	e.SensorRepo.GuardarDato(equipoID, parametro, valor, unidad, fuente)
 
 	umbrales, err := e.ConfigRepo.ObtenerUmbrales(equipoID, parametro)
 	if err != nil || umbrales == nil {

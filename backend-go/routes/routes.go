@@ -9,10 +9,17 @@ import (
 	"backend/services"
 	"database/sql"
 
+	"cloud.google.com/go/firestore"
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Scheduler, whatsappManager *services.WhatsAppManager) *mux.Router {
+func SetupRoutes(
+	db *sql.DB,
+	ruleEngine *engine.RuleEngine,
+	sched *scheduler.Scheduler,
+	whatsappManager *services.WhatsAppManager,
+	firestoreClient *firestore.Client,
+) *mux.Router {
 	r := mux.NewRouter()
 
 	// ============================================
@@ -29,6 +36,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	mantenimientoRepo := repository.NewMantenimientoRepository(db)
 	conexionRepo := repository.NewConexionRepository(db)
+	firestoreRepo := repository.NewFirestoreRepository(
+		firestoreClient,
+	)
 
 	// ============================================
 	// SERVICES
@@ -41,6 +51,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
 	dispositivoService := &services.DispositivoRedService{Repo: dispositivoRepo}
+	firestoreService := services.NewFirestoreService(
+		firestoreRepo,
+	)
 
 	// ============================================
 	// HANDLERS
@@ -68,6 +81,9 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
+	firestoreHandler := handlers.NewFirestoreHandler(
+		firestoreService,
+	)
 
 	// ============================================
 	// RUTAS
@@ -142,7 +158,10 @@ func SetupRoutes(db *sql.DB, ruleEngine *engine.RuleEngine, sched *scheduler.Sch
 	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/equipos/{id}/conexiones/{conId}", conexionHandler.Eliminar).Methods("DELETE")
-
+	r.HandleFunc(
+		"/api/firestore/{collection}/{documentID}",
+		firestoreHandler.GetDocument,
+	).Methods("GET")
 	// Jerarquía
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 

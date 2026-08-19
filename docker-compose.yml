@@ -28,10 +28,14 @@ services:
     volumes:
       - ./whatsapp_data:/app/whatsapp_data
       - ./whatsapp_sessions:/app/whatsapp_sessions
+      - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
     ports:
       - "1883:1883"
     environment:
       DATABASE_URL: "postgres://admin:admin@postgres:5432/mantenimiento?sslmode=disable"
+      FIREBASE_PROJECT_ID: "registros-actividades-mina"
+      GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/firebase-service-account.json"
+
     depends_on:
       postgres:
         condition: service_healthy

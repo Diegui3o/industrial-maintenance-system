@@ -34,6 +34,7 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 			reading.TagName,
 			reading.Value,
 			reading.Unit,
+			"sensor",
 		)
 		procesados++
 	}
