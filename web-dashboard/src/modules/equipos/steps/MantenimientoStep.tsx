@@ -1,7 +1,10 @@
 import type { EquipoFormData } from '../hooks/useEquipoForm';
 import { colors } from '../../../theme/colors'
 
-interface Props { form: EquipoFormData; update: (d: Partial<EquipoFormData>) => void }
+interface Props { 
+  form: EquipoFormData; 
+  update: (d: Partial<EquipoFormData>) => void 
+}
 
 export default function MantenimientoStep({ form, update }: Props) {
   if (!form.requiere_mantenimiento && form.estado_equipo !== 'mantenimiento' && form.estado_equipo !== 'fallo') {

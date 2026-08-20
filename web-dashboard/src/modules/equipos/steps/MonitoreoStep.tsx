@@ -1,7 +1,10 @@
 import type { EquipoFormData } from '../hooks/useEquipoForm';
 import { colors } from '../../../theme/colors'
 
-interface Props { form: EquipoFormData; update: (d: Partial<EquipoFormData>) => void }
+interface Props { 
+  form: EquipoFormData; 
+  update: (d: Partial<EquipoFormData>) => void 
+}
 
 const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) => (
   <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>

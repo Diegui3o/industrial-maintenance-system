@@ -1,0 +1,251 @@
+.equipos-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.resumen-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.resumen-icon {
+  font-size: 24px;
+}
+
+.resumen-numero {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f2329;
+}
+
+.resumen-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8a919f;
+}
+
+.equipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.equipo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.equipo-icono {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.estado-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.estado-activo { background: #2d7a4c; }
+.estado-inactivo { background: #8a919f; animation: none; }
+.estado-fallo { background: #b93636; }
+.estado-mantenimiento { background: #a16207; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.equipos-seccion {
+  margin-bottom: 32px;
+}
+
+.seccion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.seccion-titulo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1f2329;
+}
+
+.seccion-contador {
+  font-size: 11px;
+  color: #8a919f;
+  background: #f0f1f4;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.equipo-icono-svg {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.equipo-card.activo {
+  border-left: 4px solid #2d7a4c;
+}
+
+/* ============ TARJETA BASE ============ */
+.equipo-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.equipo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  border-color: #c45a1a;
+}
+
+/* ============ BORDES POR ESTADO (SOLO BORDE EXTERIOR) ============ */
+.equipo-card.estado-activo {
+  border: 1px solid #2d7a4c;
+}
+
+.equipo-card.estado-inactivo {
+  border: 1px solid #8a919f;
+  opacity: 0.7;
+}
+
+.equipo-card.estado-fallo {
+  border: 1px solid #b93636;
+  animation: falloAlerta 1.5s ease-in-out infinite;
+}
+
+.equipo-card.estado-mantenimiento {
+  border: 1px solid #a16207;
+  animation: mantenimientoPulso 2s ease-in-out infinite;
+}
+
+/* ============ ANIMACIÓN CONGELADA ============ */
+.equipo-animacion.estado-inactivo svg *,
+.equipo-animacion.estado-inactivo .variador-aspa,
+.equipo-animacion.estado-inactivo .geofono-onda,
+.equipo-animacion.estado-inactivo .estacion-onda,
+.equipo-animacion.estado-inactivo .wapsi-onda {
+  animation: none !important;
+  opacity: 0.5;
+}
+
+/* ============ ANIMACIÓN FALLO ============ */
+.equipo-animacion.estado-fallo svg {
+  animation: falloTemblor 0.5s ease-in-out infinite;
+}
+
+/* ============ ANIMACIÓN MANTENIMIENTO ============ */
+.equipo-animacion.estado-mantenimiento svg {
+  animation: mantenimientoSway 2s ease-in-out infinite;
+}
+
+/* ============ KEYFRAMES ============ */
+@keyframes falloAlerta {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(185, 54, 54, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(185, 54, 54, 0); }
+}
+
+@keyframes mantenimientoPulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(161, 98, 7, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(161, 98, 7, 0); }
+}
+
+@keyframes falloTemblor {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes mantenimientoSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* ============ ESTILOS DE TEXTO ============ */
+.equipo-animacion {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.equipo-nombre {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2329;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.equipo-codigo {
+  font-size: 12px;
+  color: #8a919f;
+  margin-bottom: 12px;
+}
+
+.equipo-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.equipo-tipo {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.equipo-estado-texto {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.estado-texto-activo { color: #2d7a4c; }
+.estado-texto-inactivo { color: #8a919f; }
+.estado-texto-fallo { color: #b93636; }
+.estado-texto-mantenimiento { color: #a16207; }
+
+.equipo-ip {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #8a919f;
+  font-family: monospace;
+}

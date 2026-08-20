@@ -3,7 +3,7 @@ import { DashboardHeader } from '../../DashboardHeader/DashboardHeader';
 import { IncidentesTab } from './tabs/IncidentesTab';
 import { RequerimientosTab } from './tabs/RequerimientosTab';
 import { GraficasTab } from './tabs/GraficasTab';
-import { EquiposTab } from './tabs/EquiposTab';
+import { EquiposTab } from './tabs/equipos/EquiposTab';
 import { colors } from '../../../theme/colors';
 import './Mina.css';
 

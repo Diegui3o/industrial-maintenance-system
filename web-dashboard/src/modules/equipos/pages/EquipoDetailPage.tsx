@@ -44,7 +44,7 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
           <Field label="Nombre" value={detalle.nombre} />
           <Field label="Área" value={detalle.area} />
           <Field label="Tipo" value={detalle.tipo} />
-          <Field label="Fase" value={detalle.fase} />
+          <Field label="Fase o Nivel" value={detalle.fase} />
           <Field label="Fabricante" value={detalle.fabricante} />
           <Field label="Modelo" value={detalle.modelo} />
           <Field label="N° Serie" value={detalle.numero_serie} />

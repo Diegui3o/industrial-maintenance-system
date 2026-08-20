@@ -1,0 +1,27 @@
+.geofono-anim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.geofono-onda {
+  animation: geofonoOnda 2s ease-in-out infinite;
+}
+
+.geofono-onda-1 { animation-delay: 0s; }
+.geofono-onda-2 { animation-delay: 0.3s; }
+.geofono-onda-3 { animation-delay: 0.6s; }
+
+@keyframes geofonoOnda {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.geofono-pulso {
+  animation: geofonoPulso 2s ease-out infinite;
+}
+
+@keyframes geofonoPulso {
+  0% { r: 6; opacity: 1; }
+  100% { r: 20; opacity: 0; }
+}

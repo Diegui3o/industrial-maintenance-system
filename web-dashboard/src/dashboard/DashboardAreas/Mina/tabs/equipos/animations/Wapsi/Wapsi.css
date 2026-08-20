@@ -1,0 +1,26 @@
+.wapsi-anim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wapsi-luz {
+  animation: wapsiParpadeo 1.5s ease-in-out infinite;
+}
+
+@keyframes wapsiParpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.wapsi-onda {
+  animation: wapsiOnda 1.5s ease-in-out infinite;
+}
+
+.wapsi-onda-1 { animation-delay: 0s; }
+.wapsi-onda-2 { animation-delay: 0.3s; }
+
+@keyframes wapsiOnda {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

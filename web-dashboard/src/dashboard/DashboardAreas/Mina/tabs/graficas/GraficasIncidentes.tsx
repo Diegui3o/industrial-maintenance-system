@@ -118,30 +118,67 @@ export function GraficasIncidentes({ filtro }: { filtro: FiltroFecha }) {
       </div>
 
       <ChartCard title="Tipos de incidente más frecuentes" subtitle="Fallas repetitivas del sistema">
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dataTipo} layout="vertical" margin={{ left: 8, right: 40 }}>
-            <CartesianGrid horizontal={false} stroke="#E5E7EB" />
-            <XAxis type="number" tick={AXIS} axisLine={false} tickLine={false} />
-            <YAxis
-              type="category"
-              dataKey="nombre"
-              tick={AXIS}
-              width={220}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(value: string) => truncar(value, 28)}
-            />
-            <Tooltip content={<ChartTooltip unidad=" incid." />} cursor={{ fill: '#F3F4F6' }} />
-            <Bar dataKey="cantidad" name="Incidentes" radius={[0, 4, 4, 0]}>
-              {dataTipo.map((t, i) => (
-                <Cell key={i} fill={t.nombre === 'Otros' ? COLORS.neutral : COLORS.primary} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <Insight>
-          Los tipos más comunes son <strong>{dataTipo[0]?.nombre}</strong> y <strong>{dataTipo[1]?.nombre}</strong>.
-        </Insight>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {dataTipo.slice(0, 15).map((tipo, i) => {
+            const maxCantidad = dataTipo[0]?.cantidad || 1;
+            const pctBarra = Math.round((tipo.cantidad / maxCantidad) * 100);
+            return (
+              <div key={i} style={{
+                display: 'grid',
+                gridTemplateColumns: '220px 1fr 50px',
+                alignItems: 'center',
+                gap: 16,
+              }}>
+                <span style={{
+                  fontSize: 12,
+                  color: '#5E6573',
+                  textAlign: 'right',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {tipo.nombre}
+                </span>
+                <div style={{
+                  height: 18,
+                  background: '#F0F1F4',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}>
+                  <div style={{
+                    width: `${pctBarra}%`,
+                    height: '100%',
+                    background: tipo.nombre === 'Otros' ? '#9CA3AF' : '#C45A1A',
+                    borderRadius: 4,
+                    transition: 'width 0.4s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    paddingRight: 8,
+                  }}>
+                    {pctBarra > 15 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>
+                        {tipo.cantidad}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#1F2329',
+                  textAlign: 'left',
+                }}>
+                  {tipo.cantidad}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+          <Insight>
+            Los tipos más comunes son <strong>{dataTipo[0]?.nombre}</strong> y <strong>{dataTipo[1]?.nombre}</strong>.
+          </Insight>
       </ChartCard>
     </div>
   );
