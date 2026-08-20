@@ -24,6 +24,13 @@ const COLORS = {
 
 const AXIS = { fontSize: 12, fill: '#8A919F' };
 
+// Función para truncar etiquetas largas
+const truncar = (texto: string, max: number) => {
+  if (!texto) return '—';
+  if (texto.length <= max) return texto;
+  return `${texto.slice(0, max).trimEnd()}…`;
+};
+
 export function GraficasIncidentes({ filtro }: { filtro: FiltroFecha }) {
   const { incidentes, loading } = useGraficasData(filtro);
 
@@ -81,9 +88,9 @@ export function GraficasIncidentes({ filtro }: { filtro: FiltroFecha }) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-            <Insight>
-              La zona <strong>{zonaTop?.nombre}</strong> concentra el {pctZona}% de incidentes.
-            </Insight>
+          <Insight>
+            La zona <strong>{zonaTop.nombre}</strong> concentra el {pctZona}% de incidentes.
+          </Insight>
         </ChartCard>
 
         <ChartCard title="Carga por responsable" subtitle="Incidentes atendidos por técnico">
@@ -91,7 +98,15 @@ export function GraficasIncidentes({ filtro }: { filtro: FiltroFecha }) {
             <BarChart data={dataResponsable} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid horizontal={false} stroke="#E5E7EB" />
               <XAxis type="number" tick={AXIS} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="nombre" tick={AXIS} width={120} axisLine={false} tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="nombre"
+                tick={AXIS}
+                width={260}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value: string) => truncar(value, 35)}
+              />
               <Tooltip content={<ChartTooltip unidad=" incid." />} cursor={{ fill: '#F3F4F6' }} />
               <Bar dataKey="cantidad" name="Incidentes" fill={COLORS.teal} radius={[0, 4, 4, 0]} />
             </BarChart>
@@ -104,10 +119,18 @@ export function GraficasIncidentes({ filtro }: { filtro: FiltroFecha }) {
 
       <ChartCard title="Tipos de incidente más frecuentes" subtitle="Fallas repetitivas del sistema">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dataTipo} layout="vertical" margin={{ left: 8, right: 24 }}>
+          <BarChart data={dataTipo} layout="vertical" margin={{ left: 8, right: 40 }}>
             <CartesianGrid horizontal={false} stroke="#E5E7EB" />
             <XAxis type="number" tick={AXIS} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="nombre" tick={AXIS} width={180} axisLine={false} tickLine={false} />
+            <YAxis
+              type="category"
+              dataKey="nombre"
+              tick={AXIS}
+              width={220}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(value: string) => truncar(value, 28)}
+            />
             <Tooltip content={<ChartTooltip unidad=" incid." />} cursor={{ fill: '#F3F4F6' }} />
             <Bar dataKey="cantidad" name="Incidentes" radius={[0, 4, 4, 0]}>
               {dataTipo.map((t, i) => (

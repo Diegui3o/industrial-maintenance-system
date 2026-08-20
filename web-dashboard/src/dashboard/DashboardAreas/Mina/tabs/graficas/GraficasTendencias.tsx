@@ -26,47 +26,55 @@ export function GraficasTendencias({ filtro }: { filtro: FiltroFecha }) {
 
   if (loading) return <p>Cargando...</p>;
 
-  // Agrupar por mes
-  const porMes = (data: any[]) => {
-    const meses: Record<string, { mes: string; incidentes: number; requerimientos: number }> = {};
-    data.forEach((item) => {
-      const d = new Date(item.fecha);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const nombreMes = d.toLocaleDateString('es-PE', { month: 'short', year: '2-digit' });
-      if (!meses[key]) meses[key] = { mes: nombreMes, incidentes: 0, requerimientos: 0 };
-    });
-    return Object.values(meses).sort((a: any, b: any) => a.mes.localeCompare(b.mes));
+  // ====================================================
+  // AGRUPACIÓN POR DÍA CON ORDEN CORRECTO
+  // ====================================================
+  const dias: Record<string, { key: string; fecha: string; incidentes: number; requerimientos: number }> = {};
+
+  const keyDeFecha = (fecha: string) => {
+    const d = new Date(fecha);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
-  const datosInc = porMes(incidentes);
-  const datosReq = porMes(requerimientos);
+  const etiquetaFecha = (fecha: string) => {
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+  };
 
-  const data = datosInc.map((d) => ({
-    mes: d.mes,
-    incidentes: d.incidentes,
-    requerimientos: datosReq.find((r) => r.mes === d.mes)?.requerimientos || 0,
-  }));
+  incidentes.forEach((inc: any) => {
+    const key = keyDeFecha(inc.fecha);
+    const label = etiquetaFecha(inc.fecha);
+    if (!dias[key]) {
+      dias[key] = { key, fecha: label, incidentes: 0, requerimientos: 0 };
+    }
+    dias[key].incidentes += 1;
+  });
 
-  // Llenar datos reales
-  const dataFinal = data.map((d) => ({
-    mes: d.mes,
-    incidentes: incidentes.filter((i) => {
-      const fecha = new Date(i.fecha);
-      return `${fecha.getFullYear()}-${fecha.getMonth()}` === d.mes;
-    }).length,
-    requerimientos: requerimientos.filter((r) => {
-      const fecha = new Date(r.fecha);
-      return `${fecha.getFullYear()}-${fecha.getMonth()}` === d.mes;
-    }).length,
-  }));
+  requerimientos.forEach((req: any) => {
+    const key = keyDeFecha(req.fecha);
+    const label = etiquetaFecha(req.fecha);
+    if (!dias[key]) {
+      dias[key] = { key, fecha: label, incidentes: 0, requerimientos: 0 };
+    }
+    dias[key].requerimientos += 1;
+  });
 
-  const pico = dataFinal.reduce((a, b) => (b.incidentes > a.incidentes ? b : a), dataFinal[0]);
+  // Ordenar por clave ISO (YYYY-MM-DD) de forma ascendente
+  const dataFinal = Object.values(dias).sort((a, b) => a.key.localeCompare(b.key));
+
+  const pico = dataFinal.reduce(
+    (max, item) => (item.incidentes > max.incidentes ? item : max),
+    dataFinal[0] || { fecha: '—', incidentes: 0 }
+  );
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
       <ChartCard
-        title="Evolución mensual de incidentes y requerimientos"
-        subtitle="Cómo cambia la carga operativa a lo largo del tiempo"
+        title="Evolución diaria de incidentes y requerimientos"
+        subtitle="Carga operativa día a día (orden cronológico)"
       >
         <ResponsiveContainer width="100%" height={360}>
           <AreaChart data={dataFinal}>
@@ -81,8 +89,15 @@ export function GraficasTendencias({ filtro }: { filtro: FiltroFecha }) {
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="#E5E7EB" />
-            <XAxis dataKey="mes" tick={AXIS} axisLine={false} tickLine={false} />
-            <YAxis tick={AXIS} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey="fecha"
+              tick={AXIS}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+              minTickGap={30}
+            />
+            <YAxis tick={AXIS} axisLine={false} tickLine={false} allowDecimals={false} />
             <Tooltip content={<ChartTooltip />} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
             <Area
@@ -104,7 +119,7 @@ export function GraficasTendencias({ filtro }: { filtro: FiltroFecha }) {
           </AreaChart>
         </ResponsiveContainer>
         <Insight>
-          El pico de actividad se dio en <strong>{pico?.mes}</strong> con {pico?.incidentes} incidentes.
+          El pico de actividad se dio el <strong>{pico?.fecha}</strong> con {pico?.incidentes} incidentes.
         </Insight>
       </ChartCard>
     </div>

@@ -28,8 +28,12 @@ export const updateFirestoreDoc = (
   collection: string,
   id: string,
   data: any
-) =>
-  fetchJson<any>(`/api/firestore/${collection}/${id}`, {
+) => {
+
+  const { fecha, creadoPorId, timestampCreacion, ...safeData } = data;
+
+  return fetchJson<any>(`/api/firestore/${collection}/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify(safeData),
   });
+};
