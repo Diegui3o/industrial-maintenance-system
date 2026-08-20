@@ -1,54 +1,79 @@
-import { useState, useEffect } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
-import DashboardPage from './pages/DashboardPage';
-import EquiposPage from './pages/EquiposPage';
-import EquipoDetailPage from './pages/EquipoDetailPage';
-import EquipoFormPage from './pages/equipos/EquipoFormPage';
-import AlarmasPage from './pages/AlarmasPage';
-import EventosPage from './pages/EventosPage';
-import MetricasPage from './pages/MetricasPage';
-import ConfiguracionPage from './pages/ConfiguracionPage';
-import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
-import EquipoEditPage from './pages/EquipoEditPage';
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { AppProvider } from './shared/context/AppContext';
+import Dashboard from './dashboard/Dashboard';
+import EquiposPage from './modules/equipos/pages/EquiposPage';
+import EquipoDetailPage from './modules/equipos/pages/EquipoDetailPage';
+import EquipoFormPage from './modules/equipos/pages/EquipoFormPage';
+import EquipoEditPage from './modules/equipos/pages/EquipoEditPage';
+import AlarmasPage from './modules/alarmas/pages/AlarmasPage';
+import EventosPage from './modules/eventos/page/EventosPage';
+import MetricasPage from './modules/metricas/page/MetricasPage';
+import ConfiguracionPage from './modules/configuracion/page/ConfiguracionPage';
+import NotificacionesPage from './modules/notifications/page/NotificacionesPage';
+import { MinaPanel } from './dashboard/DashboardAreas/Mina/MinaPanel';
+import { PlantaPanel } from './dashboard/DashboardAreas/Planta/PlantaPanel';
+import { InfraestructuraPanel } from './dashboard/DashboardAreas/Infraestructura/InfraestructuraPanel';
+
+function DashboardRoute() {
+  const navigate = useNavigate();
+  return <Dashboard onNavigate={(page) => navigate(`/${page}`)} isConnected={null} />;
+}
+
+function EquiposRoute() {
+  const navigate = useNavigate();
+  return <EquiposPage onNavigate={(page, params) => {
+    if (page === 'equipo-detalle') navigate(`/equipos/${params.id}`);
+    else if (page === 'crear') navigate('/equipos/nuevo');
+    else navigate(`/${page}`);
+  }} />;
+}
+
+function EquipoDetailRoute() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  return <EquipoDetailPage
+    equipo={{ id: Number(id) }}
+    onNavigate={(page, params) => {
+      if (page === 'editar-equipo') navigate(`/equipos/${params.id}/editar`);
+      else navigate(`/${page}`);
+    }}
+    onBack={() => navigate('/equipos')}
+  />;
+}
+
+function EquipoFormRoute() {
+  const navigate = useNavigate();
+  return <EquipoFormPage onSuccess={() => navigate('/equipos')} onNavigate={(page) => navigate(`/${page}`)} />;
+}
+
+function EquipoEditRoute() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  return <EquipoEditPage equipo={{ id: Number(id) }} onNavigate={(page) => navigate(`/${page}`)} onBack={() => navigate(`/equipos/${id}`)} />;
+}
 
 export default function App() {
   return (
     <AppProvider>
-      <Router />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<DashboardRoute />} />
+          <Route path="/dashboard" element={<DashboardRoute />} />
+          <Route path="/equipos" element={<EquiposRoute />} />
+          <Route path="/equipos/nuevo" element={<EquipoFormRoute />} />
+          <Route path="/equipos/:id" element={<EquipoDetailRoute />} />
+          <Route path="/equipos/:id/editar" element={<EquipoEditRoute />} />
+          <Route path="/alarmas" element={<AlarmasPage onNavigate={() => {}} onBack={() => {}} />} />
+          <Route path="/eventos" element={<EventosPage onNavigate={() => {}} onBack={() => {}} />} />
+          <Route path="/metricas" element={<MetricasPage onNavigate={() => {}} onBack={() => {}} />} />
+          <Route path="/configuracion" element={<ConfiguracionPage onNavigate={() => {}} onBack={() => {}} />} />
+          <Route path="/notificaciones" element={<NotificacionesPage onNavigate={() => {}} onBack={() => {}} />} />
+          <Route path="/mina" element={<MinaPanel />} />
+          <Route path="/planta" element={<PlantaPanel />} />
+          <Route path="/infraestructura" element={<InfraestructuraPanel />} />
+          <Route path="*" element={<DashboardRoute />} />
+        </Routes>
+      </BrowserRouter>
     </AppProvider>
   );
-}
-
-function Router() {
-  const { current, navigate, goBack } = useApp();
-  const { screen, params } = current;
-  const [isConnected, setIsConnected] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetch('/api/equipos')
-      .then(r => setIsConnected(r.ok))
-      .catch(() => setIsConnected(false));
-    const iv = setInterval(() => {
-      fetch('/api/equipos')
-        .then(r => setIsConnected(r.ok))
-        .catch(() => setIsConnected(false));
-    }, 30000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const nav = (s: string, p?: any) => navigate(s, p);
-
-  switch (screen) {
-    case 'dashboard':     return <DashboardPage onNavigate={nav} isConnected={isConnected} />;
-    case 'equipos':       return <EquiposPage onNavigate={nav} />;
-    case 'crear':         return <EquipoFormPage onSuccess={() => navigate('equipos')} onNavigate={nav} />;
-    case 'equipo-detalle': return <EquipoDetailPage equipo={params} onNavigate={nav} onBack={goBack} />;
-    case 'editar-equipo': return <EquipoEditPage equipo={params} onNavigate={nav} onBack={goBack} />;
-    case 'alarmas':       return <AlarmasPage onNavigate={nav} onBack={goBack} />;
-    case 'mantenimiento': return <EventosPage onNavigate={nav} onBack={goBack} />;
-    case 'metricas':      return <MetricasPage onNavigate={nav} onBack={goBack} />;
-    case 'configuracion': return <ConfiguracionPage onNavigate={nav} onBack={goBack} />;
-    case 'notificaciones': return <NotificacionesPage onNavigate={nav} onBack={goBack} />;
-    default:              return <DashboardPage onNavigate={nav} isConnected={isConnected} />;
-  }
 }

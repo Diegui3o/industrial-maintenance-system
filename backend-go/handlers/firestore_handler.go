@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"backend/services"
+	"backend/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -46,4 +47,14 @@ func (h *FirestoreHandler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(data)
+}
+
+func (h *FirestoreHandler) ListIncidentes(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	docs, err := h.Service.ListIncidentes(ctx)
+	if err != nil {
+		utils.ErrorJSON(w, 500, "Error listando incidentes")
+		return
+	}
+	utils.SuccessJSON(w, 200, docs)
 }

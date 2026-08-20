@@ -1,0 +1,49 @@
+.area-panel {
+  max-width: 1200px;
+  margin: 24px auto;
+  width: 100%;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #DADDE3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.area-options {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--color-surface-muted, #F7F8FA);
+  border-bottom: 1px solid var(--color-border, #DADDE3);
+  flex-wrap: wrap;
+}
+
+.area-options button {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted, #8A919F);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.area-options button:hover {
+  color: var(--color-text-primary, #1F2329);
+  background: rgba(0,0,0,0.04);
+}
+
+.area-options button.active {
+  background: var(--color-primary, #C45A1A);
+  color: #fff;
+}
+
+.area-content {
+  padding: 28px;
+  font-size: 14px;
+  color: var(--color-text-primary, #1F2329);
+  text-align: left;
+}

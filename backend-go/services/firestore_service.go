@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 
+	"backend/models"
 	"backend/repository"
 )
 
@@ -29,4 +30,8 @@ func (s *FirestoreService) GetDocument(
 		collection,
 		documentID,
 	)
+}
+
+func (s *FirestoreService) ListIncidentes(ctx context.Context) ([]models.Incidente, error) {
+	return s.Repo.ListIncidentes(ctx)
 }

@@ -1,0 +1,65 @@
+.dashboard-summary {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  min-height: 92px;
+
+  padding: 16px 18px;
+
+  background: #151b1f;
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  border-radius: 4px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.summary-card:hover {
+  background: #181f23;
+
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+.summary-card-label {
+  font-size: 10px;
+
+  letter-spacing: 0.1em;
+
+  color: #7f898f;
+}
+
+.summary-card-value {
+  margin-top: 7px;
+
+  font-size: 25px;
+
+  line-height: 1;
+
+  font-weight: 500;
+
+  color: #e2e7e9;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-card-detail {
+  margin-top: 7px;
+
+  font-size: 10px;
+
+  color: #68747b;
+}

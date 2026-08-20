@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"backend/models"
 	"context"
 
 	"cloud.google.com/go/firestore"
+	"google.golang.org/api/iterator"
 )
 
 type FirestoreRepository struct {
@@ -32,4 +34,23 @@ func (r *FirestoreRepository) GetDocument(
 	}
 
 	return docSnap.Data(), nil
+}
+
+func (r *FirestoreRepository) ListIncidentes(ctx context.Context) ([]models.Incidente, error) {
+	iter := r.Client.Collection("incidentes").Documents(ctx)
+	var incidentes []models.Incidente
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var inc models.Incidente
+		doc.DataTo(&inc)
+		inc.ID = doc.Ref.ID
+		incidentes = append(incidentes, inc)
+	}
+	return incidentes, nil
 }

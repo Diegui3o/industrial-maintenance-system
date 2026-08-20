@@ -1,0 +1,15 @@
+.dashboard {
+  min-height: 100vh;
+
+  background: #0e1316;
+
+  color: #dce2e4;
+}
+
+.dashboard-main {
+  max-width: 1600px;
+
+  margin: 0 auto;
+
+  padding: 24px 28px 40px;
+}

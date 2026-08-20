@@ -1,0 +1,82 @@
+.dashboard-areas {
+  margin-bottom: 28px;
+}
+
+.dashboard-section-header {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.dashboard-section-title {
+  font-size: 11px;
+
+  font-weight: 500;
+
+  letter-spacing: 0.12em;
+
+  color: #b5bec2;
+}
+
+.dashboard-section-description {
+  margin-top: 4px;
+
+  font-size: 10px;
+
+  color: #68737a;
+}
+
+.area-tabs {
+  display: flex;
+
+  gap: 4px;
+
+  padding: 3px;
+
+  background: #11161a;
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  border-radius: 4px;
+}
+
+.area-tabs button {
+  border: 0;
+
+  background: transparent;
+
+  padding: 7px 14px;
+
+  font-family: inherit;
+
+  font-size: 9px;
+
+  letter-spacing: 0.08em;
+
+  color: #68747b;
+
+  cursor: pointer;
+
+  border-radius: 3px;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.area-tabs button:hover {
+  color: #aeb7bb;
+}
+
+.area-tabs button.active {
+  background: #20282d;
+
+  color: #d8dfe2;
+}
+
+.dashboard-area-content {
+  min-height: 280px;
+}

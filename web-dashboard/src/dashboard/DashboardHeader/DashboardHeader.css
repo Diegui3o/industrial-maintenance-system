@@ -1,0 +1,65 @@
+.dashboard-header {
+  min-height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 28px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  background: #11161a;
+}
+
+.dashboard-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-header-title {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #e5e9eb;
+}
+
+.dashboard-header-subtitle {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: #7f8a91;
+}
+
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.dashboard-system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #8d989e;
+}
+
+.dashboard-status-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #6d9b75;
+  box-shadow: 0 0 8px rgba(109, 155, 117, 0.45);
+}
+
+.dashboard-header-time {
+  font-size: 12px;
+  color: #9da6ab;
+  font-variant-numeric: tabular-nums;
+}

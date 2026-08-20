@@ -149,6 +149,7 @@ func SetupRoutes(
 	r.HandleFunc("/api/whatsapp/refresh", whatsappHandler.RefreshBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/asegurar-instancia", whatsappHandler.AsegurarInstancia).Methods("POST")
 
+	r.HandleFunc("/api/incidentes", firestoreHandler.ListIncidentes).Methods("GET")
 	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
 	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
