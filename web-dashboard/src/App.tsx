@@ -14,9 +14,27 @@ import { MinaPanel } from './dashboard/DashboardAreas/Mina/MinaPanel';
 import { PlantaPanel } from './dashboard/DashboardAreas/Planta/PlantaPanel';
 import { InfraestructuraPanel } from './dashboard/DashboardAreas/Infraestructura/InfraestructuraPanel';
 
+import { useEffect, useState } from 'react';
+
 function DashboardRoute() {
   const navigate = useNavigate();
-  return <Dashboard onNavigate={(page) => navigate(`/${page}`)} isConnected={null} />;
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/equipos')
+      .then(r => setIsConnected(r.ok))
+      .catch(() => setIsConnected(false));
+
+    const interval = setInterval(() => {
+      fetch('/api/equipos')
+        .then(r => setIsConnected(r.ok))
+        .catch(() => setIsConnected(false));
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return <Dashboard onNavigate={(page) => navigate(`/${page}`)} isConnected={isConnected} />;
 }
 
 function EquiposRoute() {
