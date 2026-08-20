@@ -5,6 +5,8 @@ import (
 
 	"backend/models"
 	"backend/repository"
+
+	"cloud.google.com/go/firestore"
 )
 
 type FirestoreService struct {
@@ -38,4 +40,16 @@ func (s *FirestoreService) ListIncidentes(ctx context.Context) ([]models.Inciden
 
 func (s *FirestoreService) ListarRequerimientos(ctx context.Context) ([]models.Requerimiento, error) {
 	return s.Repo.ListarRequerimientos(ctx)
+}
+
+func (s *FirestoreService) CrearDocumento(ctx context.Context, collection string, data map[string]interface{}) (*firestore.DocumentRef, *firestore.WriteResult, error) {
+	return s.Repo.CrearDocumento(ctx, collection, data)
+}
+
+func (s *FirestoreService) ActualizarDocumento(ctx context.Context, collection, id string, data map[string]interface{}) error {
+	return s.Repo.ActualizarDocumento(ctx, collection, id, data)
+}
+
+func (s *FirestoreService) EliminarDocumento(ctx context.Context, collection, id string) error {
+	return s.Repo.EliminarDocumento(ctx, collection, id)
 }

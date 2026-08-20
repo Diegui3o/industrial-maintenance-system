@@ -71,3 +71,60 @@ func (h *FirestoreHandler) ListarRequerimientos(w http.ResponseWriter, r *http.R
 	}
 	utils.SuccessJSON(w, http.StatusOK, requerimientos)
 }
+
+// CrearDocumento: POST /api/firestore/{collection}
+func (h *FirestoreHandler) CrearDocumento(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	collection := vars["collection"]
+
+	var data map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	docRef, _, err := h.Service.CrearDocumento(r.Context(), collection, data)
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusCreated, map[string]string{
+		"id":      docRef.ID,
+		"mensaje": "Documento creado",
+	})
+}
+
+// ActualizarDocumento: PUT /api/firestore/{collection}/{id}
+func (h *FirestoreHandler) ActualizarDocumento(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	collection := vars["collection"]
+	id := vars["id"]
+
+	var data map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	if err := h.Service.ActualizarDocumento(r.Context(), collection, id, data); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Documento actualizado"})
+}
+
+// EliminarDocumento: DELETE /api/firestore/{collection}/{id}
+func (h *FirestoreHandler) EliminarDocumento(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	collection := vars["collection"]
+	id := vars["id"]
+
+	if err := h.Service.EliminarDocumento(r.Context(), collection, id); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Documento eliminado"})
+}

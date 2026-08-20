@@ -144,3 +144,24 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   font-weight: 700;
 }
+
+.edit-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #daddde;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: #c45a1a10;
+  border-color: #c45a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(196, 90, 26, 0.15);
+}

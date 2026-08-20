@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { getRequerimientos } from '../../../../dashboard/services/dashboardApi';
 import { colors } from '../../../../theme/colors';
+import { getRequerimientos, updateFirestoreDoc } from '../../../../dashboard/services/dashboardApi';
+import { EditModal } from '../components/EditModal';
 
 interface Requerimiento {
+  id: string;
   id_numerico: number;
   fecha: string;
   nivel: string;
@@ -18,6 +20,7 @@ export function RequerimientosTab() {
   const [requerimientos, setRequerimientos] = useState<Requerimiento[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState<any>(null); // ← FALTABA
 
   useEffect(() => {
     loadRequerimientos();
@@ -64,6 +67,7 @@ export function RequerimientosTab() {
                 <th>Tipo</th>
                 <th>Descripción</th>
                 <th>Avance</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -95,10 +99,35 @@ export function RequerimientosTab() {
                       </span>
                     </div>
                   </td>
+                  <td>
+                    <button className="edit-btn" onClick={() => setEditItem(req)} title="Editar">✏️</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {editItem && (
+            <EditModal
+              title={`Editar Requerimiento #${editItem.id_numerico}`}
+              item={editItem}
+              fields={[
+                { key: 'nivel', label: 'Nivel' },
+                { key: 'referencia', label: 'Referencia' },
+                { key: 'tipo_de_requerimiento', label: 'Tipo' },
+                { key: 'descripcion_del_requerimiento', label: 'Descripción' },
+                { key: 'avance', label: 'Avance', type: 'number' },
+                { key: 'accion_realizada', label: 'Acción Realizada' },
+                { key: 'prioridad', label: 'Prioridad' },
+              ]}
+              onSave={async (data: any) => {
+                await updateFirestoreDoc('requerimientos', editItem.id, data);
+                setEditItem(null);
+                loadRequerimientos();
+              }}
+              onClose={() => setEditItem(null)}
+            />
+          )}
 
           {totalPages > 1 && (
             <div className="pagination">

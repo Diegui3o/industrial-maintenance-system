@@ -1,0 +1,53 @@
+.graficas-container {
+  padding: 20px;
+}
+
+.graficas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.graficas-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f1f4;
+  border-radius: 10px;
+}
+
+.graficas-tabs button {
+  padding: 9px 18px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5e6573;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s ease;
+}
+
+.graficas-tabs button:hover {
+  color: #1f2329;
+}
+
+.graficas-tabs button.active {
+  background: #ffffff;
+  color: #c45a1a;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.graficas-filtro {
+  padding: 8px 14px;
+  border: 1px solid #daddde;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1f2329;
+  background: #fff;
+  cursor: pointer;
+}

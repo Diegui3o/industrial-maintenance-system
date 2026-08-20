@@ -73,3 +73,17 @@ func (r *FirestoreRepository) ListarRequerimientos(ctx context.Context) ([]model
 
 	return requerimientos, nil
 }
+
+func (r *FirestoreRepository) CrearDocumento(ctx context.Context, collection string, data map[string]interface{}) (*firestore.DocumentRef, *firestore.WriteResult, error) {
+	return r.Client.Collection(collection).Add(ctx, data)
+}
+
+func (r *FirestoreRepository) ActualizarDocumento(ctx context.Context, collection, id string, data map[string]interface{}) error {
+	_, err := r.Client.Collection(collection).Doc(id).Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
+func (r *FirestoreRepository) EliminarDocumento(ctx context.Context, collection, id string) error {
+	_, err := r.Client.Collection(collection).Doc(id).Delete(ctx)
+	return err
+}

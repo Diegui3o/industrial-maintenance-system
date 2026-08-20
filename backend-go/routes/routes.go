@@ -151,6 +151,9 @@ func SetupRoutes(
 
 	r.HandleFunc("/api/incidentes", firestoreHandler.ListIncidentes).Methods("GET")
 	r.HandleFunc("/api/requerimientos", firestoreHandler.ListarRequerimientos).Methods("GET")
+	r.HandleFunc("/api/firestore/{collection}", firestoreHandler.CrearDocumento).Methods("POST")
+	r.HandleFunc("/api/firestore/{collection}/{id}", firestoreHandler.ActualizarDocumento).Methods("PUT")
+	r.HandleFunc("/api/firestore/{collection}/{id}", firestoreHandler.EliminarDocumento).Methods("DELETE")
 	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
 	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getIncidentes } from '../../../../dashboard/services/dashboardApi';
 import { colors } from '../../../../theme/colors';
+import { getIncidentes, updateFirestoreDoc } from '../../../../dashboard/services/dashboardApi';
+import { EditModal } from '../components/EditModal';
 
 interface Incidente {
   id_numerico: number;
@@ -18,6 +19,7 @@ export function IncidentesTab() {
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState<any>(null);
 
   useEffect(() => {
     loadIncidentes();
@@ -95,11 +97,35 @@ export function IncidentesTab() {
                       </span>
                     </div>
                   </td>
+                    <td>
+                      <button className="edit-btn" onClick={() => setEditItem(inc)} title="Editar">✏️</button>
+                    </td>
                 </tr>
+                
               ))}
             </tbody>
           </table>
-
+            {editItem && (
+              <EditModal
+                title={`Editar Incidente #${editItem.id_numerico}`}
+                item={editItem}
+                fields={[
+                  { key: 'nivel', label: 'Nivel' },
+                  { key: 'referencia', label: 'Referencia' },
+                  { key: 'sistema', label: 'Sistema' },
+                  { key: 'descripcion', label: 'Descripción' },
+                  { key: 'avance', label: 'Avance', type: 'number' },
+                  { key: 'accion_realizada', label: 'Acción Realizada' },
+                  { key: 'prioridad', label: 'Prioridad' },
+                ]}
+                onSave={async (data) => {
+                  await updateFirestoreDoc('incidentes', editItem.id, data);
+                  setEditItem(null);
+                  loadIncidentes();
+                }}
+                onClose={() => setEditItem(null)}
+              />
+            )}
           {totalPages > 1 && (
             <div className="pagination">
               <button
