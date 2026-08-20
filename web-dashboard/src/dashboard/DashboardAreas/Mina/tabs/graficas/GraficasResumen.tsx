@@ -1,62 +1,47 @@
-import { useGraficasData, type FiltroFecha } from './useGraficasData';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import type { FiltroFecha } from './useGraficasData';
+import { useGraficasData } from './useGraficasData';
+import { ChartCard } from '../../components/ChartCard';
+import { KpiCard } from '../../components/KpiCard';
 
-const COLORS = ['#C45A1A', '#2563A0', '#2D7A4C', '#B93636', '#A16207'];
+const ALERT_ICON = '⚠️';
+const CHECK_ICON = '✅';
+const CLIP_ICON = '📋';
+const MAP_ICON = '📍';
 
 export function GraficasResumen({ filtro }: { filtro: FiltroFecha }) {
   const { incidentes, requerimientos, loading } = useGraficasData(filtro);
 
-  if (loading) return <p>Cargando gráficas...</p>;
+  if (loading) return <p>Cargando...</p>;
 
   const totalInc = incidentes.length;
   const totalReq = requerimientos.length;
-  const completadosInc = incidentes.filter(i => i.avance === 100).length;
-  const completadosReq = requerimientos.filter(r => r.avance === 100).length;
-  const pendientesInc = totalInc - completadosInc;
-  const pendientesReq = totalReq - completadosReq;
+  const resueltosInc = incidentes.filter((i: any) => i.avance === 100).length;
+  const pendientesInc = totalInc - resueltosInc;
 
-  const dataPie = [
-    { name: 'Incidentes Completados', value: completadosInc },
-    { name: 'Incidentes Pendientes', value: pendientesInc },
-    { name: 'Req. Completados', value: completadosReq },
-    { name: 'Req. Pendientes', value: pendientesReq },
-  ];
+  // Calcular zona crítica
+  const zonasCount: Record<string, number> = {};
+  incidentes.forEach((inc: any) => {
+    const zona = inc.zona || 'Sin zona';
+    zonasCount[zona] = (zonasCount[zona] || 0) + 1;
+  });
+
+  const zonaCritica = Object.entries(zonasCount).sort((a, b) => b[1] - a[1])[0];
+  const zonaNombre: string = zonaCritica ? zonaCritica[0] : '—';
+  const zonaCantidad: number = zonaCritica ? zonaCritica[1] : 0;
 
   return (
-    <div className="graficas-grid">
-      <div className="kpi-row">
-        <div className="kpi-card">
-          <div className="kpi-label">Total Incidentes</div>
-          <div className="kpi-value">{totalInc}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Total Requerimientos</div>
-          <div className="kpi-value">{totalReq}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Completados</div>
-          <div className="kpi-value" style={{ color: '#2D7A4C' }}>{completadosInc + completadosReq}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Pendientes</div>
-          <div className="kpi-value" style={{ color: '#B93636' }}>{pendientesInc + pendientesReq}</div>
-        </div>
+    <div>
+      <div className="kpi-grid">
+        <KpiCard label="Incidentes" value={totalInc} tone="primary" icon={ALERT_ICON} hint="Fallas reportadas" />
+        <KpiCard label="Requerimientos" value={totalReq} icon={CLIP_ICON} hint="Solicitudes de trabajo" />
+        <KpiCard label="Resueltos" value={resueltosInc} tone="success" icon={CHECK_ICON} hint={`${totalInc - pendientesInc} cerrados`} />
+        <KpiCard label="Pendientes" value={pendientesInc} tone="warning" icon={CLIP_ICON} hint="Por atender" />
+        <KpiCard label="Zona crítica" value={zonaCantidad} suffix={zonaNombre} icon={MAP_ICON} hint="Con más incidentes" />
       </div>
 
-      <div className="grafica-card">
-        <h3>Distribución General</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie data={dataPie} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-              {dataPie.map((_, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartCard title="Distribución por sistema" subtitle="Incidencia proporcional por sistema de comunicación">
+        <p>Gráfica donut próximamente</p>
+      </ChartCard>
     </div>
   );
 }
