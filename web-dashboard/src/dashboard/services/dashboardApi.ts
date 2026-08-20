@@ -12,3 +12,10 @@ export const getMantenimientos = () => fetchJson<any[]>(`${BASE}/mantenimiento`)
 export const getRaices = () => fetchJson<any[]>(`${BASE}/equipos/raices`);
 export const getHijos = (id: number) => fetchJson<any[]>(`${BASE}/equipos/${id}/hijos`);
 export const getCriticos = () => fetchJson<any[]>(`${BASE}/equipos/criticos`);
+export const getRequerimientos = async (): Promise<any[]> => {
+  try {
+    return await fetchJson<any[]>('/api/requerimientos');
+  } catch {
+    return [];
+  }
+};

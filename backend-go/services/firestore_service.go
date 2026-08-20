@@ -35,3 +35,7 @@ func (s *FirestoreService) GetDocument(
 func (s *FirestoreService) ListIncidentes(ctx context.Context) ([]models.Incidente, error) {
 	return s.Repo.ListIncidentes(ctx)
 }
+
+func (s *FirestoreService) ListarRequerimientos(ctx context.Context) ([]models.Requerimiento, error) {
+	return s.Repo.ListarRequerimientos(ctx)
+}

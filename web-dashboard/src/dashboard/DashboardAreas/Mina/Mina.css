@@ -106,3 +106,41 @@
   color: #ffffff;
   cursor: default;
 }
+
+.area-options {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f1f4;
+  border: 1px solid #e0e2e6;
+  border-radius: 10px;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+
+.area-options button {
+  border: 0;
+  background: transparent;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #5e6573;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.area-options button:hover {
+  color: #1f2329;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.area-options button.active {
+  background: #ffffff;
+  color: #c45a1a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}

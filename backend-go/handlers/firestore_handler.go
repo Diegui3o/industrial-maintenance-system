@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"backend/models"
 	"backend/services"
 	"backend/utils"
 
@@ -57,4 +58,16 @@ func (h *FirestoreHandler) ListIncidentes(w http.ResponseWriter, r *http.Request
 		return
 	}
 	utils.SuccessJSON(w, 200, docs)
+}
+
+func (h *FirestoreHandler) ListarRequerimientos(w http.ResponseWriter, r *http.Request) {
+	requerimientos, err := h.Service.ListarRequerimientos(r.Context()) // ← Service
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error al listar requerimientos")
+		return
+	}
+	if requerimientos == nil {
+		requerimientos = []models.Requerimiento{}
+	}
+	utils.SuccessJSON(w, http.StatusOK, requerimientos)
 }

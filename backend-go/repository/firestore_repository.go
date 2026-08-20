@@ -54,3 +54,22 @@ func (r *FirestoreRepository) ListIncidentes(ctx context.Context) ([]models.Inci
 	}
 	return incidentes, nil
 }
+
+func (r *FirestoreRepository) ListarRequerimientos(ctx context.Context) ([]models.Requerimiento, error) {
+	docs, err := r.Client.Collection("requerimientos").Documents(ctx).GetAll() // ← Client
+	if err != nil {
+		return nil, err
+	}
+
+	var requerimientos []models.Requerimiento
+	for _, doc := range docs {
+		var req models.Requerimiento
+		if err := doc.DataTo(&req); err != nil {
+			continue
+		}
+		req.ID = doc.Ref.ID
+		requerimientos = append(requerimientos, req)
+	}
+
+	return requerimientos, nil
+}
