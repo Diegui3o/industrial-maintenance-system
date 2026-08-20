@@ -91,7 +91,7 @@ export default function LandingPage({ isConnected, onContinue }: Props) {
         position: 'relative',
         zIndex: 1,
       }}>
-        Mantenimiento Industrial
+        Mantenimiento Y OPERACIONES
       </p>
 
       {/* Connection badge */}

@@ -40,7 +40,7 @@ export function DashboardHeader({ isConnected }: DashboardHeaderProps) {
               NEXA RESOURCES
             </div>
             <div style={{ fontSize: 10, color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 }}>
-              Mantenimiento Industrial
+              Mantenimiento Y OPERACIONES
             </div>
           </div>
         </div>
