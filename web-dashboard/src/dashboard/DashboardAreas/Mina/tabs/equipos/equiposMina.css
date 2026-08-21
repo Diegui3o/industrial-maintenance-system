@@ -65,6 +65,10 @@
   animation: pulse 2s infinite;
 }
 
+.pausado {
+  animation: none !important;
+}
+
 .estado-activo { background: #2d7a4c; }
 .estado-inactivo { background: #8a919f; animation: none; }
 .estado-fallo { background: #b93636; }
@@ -115,54 +119,10 @@
   border-left: 4px solid #2d7a4c;
 }
 
-/* ============ TARJETA BASE ============ */
-.equipo-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 18px;
-  transition: all 0.25s ease;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
 .equipo-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   border-color: #c45a1a;
-}
-
-/* ============ BORDES POR ESTADO (SOLO BORDE EXTERIOR) ============ */
-.equipo-card.estado-activo {
-  border: 1px solid #2d7a4c;
-}
-
-.equipo-card.estado-inactivo {
-  border: 1px solid #8a919f;
-  opacity: 0.7;
-}
-
-.equipo-card.estado-fallo {
-  border: 1px solid #b93636;
-  animation: falloAlerta 1.5s ease-in-out infinite;
-}
-
-.equipo-card.estado-mantenimiento {
-  border: 1px solid #a16207;
-  animation: mantenimientoPulso 2s ease-in-out infinite;
-}
-
-/* ============ ANIMACIÓN CONGELADA ============ */
-.equipo-animacion.estado-inactivo svg *,
-.equipo-animacion.estado-inactivo .variador-aspa,
-.equipo-animacion.estado-inactivo .geofono-onda,
-.equipo-animacion.estado-inactivo .estacion-onda,
-.equipo-animacion.estado-inactivo .wapsi-onda {
-  animation: none !important;
-  opacity: 0.5;
 }
 
 /* ============ ANIMACIÓN FALLO ============ */
@@ -248,4 +208,79 @@
   font-size: 11px;
   color: #8a919f;
   font-family: monospace;
+}
+
+/* ============ TARJETA BASE ============ */
+.equipo-card {
+  background: #fff;
+  border: 3px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.equipo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ============ INDICADOR DE ESTADO ============ */
+.equipo-card.estado-activo {
+  border: 3px solid #2d7a4c;
+}
+
+.equipo-card.estado-inactivo {
+  border: 3px solid #8a919f;
+  opacity: 0.7;
+}
+
+.equipo-card.estado-fallo {
+  border: 3px solid #b93636;
+  animation: falloAlerta 1.5s ease-in-out infinite;
+}
+
+.equipo-card.estado-mantenimiento {
+  border: 3px solid #a16207;
+  animation: mantenimientoPulso 2s ease-in-out infinite;
+}
+
+/* ============ ANIMACIONES DE BORDE ============ */
+@keyframes falloAlerta {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(185, 54, 54, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(185, 54, 54, 0); }
+}
+
+@keyframes mantenimientoPulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(161, 98, 7, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(161, 98, 7, 0); }
+}
+
+/* ============ DETENER ANIMACIÓN EN FALLO ============ */
+.equipo-card.estado-fallo .equipo-animacion svg,
+.equipo-card.estado-fallo .equipo-animacion .variador-aspa {
+  animation: none !important;
+  opacity: 0.6;
+}
+.equipo-card.estado-fallo .equipo-animacion .geofono-onda,
+.equipo-card.estado-fallo .equipo-animacion .estacion-onda,
+.equipo-card.estado-fallo .equipo-animacion .wapsi-onda {
+  animation: none !important;
+  opacity: 0.6;
+}
+
+/* ============ ANIMACIONES DE BORDE ============ */
+@keyframes falloAlerta {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(185, 54, 54, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(185, 54, 54, 0); }
+}
+
+@keyframes mantenimientoPulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(161, 98, 7, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(161, 98, 7, 0); }
 }

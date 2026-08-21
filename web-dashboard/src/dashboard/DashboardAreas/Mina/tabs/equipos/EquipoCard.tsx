@@ -21,7 +21,7 @@ export function EquipoCard({ equipo, categoria }: Props) {
   const esActivo = estado === 'activo';
 
   return (
-    <div className={`equipo-card ${esActivo ? 'activo' : ''} estado-${estado}`}>
+    <div className={`equipo-card estado-${estado}`}>
       <div className="equipo-animacion">
         <Animacion size={60} activo={esActivo} />
       </div>

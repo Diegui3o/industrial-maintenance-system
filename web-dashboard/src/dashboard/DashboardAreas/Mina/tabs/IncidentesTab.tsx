@@ -1,43 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { colors } from '../../../../theme/colors';
-import { getIncidentes, updateFirestoreDoc } from '../../../../dashboard/services/dashboardApi';
+import { updateFirestoreDoc } from '../../../../dashboard/services/dashboardApi';
 import { EditModal } from '../components/EditModal';
-
-interface Incidente {
-  id_numerico: number;
-  fecha: string;
-  nivel: string;
-  referencia: string;
-  sistema: string;
-  descripcion: string;
-  avance: number;
-}
+import { useIncidentesCache } from '../hooks/useIncidentesCache';
 
 const PAGE_SIZE = 80;
 
 export function IncidentesTab() {
-  const [incidentes, setIncidentes] = useState<Incidente[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { incidentes, loading, ultimaCarga, refrescarDatos } = useIncidentesCache();
   const [page, setPage] = useState(1);
   const [editItem, setEditItem] = useState<any>(null);
-
-  useEffect(() => {
-    loadIncidentes();
-  }, []);
-
-  const loadIncidentes = async () => {
-    setLoading(true);
-    try {
-      const data = await getIncidentes();
-      const ordenados = data.sort((a: any, b: any) =>
-        new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-      );
-      setIncidentes(ordenados);
-    } catch {
-      setIncidentes([]);
-    }
-    setLoading(false);
-  };
 
   const totalPages = Math.ceil(incidentes.length / PAGE_SIZE);
   const paginados = incidentes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -53,6 +25,23 @@ export function IncidentesTab() {
 
   return (
     <div>
+      {/* Info de caché */}
+      <div style={{ fontSize: 11, color: '#8a919f', marginBottom: 12 }}>
+        {ultimaCarga && `📅 Última carga: ${ultimaCarga} · `}
+        <button
+          onClick={refrescarDatos}
+          style={{
+            cursor: 'pointer',
+            border: 'none',
+            background: 'none',
+            color: '#C45A1A',
+            fontWeight: 600,
+          }}
+        >
+          Refrescar ahora
+        </button>
+      </div>
+
       {paginados.length === 0 ? (
         <p>Sin incidentes</p>
       ) : (
@@ -66,6 +55,7 @@ export function IncidentesTab() {
                 <th>Sistema</th>
                 <th>Descripción</th>
                 <th>Avance</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -97,35 +87,36 @@ export function IncidentesTab() {
                       </span>
                     </div>
                   </td>
-                    <td>
-                      <button className="edit-btn" onClick={() => setEditItem(inc)} title="Editar">✏️</button>
-                    </td>
+                  <td>
+                    <button className="edit-btn" onClick={() => setEditItem(inc)} title="Editar">✏️</button>
+                  </td>
                 </tr>
-                
               ))}
             </tbody>
           </table>
-            {editItem && (
-              <EditModal
-                title={`Editar Incidente #${editItem.id_numerico}`}
-                item={editItem}
-                fields={[
-                  { key: 'nivel', label: 'Nivel' },
-                  { key: 'referencia', label: 'Referencia' },
-                  { key: 'sistema', label: 'Sistema' },
-                  { key: 'descripcion', label: 'Descripción' },
-                  { key: 'avance', label: 'Avance', type: 'number' },
-                  { key: 'accion_realizada', label: 'Acción Realizada' },
-                  { key: 'prioridad', label: 'Prioridad' },
-                ]}
-                onSave={async (data) => {
-                  await updateFirestoreDoc('incidentes', editItem.id, data);
-                  setEditItem(null);
-                  loadIncidentes();
-                }}
-                onClose={() => setEditItem(null)}
-              />
-            )}
+
+          {editItem && (
+            <EditModal
+              title={`Editar Incidente #${editItem.id_numerico}`}
+              item={editItem}
+              fields={[
+                { key: 'nivel', label: 'Nivel' },
+                { key: 'referencia', label: 'Referencia' },
+                { key: 'sistema', label: 'Sistema' },
+                { key: 'descripcion', label: 'Descripción' },
+                { key: 'avance', label: 'Avance', type: 'number' },
+                { key: 'accion_realizada', label: 'Acción Realizada' },
+                { key: 'prioridad', label: 'Prioridad' },
+              ]}
+              onSave={async (data: any) => {
+                await updateFirestoreDoc('incidentes', editItem.id, data);
+                setEditItem(null);
+                refrescarDatos();
+              }}
+              onClose={() => setEditItem(null)}
+            />
+          )}
+
           {totalPages > 1 && (
             <div className="pagination">
               <button
