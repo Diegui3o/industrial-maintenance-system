@@ -9,5 +9,6 @@ type DatoSensor struct {
 	Valor      float64   `json:"valor"`
 	Unidad     string    `json:"unidad"`
 	Fuente     string    `json:"fuente"`
+	Calidad    string    `json:"calidad"`
 	RecibidoEn time.Time `json:"recibido_en"`
 }

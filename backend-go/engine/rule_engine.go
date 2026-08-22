@@ -1,56 +1,166 @@
+// engine/rule_engine.go
 package engine
 
 import (
 	"fmt"
 	"log"
+	"time"
 
+	"backend/models"
 	"backend/repository"
 	"backend/services"
 )
 
 type RuleEngine struct {
-	ConfigRepo      *repository.ConfigRepository
-	SensorRepo      *repository.SensorRepository
-	AlarmaService   *services.AlarmaService
-	EventoService   *services.EventosService
-	NotifierService *services.NotifierService
-	EquipoRepo      *repository.EquipoRepository
-	Dispatcher      *services.DispatcherService
+	ConfigRepo         *repository.ConfigRepository
+	SensorRepo         *repository.SensorRepository
+	DecisionService    *services.DecisionService
+	AlarmaService      *services.AlarmaService
+	EventoService      *services.EventosService
+	NotifierService    *services.NotifierService
+	EquipoRepo         *repository.EquipoRepository
+	Dispatcher         *services.DispatcherService
+	TagDescubiertoRepo *repository.TagDescubiertoRepository
 }
 
-func (e *RuleEngine) ProcessSensorData(
-	equipoID int,
-	parametro string,
-	valor float64,
-	unidad string,
-	fuente string,
-) {
+func NewRuleEngine(
+	configRepo *repository.ConfigRepository,
+	sensorRepo *repository.SensorRepository,
+	decisionService *services.DecisionService,
+	alarmaService *services.AlarmaService,
+	eventoService *services.EventosService,
+	notifierService *services.NotifierService,
+	equipoRepo *repository.EquipoRepository,
+	dispatcher *services.DispatcherService,
+	tagDescubiertoRepo *repository.TagDescubiertoRepository,
+) *RuleEngine {
+	return &RuleEngine{
+		ConfigRepo:         configRepo,
+		SensorRepo:         sensorRepo,
+		DecisionService:    decisionService,
+		AlarmaService:      alarmaService,
+		EventoService:      eventoService,
+		NotifierService:    notifierService,
+		EquipoRepo:         equipoRepo,
+		Dispatcher:         dispatcher,
+		TagDescubiertoRepo: tagDescubiertoRepo,
+	}
+}
 
-	e.SensorRepo.GuardarDato(equipoID, parametro, valor, unidad, fuente)
+func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp time.Time) {
+	log.Printf("🔍 ProcessSensorData: Equipo=%d, Tag=%s, Valor=%.3f",
+		reading.EquipmentID, reading.TagName, reading.Value)
 
-	umbrales, err := e.ConfigRepo.ObtenerUmbrales(equipoID, parametro)
+	// ============================================
+	// 1. DATOS SIN EQUIPO → GUARDAR EN DESCUBIERTOS
+	// ============================================
+	if reading.EquipmentID <= 0 {
+		log.Printf("📌 Tag SIN EQUIPO detectado: %s = %.3f %s",
+			reading.TagName, reading.Value, reading.Unit)
+
+		// Verificar que TagName no esté vacío
+		if reading.TagName == "" {
+			log.Printf("⚠️ TagName vacío, ignorando")
+			return
+		}
+
+		// Guardar en tags_descubiertos
+		tag := &models.TagDescubierto{
+			TagName:             reading.TagName,
+			TagPath:             reading.ElementPath,
+			ElementName:         reading.ElementName,
+			ElementPath:         reading.ElementPath,
+			PIPointName:         reading.PIPointName,
+			Unidad:              reading.Unit,
+			UltimoValor:         reading.Value,
+			UltimaActualizacion: timestamp,
+			Source:              reading.Source,
+		}
+
+		err := e.TagDescubiertoRepo.Upsert(tag)
+		if err != nil {
+			log.Printf("❌ Error guardando tag descubierto: %v", err)
+		} else {
+			log.Printf("✅ Tag descubierto guardado: %s (frecuencia: %d)",
+				reading.TagName, tag.Frecuencia)
+		}
+		return
+
+	}
+
+	// ============================================
+	// 2. DATOS CON EQUIPO → GUARDAR NORMAL
+	// ============================================
+	decision := e.DecisionService.DecidirGuardado(reading, timestamp)
+
+	if decision.Guardar {
+		err := e.SensorRepo.GuardarDato(
+			reading.EquipmentID,
+			reading.TagName,
+			reading.Value,
+			reading.Unit,
+			reading.Source,
+			reading.Quality,
+			timestamp,
+		)
+		if err != nil {
+			log.Printf("❌ Error guardando dato: %v", err)
+		} else {
+			log.Printf("✅ Dato GUARDADO: Equipo=%d, %s=%.3f %s",
+				reading.EquipmentID, reading.TagName, reading.Value, reading.Unit)
+		}
+	} else {
+		log.Printf("⏭️ Dato NO guardado: Equipo=%d, %s=%.3f %s (motivo: %s)",
+			reading.EquipmentID, reading.TagName, reading.Value, reading.Unit, decision.Motivo)
+	}
+
+	// ============================================
+	// 3. ACTUALIZAR ÚLTIMO VALOR (SIEMPRE)
+	// ============================================
+	e.SensorRepo.ActualizarUltimoValor(
+		reading.EquipmentID,
+		reading.TagName,
+		reading.Value,
+		reading.Unit,
+		reading.Source,
+		reading.Quality,
+		timestamp,
+	)
+
+	// ============================================
+	// 4. EVALUAR UMBRALES (ALARMAS)
+	// ============================================
+	umbrales, err := e.ConfigRepo.ObtenerUmbrales(reading.EquipmentID, reading.TagName)
 	if err != nil || umbrales == nil {
 		return
 	}
-	evaluator := &ConditionEvaluator{}
-	estado, excedido := evaluator.Evaluate(umbrales.UmbralMin, umbrales.UmbralMax, valor)
 
-	if !excedido {
-		return
+	if (umbrales.UmbralMin != nil && reading.Value < *umbrales.UmbralMin) ||
+		(umbrales.UmbralMax != nil && reading.Value > *umbrales.UmbralMax) {
+
+		log.Printf("🚨 ALARMA: %s = %.3f está fuera de rango", reading.TagName, reading.Value)
+
+		evento := &models.DatoEvento{
+			EquipoID:        reading.EquipmentID,
+			TipoEvento:      "alarma",
+			Descripcion:     fmt.Sprintf("%s = %.3f %s (fuera de rango)", reading.TagName, reading.Value, reading.Unit),
+			ValorNuevo:      &reading.Value,
+			Parametro:       reading.TagName,
+			TimestampEvento: timestamp,
+		}
+		e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento)
+
+		if e.EventoService != nil {
+			e.EventoService.CambiarEstadoEquipo(reading.EquipmentID, "fallo",
+				"Valor fuera de rango: "+reading.TagName)
+		}
+
+		if e.AlarmaService != nil {
+			motivoAlarma := fmt.Sprintf("%s = %.3f %s (fuera de rango)",
+				reading.TagName, reading.Value, reading.Unit)
+			e.AlarmaService.GenerarAlarmaPorFallo(reading.EquipmentID, motivoAlarma)
+		}
 	}
-
-	motivo := fmt.Sprintf("%s %s: %.2f %s (límite: %.2f %s)",
-		parametro, estado, valor, unidad, *umbrales.UmbralMax, unidad)
-
-	err = e.EventoService.CambiarEstadoEquipo(equipoID, "fallo", motivo)
-	if err != nil {
-		log.Printf("Error cambiando estado: %v", err)
-		return
-	}
-
-	e.NotifierService.NotificarFalloEquipo(equipoID, motivo, umbrales.Severidad)
-	e.Dispatcher.Dispatch(equipoID, "fallo", umbrales.Severidad, motivo)
-	log.Printf("🚨 Equipo %d en FALLO por %s", equipoID, parametro)
 }
 
 func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetries int) {

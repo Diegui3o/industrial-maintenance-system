@@ -180,3 +180,39 @@ func (h *EquipoHandler) ListarCriticos(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.SuccessJSON(w, http.StatusOK, equipos)
 }
+
+func (h *EquipoHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
+	// Usar ConfigRepo que ya tiene acceso a DB
+	rows, err := h.ConfigRepo.DB.Query(`
+		SELECT DISTINCT parametro, unidad 
+		FROM datos_sensores 
+		WHERE equipo_id = $1
+		ORDER BY parametro
+	`, id)
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags")
+		return
+	}
+	defer rows.Close()
+
+	var tags []map[string]string
+	for rows.Next() {
+		var parametro, unidad string
+		if err := rows.Scan(&parametro, &unidad); err != nil {
+			continue
+		}
+		tags = append(tags, map[string]string{
+			"parametro": parametro,
+			"unidad":    unidad,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error iterando resultados")
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, tags)
+}

@@ -37,18 +37,18 @@ namespace IndustrialConnector.Services
                 else
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("❌ Error HTTP {StatusCode}: {Error}", response.StatusCode, errorBody);
+                    _logger.LogError(" Error HTTP {StatusCode}: {Error}", response.StatusCode, errorBody);
                     return false;
                 }
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "❌ Error de red al enviar datos");
+                _logger.LogError(ex, " Error de red al enviar datos");
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error inesperado en SendDataAsync");
+                _logger.LogError(ex, " Error inesperado en SendDataAsync");
                 return false;
             }
         }

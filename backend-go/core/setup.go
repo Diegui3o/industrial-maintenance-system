@@ -20,6 +20,8 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 	auditoriaRepo := repository.NewAuditoriaRepository(db)
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	notifRepo := repository.NewNotificacionRepository(db)
+	configGuardadoRepo := repository.NewConfigGuardadoRepository(db)
+	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
 
 	// Crear manager de WhatsApp (multi‑instancia)
 	whatsappManager := services.NewWhatsAppManager(db, whatsappRepo)
@@ -29,6 +31,7 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	dispatcherService := services.NewDispatcherService(notifRepo, equipoRepo)
+	decisionService := services.NewDecisionService(configGuardadoRepo, sensorRepo)
 
 	notifierService := &services.NotifierService{
 		WhatsApp:   nil,
@@ -44,7 +47,6 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		whatsappRepo,
 		equipoRepo,
 	)
-
 	eventosService := services.NewEventosService(
 		eventosRepo,
 		equipoRepo,
@@ -53,16 +55,21 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		whatsappNotificationService,
 	)
 
-	ruleEngine := &engine.RuleEngine{
-		ConfigRepo:      configRepo,
-		SensorRepo:      sensorRepo,
-		AlarmaService:   alarmaService,
-		EventoService:   eventosService,
-		NotifierService: notifierService,
-		EquipoRepo:      equipoRepo,
-		Dispatcher:      dispatcherService,
-	}
+	ruleEngine := engine.NewRuleEngine(
+		configRepo,
+		sensorRepo,
+		decisionService,
+		alarmaService,
+		eventosService,
+		notifierService,
+		equipoRepo,
+		dispatcherService,
+		tagDescubiertoRepo,
+	)
 
+	// ============================================
+	// SCHEDULER
+	// ============================================
 	sched := scheduler.NewScheduler(configRepo, ruleEngine)
 	log.Println("Scheduler inicializado")
 

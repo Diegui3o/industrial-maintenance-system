@@ -39,6 +39,9 @@ func SetupRoutes(
 	firestoreRepo := repository.NewFirestoreRepository(
 		firestoreClient,
 	)
+	sensorRepo := repository.NewSensorRepository(db)
+	piTagRepo := repository.NewPITagRepository(db)
+	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
 
 	// ============================================
 	// SERVICES
@@ -54,6 +57,7 @@ func SetupRoutes(
 	firestoreService := services.NewFirestoreService(
 		firestoreRepo,
 	)
+	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
 
 	// ============================================
 	// HANDLERS
@@ -78,12 +82,15 @@ func SetupRoutes(
 		Manager: whatsappManager,
 		DB:      db,
 	}
-	sensorHandler := handlers.NewSensorHandler(ruleEngine)
+	tiempoRealHandler := handlers.NewTiempoRealHandler(sensorRepo)
+	sensorHandler := handlers.NewSensorHandler(ruleEngine, tagDescubiertoRepo)
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 	firestoreHandler := handlers.NewFirestoreHandler(
 		firestoreService,
 	)
+	piTagHandler := handlers.NewPITagHandler(piTagService)
+	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
 
 	// ============================================
 	// RUTAS
@@ -148,6 +155,23 @@ func SetupRoutes(
 	r.HandleFunc("/api/whatsapp/reiniciar", whatsappHandler.ReiniciarBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/refresh", whatsappHandler.RefreshBot).Methods("POST")
 	r.HandleFunc("/api/whatsapp/asegurar-instancia", whatsappHandler.AsegurarInstancia).Methods("POST")
+
+	r.HandleFunc("/equipos/{id}/tiempo-real", tiempoRealHandler.GetUltimosValores).Methods("GET")
+	r.HandleFunc("/equipos/{id}/tiempo-real/{parametro}", tiempoRealHandler.GetUltimoValor).Methods("GET")
+	r.HandleFunc("/equipos/{id}/historico/{parametro}", tiempoRealHandler.GetHistoricoTag).Methods("GET")
+	r.HandleFunc("/equipos/{id}/tags", tiempoRealHandler.GetTagsByEquipo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/tags", equipoHandler.GetTagsByEquipo).Methods("GET")
+	r.HandleFunc("/api/pi/tags/sin-equipo", piTagHandler.GetTagsSinEquipo).Methods("GET")
+	r.HandleFunc("/api/pi/tags/sugerencias", piTagHandler.GetSugerenciasAgrupacion).Methods("GET")
+	r.HandleFunc("/api/pi/tags/asignar", piTagHandler.AsignarTagsEquipo).Methods("POST")
+	r.HandleFunc("/api/pi/tags/crear-equipo", piTagHandler.CrearEquipoConTags).Methods("POST")
+	r.HandleFunc("/api/pi/tags/equipo/{id}", piTagHandler.GetTagsByEquipo).Methods("GET")
+
+	r.HandleFunc("/api/pi/tags/descubiertos", tagDescubiertoHandler.GetTagsDescubiertos).Methods("GET")
+	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.GetTagDescubierto).Methods("GET")
+	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.EliminarTag).Methods("DELETE")
+	r.HandleFunc("/api/pi/tags/asignar", tagDescubiertoHandler.AsignarTag).Methods("POST")
+	r.HandleFunc("/api/pi/tags/asignar-multiple", tagDescubiertoHandler.AsignarMultiplesTags).Methods("POST")
 
 	r.HandleFunc("/api/incidentes", firestoreHandler.ListIncidentes).Methods("GET")
 	r.HandleFunc("/api/requerimientos", firestoreHandler.ListarRequerimientos).Methods("GET")

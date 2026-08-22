@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"time"
 
 	"backend/models"
 	"backend/services"
@@ -51,21 +53,29 @@ func (h *FirestoreHandler) GetDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FirestoreHandler) ListIncidentes(w http.ResponseWriter, r *http.Request) {
+	log.Printf("🔥 FIRESTORE: ListIncidentes llamado a las %s desde %s", time.Now().Format("15:04:05"), r.RemoteAddr)
+
 	ctx := r.Context()
 	docs, err := h.Service.ListIncidentes(ctx)
 	if err != nil {
+		log.Printf("❌ Error listando incidentes: %v", err)
 		utils.ErrorJSON(w, 500, "Error listando incidentes")
 		return
 	}
+	log.Printf("✅ ListIncidentes devolvió %d documentos", len(docs))
 	utils.SuccessJSON(w, 200, docs)
 }
 
 func (h *FirestoreHandler) ListarRequerimientos(w http.ResponseWriter, r *http.Request) {
-	requerimientos, err := h.Service.ListarRequerimientos(r.Context()) // ← Service
+	log.Printf("🔥 FIRESTORE: ListarRequerimientos llamado a las %s desde %s", time.Now().Format("15:04:05"), r.RemoteAddr)
+
+	requerimientos, err := h.Service.ListarRequerimientos(r.Context())
 	if err != nil {
+		log.Printf("❌ Error listando requerimientos: %v", err)
 		utils.ErrorJSON(w, http.StatusInternalServerError, "Error al listar requerimientos")
 		return
 	}
+	log.Printf("✅ ListarRequerimientos devolvió %d documentos", len(requerimientos))
 	if requerimientos == nil {
 		requerimientos = []models.Requerimiento{}
 	}

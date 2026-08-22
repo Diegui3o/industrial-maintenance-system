@@ -39,7 +39,6 @@ func NewScheduler(configRepo *repository.ConfigRepository, ruleEngine *engine.Ru
 func (s *Scheduler) Start() {
 	log.Println("Scheduler iniciado")
 	go s.pingLoop()
-	go s.piSystemLoop()
 	select {}
 }
 
@@ -127,20 +126,5 @@ func (s *Scheduler) pingLoop() {
 
 			time.Sleep(s.intervaloActual[equipoID])
 		}
-	}
-}
-
-func (s *Scheduler) piSystemLoop() {
-	// ... sin cambios
-	for {
-		fuentes, err := s.ConfigRepo.ObtenerFuentesActivas("pisystem")
-		if err != nil {
-			time.Sleep(30 * time.Second)
-			continue
-		}
-		for _, fuente := range fuentes {
-			_ = fuente
-		}
-		time.Sleep(60 * time.Second)
 	}
 }

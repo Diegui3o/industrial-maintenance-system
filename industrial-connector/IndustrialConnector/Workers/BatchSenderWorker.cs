@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +20,6 @@ namespace IndustrialConnector.Workers
         private readonly ExporterService _exporter;
         private readonly HealthService _health;
         private readonly GoBackendConfig _config;
-
         private readonly int _batchSize;
 
         public BatchSenderWorker(
@@ -33,155 +34,97 @@ namespace IndustrialConnector.Workers
             _exporter = exporter;
             _health = health;
             _config = config.Value;
-
-            _batchSize =
-                _config.BatchSize > 0
-                    ? _config.BatchSize
-                    : 50;
+            _batchSize = _config.BatchSize > 0 ? _config.BatchSize : 50;
         }
 
-        protected override async Task ExecuteAsync(
-            CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation(
-                "📤 Batch Sender iniciado");
-
-            _logger.LogInformation(
-                "📦 Batch size: {BatchSize}, Intervalo: {Interval}ms",
-                _batchSize,
-                _config.SendIntervalMs);
+            _logger.LogInformation("📤 Batch Sender iniciado");
+            _logger.LogInformation("📦 Batch size: {BatchSize}, Intervalo: {Interval}ms",
+                _batchSize, _config.SendIntervalMs);
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var batch = new List<SensorReading>();
-
                 try
                 {
-                    // =================================================
-                    // OBTENER DATOS DEL BUFFER
-                    // =================================================
-
-                    batch = _buffer.GetBatch(_batchSize);
-
+                    var batch = _buffer.GetBatch(_batchSize);
                     _health.UpdateBufferCount(_buffer.Count);
 
-                    if (batch.Count == 0)
+                    if (batch.Count > 0)
                     {
-                        await Task.Delay(
-                            _config.SendIntervalMs,
-                            stoppingToken);
-
-                        continue;
-                    }
-
-                    // =================================================
-                    // ENVIAR LOTE
-                    // =================================================
-
-                    var success = await SendBatchAsync(batch);
-
-                    if (success)
-                    {
-                        _health.RegisterSentReadings(
-                            batch.Count,
-                            _buffer.Count);
-
-                        _logger.LogInformation(
-                            "✅ Enviados {Count} eventos al backend | Buffer: {Buffer}",
-                            batch.Count,
-                            _buffer.Count);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "⚠️ No se pudo enviar el lote de {Count} eventos",
-                            batch.Count);
-
-                        // Devolver datos al buffer
-                        foreach (var item in batch)
+                        var success = await SendBatchAsync(batch);
+                        if (success)
                         {
-                            _buffer.Store(item);
+                            _logger.LogInformation("✅ Enviados {Count} eventos al backend | Buffer: {Buffer}",
+                                batch.Count, _buffer.Count);
                         }
-
-                        _health.UpdateBufferCount(
-                            _buffer.Count);
+                        else
+                        {
+                            _logger.LogWarning("⚠️ Falló envío de {Count} eventos, reintentando", batch.Count);
+                            // Los eventos ya se devolvieron al buffer dentro de SendBatchAsync
+                        }
                     }
 
-                    await Task.Delay(
-                        _config.SendIntervalMs,
-                        stoppingToken);
+                    await Task.Delay(_config.SendIntervalMs, stoppingToken);
                 }
-                catch (OperationCanceledException)
-                    when (stoppingToken.IsCancellationRequested)
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(
-                        ex,
-                        "❌ Falló envío de {Count} eventos",
-                        batch.Count);
-
-                    // =================================================
-                    // DEVOLVER LOTE AL BUFFER
-                    // =================================================
-
-                    foreach (var item in batch)
-                    {
-                        _buffer.Store(item);
-                    }
-
-                    _health.UpdateBufferCount(
-                        _buffer.Count);
-
-                    try
-                    {
-                        await Task.Delay(
-                            _config.SendIntervalMs,
-                            stoppingToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
+                    _logger.LogError(ex, "❌ Error en ciclo de Batch Sender");
+                    await Task.Delay(5000, stoppingToken);
                 }
             }
 
-            _logger.LogInformation(
-                "📤 Batch Sender detenido");
+            _logger.LogInformation("📤 Batch Sender detenido");
         }
 
-        // =========================================================
-        // ENVIAR LOTE AL BACKEND
-        // =========================================================
-
-        private async Task<bool> SendBatchAsync(
-            List<SensorReading> batch)
+        private async Task<bool> SendBatchAsync(List<SensorReading> batch)
         {
             if (batch == null || batch.Count == 0)
-            {
                 return true;
-            }
 
             try
             {
-                var jsonData =
-                    JsonSerializer.Serialize(batch);
+                var json = JsonSerializer.Serialize(batch, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = false
+                });
 
-                var success =
-                    await _exporter.SendDataAsync(
-                        jsonData,
-                        _config.ApiKey);
+                if (json.Length > 0)
+                {
+                    var preview = json.Length > 500 ? json.Substring(0, 500) + "..." : json;
+                    _logger.LogInformation($"📤 JSON a enviar: {preview}");
+                }
 
-                return success;
+                var success = await _exporter.SendDataAsync(json, _config.ApiKey);
+
+                if (success)
+                {
+                    // ============================================
+                    // USAR MÉTODOS DE HEALTH SERVICE
+                    // ============================================
+                    _health.RegisterSentReadings(batch.Count, _buffer.Count);
+                    _health.UpdateBufferCount(_buffer.Count);
+                    return true;
+                }
+                else
+                {
+                    foreach (var item in batch)
+                        _buffer.Store(item);
+                    _health.UpdateBufferCount(_buffer.Count);
+                    return false;
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "❌ Error serializando/enviando lote");
-
+                _logger.LogError(ex, "❌ Error enviando batch");
+                foreach (var item in batch)
+                    _buffer.Store(item);
+                _health.UpdateBufferCount(_buffer.Count);
                 return false;
             }
         }

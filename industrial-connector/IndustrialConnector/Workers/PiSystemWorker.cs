@@ -13,18 +13,6 @@ using OSIsoft.AF.Asset;
 
 namespace IndustrialConnector.Workers
 {
-    /// <summary>
-    /// Worker principal encargado de:
-    ///
-    /// 1. Conectar al PI System.
-    /// 2. Descubrir elementos.
-    /// 3. Descubrir atributos.
-    /// 4. Clasificar atributos.
-    /// 5. Leer únicamente atributos monitoreables.
-    /// 6. Colocar las lecturas en el buffer.
-    ///
-    /// No conoce detalles del backend Go.
-    /// </summary>
     public class PiSystemWorker : BackgroundService
     {
         private readonly PiConnectionService _connection;
@@ -39,7 +27,6 @@ namespace IndustrialConnector.Workers
         private readonly PiSystemConfig _config;
         private readonly PiDataPipeService _dataPipe;
         private int _errorCount = 0;
-
         private const int MaxErrors = 3;
 
         public PiSystemWorker(
@@ -68,11 +55,9 @@ namespace IndustrialConnector.Workers
             _config = config.Value;
         }
 
-        protected override async Task ExecuteAsync(
-            CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation(
-                "🔌 PI System Worker iniciado");
+            _logger.LogInformation("🔌 PI System Worker iniciado - MODO COMPLETO (todos los atributos)");
 
             // =====================================================
             // 1. CONEXIÓN
@@ -81,14 +66,10 @@ namespace IndustrialConnector.Workers
             if (!_connection.IsConnected)
             {
                 var connected = _connection.Connect();
-
                 _health.SetPiSystemConnected(connected);
-
                 if (!connected)
                 {
-                    _logger.LogError(
-                        "❌ No se pudo conectar al PI System.");
-
+                    _logger.LogError("❌ No se pudo conectar al PI System.");
                     return;
                 }
             }
@@ -99,14 +80,10 @@ namespace IndustrialConnector.Workers
             // 2. OBTENER DATABASE
             // =====================================================
 
-            var database = _database.GetDatabase(
-                _config.Database);
-
+            var database = _database.GetDatabase(_config.Database);
             if (database == null)
             {
-                _logger.LogError(
-                    "❌ No se pudo obtener la AF Database.");
-
+                _logger.LogError("❌ No se pudo obtener la AF Database.");
                 return;
             }
 
@@ -114,19 +91,12 @@ namespace IndustrialConnector.Workers
             // 3. DISCOVERY DE ELEMENTOS
             // =====================================================
 
-            var elements = _discovery.DiscoverElements(
-                _config.Database,
-                _config.RootElement);
-
-            _logger.LogInformation(
-                "🔎 Elementos descubiertos: {Count}",
-                elements.Count);
+            var elements = _discovery.DiscoverElements(_config.Database, _config.RootElement);
+            _logger.LogInformation("🔎 Elementos descubiertos: {Count}", elements.Count);
 
             if (elements.Count == 0)
             {
-                _logger.LogWarning(
-                    "⚠️ No se encontraron elementos.");
-
+                _logger.LogWarning("⚠️ No se encontraron elementos.");
                 return;
             }
 
@@ -134,97 +104,52 @@ namespace IndustrialConnector.Workers
             // 4. DISCOVERY DE ATRIBUTOS
             // =====================================================
 
-            var attributeInfos =
-                _attributeDiscovery.DiscoverAttributes(
-                    elements,
-                    _config.Server,
-                    _config.Database);
-
-            _logger.LogInformation(
-                "🏷️ Atributos descubiertos: {Count}",
-                attributeInfos.Count);
+            var attributeInfos = _attributeDiscovery.DiscoverAttributes(elements, _config.Server, _config.Database);
+            _logger.LogInformation("🏷️ Atributos descubiertos: {Count}", attributeInfos.Count);
 
             // =====================================================
-            // 5. CLASIFICACIÓN DE ATRIBUTOS
+            // 5. CLASIFICACIÓN
             // =====================================================
 
-            var classified =
-                _classifier.ClassifyAll(attributeInfos);
-
-            var criticalCount =
-                classified[PiAttributePriority.Critical].Count;
-
-            var importantCount =
-                classified[PiAttributePriority.Important].Count;
-
-            var normalCount =
-                classified[PiAttributePriority.Normal].Count;
-
-            var ignoredCount =
-                classified[PiAttributePriority.Ignore].Count;
-
-            _logger.LogInformation(
-                "📊 Clasificación PI: Critical={Critical}, Important={Important}, Normal={Normal}, Ignore={Ignore}",
-                criticalCount,
-                importantCount,
-                normalCount,
-                ignoredCount);
+            var classified = _classifier.ClassifyAll(attributeInfos);
+            _logger.LogInformation("📊 Clasificación PI: Critical={Critical}, Important={Important}, Normal={Normal}, Ignore={Ignore}",
+                classified[PiAttributePriority.Critical].Count,
+                classified[PiAttributePriority.Important].Count,
+                classified[PiAttributePriority.Normal].Count,
+                classified[PiAttributePriority.Ignore].Count);
 
             // =====================================================
-            // 6. CONSTRUIR ÍNDICE DE ATRIBUTOS MONITOREABLES
-            // =====================================================
-            //
-            // Guardamos los FullPath que fueron clasificados como
-            // Critical, Important o Normal.
-            //
-            // Ignore queda fuera del ciclo de lectura.
-
-            var monitoredPaths =
-                new HashSet<string>(
-                    classified
-                        .Where(x =>
-                            x.Key == PiAttributePriority.Critical ||
-                            x.Key == PiAttributePriority.Important ||
-                            x.Key == PiAttributePriority.Normal)
-                        .SelectMany(x => x.Value)
-                        .Select(x => x.FullPath),
-                    StringComparer.OrdinalIgnoreCase);
-
-            _logger.LogInformation(
-                "👁️ Atributos seleccionados para monitoreo: {Count}",
-                monitoredPaths.Count);
-
-            // =====================================================
-            // 7. CONSTRUIR LISTA REAL DE ATRIBUTOS
+            // 6. MONITOREAR TODOS LOS ATRIBUTOS (excepto Ignore)
             // =====================================================
 
-            var monitoredAttributes =
-                new List<AFAttribute>();
+            var monitoredPaths = new HashSet<string>(
+                classified
+                    .Where(x => x.Key != PiAttributePriority.Ignore)
+                    .SelectMany(x => x.Value)
+                    .Select(x => x.FullPath),
+                StringComparer.OrdinalIgnoreCase);
 
+            _logger.LogInformation("👁️ Atributos seleccionados para monitoreo: {Count}", monitoredPaths.Count);
+
+            // =====================================================
+            // 7. CONSTRUIR LISTA DE ATRIBUTOS
+            // =====================================================
+
+            var monitoredAttributes = new List<AFAttribute>();
             foreach (var element in elements)
             {
                 foreach (AFAttribute attribute in element.Attributes)
                 {
-                    if (attribute.DataReference == null)
+                    if (attribute.DataReference == null) continue;
+                    var fullPath = $"{element.GetPath()}/{attribute.Name}";
+                    if (monitoredPaths.Contains(fullPath))
                     {
-                        continue;
+                        monitoredAttributes.Add(attribute);
                     }
-
-                    var fullPath =
-                        $"{element.GetPath()}/{attribute.Name}";
-
-                    if (!monitoredPaths.Contains(fullPath))
-                    {
-                        continue;
-                    }
-
-                    monitoredAttributes.Add(attribute);
                 }
             }
 
-            _logger.LogInformation(
-                "👁️ Atributos enviados a DataPipe: {Count}",
-                monitoredAttributes.Count);
+            _logger.LogInformation("📡 Atributos enviados a DataPipe: {Count}", monitoredAttributes.Count);
 
             // =====================================================
             // 8. INICIALIZAR DATAPIPE
@@ -232,67 +157,73 @@ namespace IndustrialConnector.Workers
 
             if (!_dataPipe.Initialize(monitoredAttributes))
             {
-                _logger.LogError(
-                    "❌ No se pudo inicializar AFDataPipe.");
-
+                _logger.LogError("❌ No se pudo inicializar AFDataPipe.");
                 _health.SetPiSystemConnected(false);
-
                 return;
             }
 
-            _logger.LogInformation(
-                "🚀 Monitoreo PI mediante AFDataPipe iniciado.");
+            _logger.LogInformation("🚀 Monitoreo PI iniciado - ENVIANDO TODOS LOS DATOS al buffer");
 
             // =====================================================
-            // 9. CICLO DE EVENTOS
+            // 9. CICLO DE EVENTOS - SIN FILTROS
             // =====================================================
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    var events =
-                        _dataPipe.GetEvents();
+                    var events = _dataPipe.GetEvents();
+                    var readings = new List<SensorReading>();
 
-                    var readings =
-                        new List<SensorReading>();
-
-                    foreach (var dataPipeEvent in events)
+                foreach (var dataPipeEvent in events)
+                {
+                    try
                     {
-                        try
+                        var attribute = dataPipeEvent.Value?.Attribute;
+                        var value = dataPipeEvent.Value;
+
+                        if (attribute == null || value == null)
                         {
-                            var attribute =
-                                dataPipeEvent.Value?.Attribute;
+                            continue;
+                        }
 
-                            var value =
-                                dataPipeEvent.Value;
+                        var reading = _reader.Read(attribute, value, _config.Server, _config.Database);
+                        
+                        if (reading == null)
+                        {
+                            continue;
+                        }
 
-                            if (attribute == null ||
-                                value == null)
+                        // ============================================
+                        // VALIDAR QUE TENGAMOS TAG NAME
+                        // ============================================
+                        if (string.IsNullOrWhiteSpace(reading.TagName))
+                        {
+                            // Intentar obtener el nombre del atributo
+                            if (!string.IsNullOrWhiteSpace(attribute.Name))
                             {
+                                reading.TagName = attribute.Name;
+                            }
+                            else if (attribute.Element != null)
+                            {
+                                reading.TagName = attribute.Element.Name;
+                            }
+                            else
+                            {
+                                _logger.LogDebug("⏭️ Reading sin TagName ignorado");
                                 continue;
                             }
-
-                            var reading =
-                                _reader.Read(
-                                    attribute,
-                                    value,
-                                    _config.Server,
-                                    _config.Database);
-
-                            if (reading != null)
-                            {
-                                readings.Add(reading);
-                            }
                         }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(
-                                ex,
-                                "⚠️ Error procesando evento DataPipe.");
-                        }
+
+                        readings.Add(reading);
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "⚠️ Error procesando evento DataPipe.");
+                    }
+                }
 
+                    // Guardar TODAS las lecturas en el buffer
                     foreach (var reading in readings)
                     {
                         _buffer.Store(reading);
@@ -300,26 +231,12 @@ namespace IndustrialConnector.Workers
 
                     if (readings.Count > 0)
                     {
-                        _health.RegisterReadings(
-                            readings.Count,
-                            _buffer.Count);
-
-                        _logger.LogInformation(
-                            "📡 Eventos PI recibidos: {Count} | Buffer: {Buffer}",
-                            readings.Count,
-                            _buffer.Count);
+                        _health.RegisterReadings(readings.Count, _buffer.Count);
+                        _logger.LogInformation("📡 Eventos PI recibidos: {Count} | Buffer: {Buffer}", readings.Count, _buffer.Count);
                     }
 
                     _errorCount = 0;
-
-                    // -------------------------------------------------
-                    // El DataPipe se consulta periódicamente.
-                    // No se vuelve a consultar el valor del atributo.
-                    // -------------------------------------------------
-
-                    await Task.Delay(
-                        TimeSpan.FromMilliseconds(500),
-                        stoppingToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(500), stoppingToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -328,29 +245,19 @@ namespace IndustrialConnector.Workers
                 catch (Exception ex)
                 {
                     _errorCount++;
-
-                    _logger.LogError(
-                        ex,
-                        "❌ Error en DataPipe PI. Intento {Count}/{Max}",
-                        _errorCount,
-                        MaxErrors);
+                    _logger.LogError(ex, "❌ Error en DataPipe PI. Intento {Count}/{Max}", _errorCount, MaxErrors);
 
                     if (_errorCount >= MaxErrors)
                     {
                         _health.SetPiSystemConnected(false);
-
-                        _logger.LogError(
-                            "❌ Demasiados errores consecutivos en DataPipe.");
+                        _logger.LogError("❌ Demasiados errores consecutivos en DataPipe.");
                     }
 
-                    await Task.Delay(
-                        TimeSpan.FromSeconds(5),
-                        stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
 
-            _logger.LogInformation(
-                "🛑 PI System Worker detenido.");
+            _logger.LogInformation("🛑 PI System Worker detenido.");
         }
     }
 }
