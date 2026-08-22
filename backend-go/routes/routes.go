@@ -92,6 +92,7 @@ func SetupRoutes(
 	)
 	piTagHandler := handlers.NewPITagHandler(piTagRepo, piTagService, tagDescubiertoRepo)
 	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
+	equipoTagHandler := handlers.NewEquipoTagHandler(tagDescubiertoRepo)
 
 	// ============================================
 	// RUTAS
@@ -168,6 +169,8 @@ func SetupRoutes(
 	r.HandleFunc("/api/pi/tags/crear-equipo", piTagHandler.CrearEquipoConTags).Methods("POST")
 	r.HandleFunc("/api/pi/tags/equipo/{id}", piTagHandler.GetTagsByEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/fuentes", piTagHandler.GetFuentesDisponibles).Methods("GET") // ← AGREGAR ESTA
+	r.HandleFunc("/api/equipos/{id}/tags", equipoTagHandler.GetTagsByEquipo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/tiempo-real", equipoTagHandler.GetTiempoReal).Methods("GET")
 
 	r.HandleFunc("/api/pi/tags/descubiertos", tagDescubiertoHandler.GetTagsDescubiertos).Methods("GET")
 	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.GetTagDescubierto).Methods("GET")

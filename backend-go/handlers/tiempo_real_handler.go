@@ -13,7 +13,8 @@ import (
 )
 
 type TiempoRealHandler struct {
-	SensorRepo *repository.SensorRepository
+	SensorRepo         *repository.SensorRepository
+	TagDescubiertoRepo *repository.TagDescubiertoRepository
 }
 
 func NewTiempoRealHandler(sensorRepo *repository.SensorRepository) *TiempoRealHandler {
@@ -22,8 +23,6 @@ func NewTiempoRealHandler(sensorRepo *repository.SensorRepository) *TiempoRealHa
 	}
 }
 
-// GetUltimosValores - Obtiene todos los últimos valores de un equipo
-// GET /api/equipos/{id}/tiempo-real
 func (h *TiempoRealHandler) GetUltimosValores(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -45,8 +44,6 @@ func (h *TiempoRealHandler) GetUltimosValores(w http.ResponseWriter, r *http.Req
 	utils.SuccessJSON(w, http.StatusOK, valores)
 }
 
-// GetUltimoValor - Obtiene el último valor de un tag específico
-// GET /api/equipos/{id}/tiempo-real/{parametro}
 func (h *TiempoRealHandler) GetUltimoValor(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -70,8 +67,6 @@ func (h *TiempoRealHandler) GetUltimoValor(w http.ResponseWriter, r *http.Reques
 	utils.SuccessJSON(w, http.StatusOK, valor)
 }
 
-// GetHistoricoTag - Obtiene datos históricos de un tag en un rango de tiempo
-// GET /api/equipos/{id}/historico/{parametro}?desde=2026-08-01&hasta=2026-08-21
 func (h *TiempoRealHandler) GetHistoricoTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -122,8 +117,6 @@ func (h *TiempoRealHandler) GetHistoricoTag(w http.ResponseWriter, r *http.Reque
 	utils.SuccessJSON(w, http.StatusOK, datos)
 }
 
-// GetTagsByEquipo - Obtiene todos los tags disponibles para un equipo
-// GET /api/equipos/{id}/tags
 func (h *TiempoRealHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -132,27 +125,29 @@ func (h *TiempoRealHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Buscar en tags_descubiertos (no en datos_sensores)
 	rows, err := h.SensorRepo.DB.Query(`
-        SELECT DISTINCT parametro, unidad 
-        FROM datos_sensores 
+        SELECT DISTINCT tag_name, unidad 
+        FROM tags_descubiertos 
         WHERE equipo_id = $1
-        ORDER BY parametro
+        ORDER BY tag_name
     `, id)
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags")
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags del equipo")
 		return
 	}
 	defer rows.Close()
 
 	var tags []map[string]string
 	for rows.Next() {
-		var parametro, unidad string
-		if err := rows.Scan(&parametro, &unidad); err != nil {
+		var tagName, unidad string
+		if err := rows.Scan(&tagName, &unidad); err != nil {
 			continue
 		}
+
 		tags = append(tags, map[string]string{
-			"parametro": parametro,
-			"unidad":    unidad,
+			"tag_name": tagName,
+			"unidad":   unidad,
 		})
 	}
 
