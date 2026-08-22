@@ -1,5 +1,4 @@
 export interface EquipoFormData {
-  // Paso 1
   codigo: string
   nombre: string
   area: string
@@ -11,14 +10,12 @@ export interface EquipoFormData {
   estado_equipo: string
   fecha_instalacion: string
 
-  // Paso 2
   activo_padre_id: number | null
   nivel_jerarquia: number
   tag: string
   ubicacion_fisica: string
   descripcion_larga: string
 
-  // Paso 3
   es_dispositivo_red: boolean
   tipo_dispositivo: string
   ip: string
@@ -34,7 +31,6 @@ export interface EquipoFormData {
   reintentos: number
   critico: boolean
 
-  // Paso 4 (mantenimiento inicial)
   requiere_mantenimiento: boolean
   fecha_reporte: string
   fase_mant: string
@@ -52,6 +48,16 @@ export interface EquipoFormData {
   produccion_afectada: boolean
   tn_dejadas_procesar: number
   enlace: string
+
+  tagsSeleccionados?: string[]
+  umbrales?: Array<{
+    parametro: string
+    umbral_min?: number
+    umbral_max?: number
+    unidad?: string
+    severidad?: 'baja' | 'media' | 'alta' | 'critica'
+  }>
+  fuenteSeleccionada?: string
 }
 
 export const emptyForm: EquipoFormData = {
@@ -66,5 +72,9 @@ export const emptyForm: EquipoFormData = {
   fase_mant: '', taller: '', tipo_criticidad: '', sistema: '',
   inicio_parada: '', fin_parada: '', horas: 0, tipo_intervencion: '',
   modo_falla: '', consecuencia_inmediata: '', descripcion_evento: '',
-  stand_by: false, produccion_afectada: false, tn_dejadas_procesar: 0, enlace: ''
+  stand_by: false, produccion_afectada: false, tn_dejadas_procesar: 0, enlace: '',
+  // === NUEVOS CAMPOS ===
+  tagsSeleccionados: [],
+  umbrales: [],
+  fuenteSeleccionada: '',
 }

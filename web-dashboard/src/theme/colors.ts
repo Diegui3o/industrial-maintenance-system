@@ -4,17 +4,32 @@ export const colors = {
   background: '#F0F1F4',
   surface: '#FFFFFF',
   surfaceMuted: '#F7F8FA',
-  text: { primary: '#1F2329', secondary: '#5E6573', muted: '#8A919F', onPrimary: '#FFFFFF' },
+  bgLight: '#F7F8FA',
   border: '#DADDE3',
   borderLight: '#E8EAEE',
-  primaryGhost: '#C45A1A15', 
+  primaryGhost: '#C45A1A15',
+  
+  text: { 
+    primary: '#1F2329', 
+    secondary: '#5E6573', 
+    muted: '#8A919F', 
+    onPrimary: '#FFFFFF',
+    tertiary: '#B0B8C4',
+  },
+  
   status: {
     success: '#2D7A4C', successBg: '#E8F5E9',
     error: '#B93636', errorBg: '#FDE8E8',
     warning: '#A16207', warningBg: '#FEF3C7',
     info: '#2563A0', infoBg: '#EFF6FF',
   },
-  estado: { activo: '#2D7A4C', inactivo: '#8A919F', fallo: '#B93636', mantenimiento: '#A16207' }
+  
+  estado: { 
+    activo: '#2D7A4C', 
+    inactivo: '#8A919F', 
+    fallo: '#B93636', 
+    mantenimiento: '#A16207' 
+  }
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48, xxxl: 64 } as const;

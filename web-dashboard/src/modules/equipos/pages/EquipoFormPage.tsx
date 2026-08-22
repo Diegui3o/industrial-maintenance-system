@@ -26,8 +26,9 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
     'Datos Básicos',
     'Ubicación',
     'Monitoreo',
-    ...(form.estado_equipo === 'mantenimiento' || form.estado_equipo === 'fallo' ? ['Mantenimiento'] : [])
+    'Sensores PI',
   ]
+
   const lastStep = STEPS.length - 1
 
   const update = (data: Partial<EquipoFormData>) => setForm(f => ({ ...f, ...data }))
@@ -82,7 +83,18 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
           activo: true,
         })
       }
-
+    if (form.tagsSeleccionados && form.tagsSeleccionados.length > 0) {
+      // Usar el nuevo endpoint crear-con-tags
+      await fetch(`/api/equipos/crear-con-tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipo: { id: equipoId },
+          tagNames: form.tagsSeleccionados,
+          umbrales: form.umbrales || [],
+        }),
+      })
+    }
       if (form.requiere_mantenimiento) {
         await createMantenimiento({
           equipo_id: equipoId,

@@ -71,3 +71,30 @@ export const getGruposReales = () =>
 
 export const getWhatsAppStatus = () =>
   fetchJson<any>('/whatsapp/status').catch(() => ({ conectado: false }))
+
+export const getPIFuentes = () => 
+  fetchJson<any[]>('/pi/fuentes').catch(() => [])
+
+export const getPITagsAgrupados = (fuente?: string) => {
+  const url = fuente ? `/pi/tags/agrupados?fuente=${fuente}` : '/pi/tags/agrupados'
+  return fetchJson<any[]>(url).catch(() => [])
+}
+
+export const getPITagsSinEquipo = () => 
+  fetchJson<any[]>('/pi/tags/sin-equipo').catch(() => [])
+
+export const crearEquipoConTags = (data: {
+  equipo: any
+  tagNames: string[]
+  umbrales?: any[]
+  notificaciones?: any
+}) => fetchJson<any>('/equipos/crear-con-tags', {
+  method: 'POST',
+  body: JSON.stringify(data)
+})
+
+export const getEquipoTags = (equipoId: number) =>
+  fetchJson<any[]>(`/equipos/${equipoId}/tags`).catch(() => [])
+
+export const getEquipoTiempoReal = (equipoId: number) =>
+  fetchJson<any[]>(`/equipos/${equipoId}/tiempo-real`).catch(() => [])

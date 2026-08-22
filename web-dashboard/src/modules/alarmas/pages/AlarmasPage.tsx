@@ -6,7 +6,7 @@ import Button from '../../../shared/components/Button';
 
 interface Props {
   onNavigate: (page: string, params?: any) => void
-  onBack?: () => void  // ← AGREGAR
+  onBack?: () => void
 }
 
 const mockAlarmas = [
