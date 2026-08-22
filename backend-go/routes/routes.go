@@ -63,8 +63,9 @@ func SetupRoutes(
 	// HANDLERS
 	// ============================================
 	equipoHandler := &handlers.EquipoHandler{
-		Service:    equipoService,
-		ConfigRepo: configRepo,
+		Service:            equipoService,
+		ConfigRepo:         configRepo,
+		TagDescubiertoRepo: tagDescubiertoRepo,
 	}
 	eventosHandler := &handlers.EventosHandler{Service: ruleEngine.EventoService}
 	metricaHandler := &handlers.MetricaHandler{Service: metricaService}
@@ -89,7 +90,7 @@ func SetupRoutes(
 	firestoreHandler := handlers.NewFirestoreHandler(
 		firestoreService,
 	)
-	piTagHandler := handlers.NewPITagHandler(piTagService)
+	piTagHandler := handlers.NewPITagHandler(piTagRepo, piTagService, tagDescubiertoRepo)
 	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
 
 	// ============================================
@@ -166,12 +167,15 @@ func SetupRoutes(
 	r.HandleFunc("/api/pi/tags/asignar", piTagHandler.AsignarTagsEquipo).Methods("POST")
 	r.HandleFunc("/api/pi/tags/crear-equipo", piTagHandler.CrearEquipoConTags).Methods("POST")
 	r.HandleFunc("/api/pi/tags/equipo/{id}", piTagHandler.GetTagsByEquipo).Methods("GET")
+	r.HandleFunc("/api/pi/fuentes", piTagHandler.GetFuentesDisponibles).Methods("GET") // ← AGREGAR ESTA
 
 	r.HandleFunc("/api/pi/tags/descubiertos", tagDescubiertoHandler.GetTagsDescubiertos).Methods("GET")
 	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.GetTagDescubierto).Methods("GET")
 	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.EliminarTag).Methods("DELETE")
 	r.HandleFunc("/api/pi/tags/asignar", tagDescubiertoHandler.AsignarTag).Methods("POST")
 	r.HandleFunc("/api/pi/tags/asignar-multiple", tagDescubiertoHandler.AsignarMultiplesTags).Methods("POST")
+	r.HandleFunc("/api/pi/tags/agrupados", piTagHandler.GetTagsAgrupados).Methods("GET")
+	r.HandleFunc("/api/equipos/crear-con-tags", equipoHandler.CrearEquipoConTags).Methods("POST")
 
 	r.HandleFunc("/api/incidentes", firestoreHandler.ListIncidentes).Methods("GET")
 	r.HandleFunc("/api/requerimientos", firestoreHandler.ListarRequerimientos).Methods("GET")

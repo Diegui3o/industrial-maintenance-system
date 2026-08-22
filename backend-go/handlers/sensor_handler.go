@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"backend/engine"
@@ -48,7 +49,6 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 		// 1. VALIDAR TAG NAME
 		// ============================================
 		if reading.TagName == "" {
-			log.Printf("⚠️ Dato sin nombre de tag")
 			continue
 		}
 
@@ -63,7 +63,6 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				parsed, err = time.Parse("2006-01-02T15:04:05Z", reading.Timestamp)
 				if err != nil {
-					log.Printf("⚠️ Error parseando timestamp: %v, usando hora actual", err)
 					timestamp = time.Now()
 				} else {
 					timestamp = parsed
@@ -75,12 +74,41 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 			timestamp = time.Now()
 		}
 
-		// ============================================
-		// 3. GUARDAR EN TAGS DESCUBIERTOS (si equipo=0)
-		// ============================================
 		if reading.EquipmentID <= 0 {
+
+			elementName := reading.ElementName
+			elementPath := reading.ElementPath
+
+			if elementName == "" && strings.Contains(reading.TagName, ".") {
+				parts := strings.SplitN(reading.TagName, ".", 2)
+				elementName = parts[0]
+			}
+
+			// Si sigue vacío, usar el tag_name completo
+			if elementName == "" {
+				elementName = reading.TagName
+			}
+
+			if elementPath == "" {
+				cleanElementName := strings.ReplaceAll(elementName, "\\", "\\\\")
+				elementPath = "\\\\PEELPWVPIAP01NX\\\\BD El Porvenir\\\\" + cleanElementName
+			}
+
+			piServer := reading.PiServer
+			if piServer == "" {
+				piServer = "PEELPWVPIAP01NX"
+			}
+			databaseName := reading.Database
+			if databaseName == "" {
+				databaseName = " DB El Porvenir"
+			}
 			tag := &models.TagDescubierto{
 				TagName:             reading.TagName,
+				ElementName:         elementName,
+				ElementPath:         elementPath,
+				PiServer:            piServer,
+				DatabaseName:        databaseName,
+				RootElement:         reading.RootElement,
 				Unidad:              reading.Unit,
 				UltimoValor:         reading.Value,
 				UltimaActualizacion: timestamp,
@@ -91,8 +119,8 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("❌ Error guardando tag descubierto: %v", err)
 			} else {
-				log.Printf("📌 Tag descubierto guardado: %s = %.3f %s",
-					reading.TagName, reading.Value, reading.Unit)
+				log.Printf("📌 Tag descubierto guardado: %s (Elemento: %s)",
+					reading.TagName, elementName)
 			}
 		}
 

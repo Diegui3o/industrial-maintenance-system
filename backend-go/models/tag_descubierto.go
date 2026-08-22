@@ -9,6 +9,9 @@ type TagDescubierto struct {
 	ElementName             string     `json:"element_name"`
 	ElementPath             string     `json:"element_path"`
 	PIPointName             string     `json:"pi_point_name"`
+	PiServer                string     `json:"pi_server"`
+	DatabaseName            string     `json:"database_name"`
+	RootElement             string     `json:"root_element"`
 	Unidad                  string     `json:"unidad"`
 	UltimoValor             float64    `json:"ultimo_valor"`
 	UltimaActualizacion     time.Time  `json:"ultima_actualizacion"`
@@ -18,4 +21,15 @@ type TagDescubierto struct {
 	AsignadoAutomaticamente bool       `json:"asignado_automaticamente"`
 	CreadoEn                time.Time  `json:"creado_en"`
 	ActualizadoEn           *time.Time `json:"actualizado_en"`
+}
+
+// TagAgrupado para sugerencias
+type TagAgrupado struct {
+	ElementName         string    `json:"elementName"`
+	ElementPath         string    `json:"elementPath"`
+	TotalTags           int       `json:"totalTags"`
+	Tags                []string  `json:"tags"`
+	Unidades            []string  `json:"unidades"`
+	UltimoValorMax      float64   `json:"ultimoValorMax"`
+	UltimaActualizacion time.Time `json:"ultimaActualizacion"`
 }

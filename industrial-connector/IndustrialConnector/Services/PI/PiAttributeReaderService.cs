@@ -42,9 +42,7 @@ namespace IndustrialConnector.Services.PI
 
             try
             {
-                // ============================================
-                // 1. VALIDAR CALIDAD
-                // ============================================
+
                 if (!value.IsGood)
                 {
                     _logger.LogWarning(
@@ -56,9 +54,6 @@ namespace IndustrialConnector.Services.PI
                     return null;
                 }
 
-                // ============================================
-                // 2. VALIDAR QUE SEA NUMÉRICO
-                // ============================================
                 double numericValue;
 
                 try
@@ -74,12 +69,8 @@ namespace IndustrialConnector.Services.PI
                     return null;
                 }
 
-                // ============================================
-                // 3. OBTENER EL NOMBRE DEL TAG
-                // ============================================
                 string tagName = attribute.Name;
                 
-                // Si el nombre del atributo está vacío, usar el nombre del elemento
                 if (string.IsNullOrWhiteSpace(tagName))
                 {
                     var element = attribute.Element;
@@ -89,7 +80,6 @@ namespace IndustrialConnector.Services.PI
                     }
                 }
                 
-                // Si sigue vacío, usar el path (sin usar [^1])
                 if (string.IsNullOrWhiteSpace(tagName))
                 {
                     try
@@ -104,20 +94,14 @@ namespace IndustrialConnector.Services.PI
                     catch { }
                 }
 
-                // Si sigue vacío, asignar un nombre por defecto
                 if (string.IsNullOrWhiteSpace(tagName))
                 {
                     tagName = $"PI_{Guid.NewGuid():N}";
                     _logger.LogWarning($"⚠️ Atributo sin nombre, asignando: {tagName}");
                 }
 
-                // ============================================
-                // 4. OBTENER EL ELEMENTO
-                // ============================================
                 var elementObj = attribute.Element;
 
-                // ============================================
-                // 5. OBTENER TIMESTAMP
                 DateTime timestamp;
                 try
                 {
@@ -128,9 +112,6 @@ namespace IndustrialConnector.Services.PI
                     timestamp = DateTime.UtcNow;
                 }
 
-                // ============================================
-                // 7. CREAR EL READING - SIEMPRE CON TagName
-                // ============================================
                 var reading = new SensorReading
                 {
                     EquipmentId = 0,
@@ -149,10 +130,7 @@ namespace IndustrialConnector.Services.PI
                     ValueType = value.Value?.GetType().Name
                 };
 
-                // ============================================
-                // 8. LOG DE CONFIRMACIÓN
-                // ============================================
-                _logger.LogInformation("📊 PI EVENT: {TagName} = {Value} {Unit} (Elemento: {Element})",
+                _logger.LogInformation(" PI EVENT: {TagName} = {Value} {Unit} (Elemento: {Element})",
                     reading.TagName,
                     reading.Value,
                     reading.Unit,

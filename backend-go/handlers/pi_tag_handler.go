@@ -7,16 +7,27 @@ import (
 	"strconv"
 
 	"backend/models"
+	"backend/repository"
 	"backend/services"
 	"backend/utils"
 )
 
 type PITagHandler struct {
-	Service *services.PITagService
+	Repo               *repository.PITagRepository
+	Service            *services.PITagService
+	TagDescubiertoRepo *repository.TagDescubiertoRepository
 }
 
-func NewPITagHandler(service *services.PITagService) *PITagHandler {
-	return &PITagHandler{Service: service}
+func NewPITagHandler(
+	repo *repository.PITagRepository,
+	service *services.PITagService,
+	tagDescubiertoRepo *repository.TagDescubiertoRepository,
+) *PITagHandler {
+	return &PITagHandler{
+		Repo:               repo,
+		Service:            service,
+		TagDescubiertoRepo: tagDescubiertoRepo,
+	}
 }
 
 // GET /api/pi/tags/sin-equipo
@@ -149,4 +160,30 @@ func (h *PITagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SuccessJSON(w, http.StatusOK, tags[0])
+}
+
+// GetTagsAgrupados - GET /api/pi/tags/agrupados
+func (h *PITagHandler) GetTagsAgrupados(w http.ResponseWriter, r *http.Request) {
+	agrupados, err := h.TagDescubiertoRepo.ObtenerTagsAgrupados()
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags agrupados: "+err.Error())
+		return
+	}
+	if agrupados == nil {
+		agrupados = []models.TagAgrupado{}
+	}
+	utils.SuccessJSON(w, http.StatusOK, agrupados)
+}
+
+// GetFuentesDisponibles - GET /api/pi/fuentes
+func (h *PITagHandler) GetFuentesDisponibles(w http.ResponseWriter, r *http.Request) {
+	fuentes, err := h.TagDescubiertoRepo.ObtenerFuentesDisponibles()
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo fuentes: "+err.Error())
+		return
+	}
+	if fuentes == nil {
+		fuentes = []models.FuenteDisponible{}
+	}
+	utils.SuccessJSON(w, http.StatusOK, fuentes)
 }

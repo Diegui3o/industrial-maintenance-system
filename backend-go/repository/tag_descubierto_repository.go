@@ -57,25 +57,48 @@ func (r *TagDescubiertoRepository) Eliminar(id int) error {
 	return err
 }
 
-// ============================================
-// GUARDAR O ACTUALIZAR TAG DESCUBIERTO
-// ============================================
 func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
-	return r.DB.QueryRow(`
-		INSERT INTO tags_descubiertos (
-			tag_name, tag_path, element_name, element_path, 
-			pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
-			frecuencia, source, equipment_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, $9, NULL)
-		ON CONFLICT (tag_name) DO UPDATE SET
-			ultimo_valor = EXCLUDED.ultimo_valor,
-			ultima_actualizacion = EXCLUDED.ultima_actualizacion,
-			frecuencia = tags_descubiertos.frecuencia + 1,
-			actualizado_en = NOW()
-		RETURNING id
-	`, tag.TagName, tag.TagPath, tag.ElementName, tag.ElementPath,
-		tag.PIPointName, tag.Unidad, tag.UltimoValor, tag.UltimaActualizacion,
-		tag.Source).Scan(&tag.ID)
+	var id int
+	err := r.DB.QueryRow(`
+        INSERT INTO tags_descubiertos (
+            tag_name, tag_path, element_name, element_path,
+            pi_point_name, pi_server, database_name, root_element,
+            unidad, ultimo_valor, ultima_actualizacion, frecuencia, source
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12)
+        ON CONFLICT (tag_name) DO UPDATE SET
+            tag_path = COALESCE(EXCLUDED.tag_path, tags_descubiertos.tag_path),
+            element_name = COALESCE(EXCLUDED.element_name, tags_descubiertos.element_name),
+            element_path = COALESCE(EXCLUDED.element_path, tags_descubiertos.element_path),
+            pi_point_name = COALESCE(EXCLUDED.pi_point_name, tags_descubiertos.pi_point_name),
+            pi_server = COALESCE(EXCLUDED.pi_server, tags_descubiertos.pi_server),
+            database_name = COALESCE(EXCLUDED.database_name, tags_descubiertos.database_name),
+            root_element = COALESCE(EXCLUDED.root_element, tags_descubiertos.root_element),
+            unidad = COALESCE(EXCLUDED.unidad, tags_descubiertos.unidad),
+            ultimo_valor = EXCLUDED.ultimo_valor,
+            ultima_actualizacion = EXCLUDED.ultima_actualizacion,
+            frecuencia = tags_descubiertos.frecuencia + 1,
+            actualizado_en = NOW()
+        RETURNING id
+    `,
+		tag.TagName,
+		tag.TagPath,
+		tag.ElementName,
+		tag.ElementPath,
+		tag.PIPointName,
+		tag.PiServer,
+		tag.DatabaseName,
+		tag.RootElement,
+		tag.Unidad,
+		tag.UltimoValor,
+		tag.UltimaActualizacion,
+		tag.Source,
+	).Scan(&id)
+
+	if err != nil {
+		return err
+	}
+	tag.ID = id
+	return nil
 }
 
 // ============================================
@@ -121,4 +144,78 @@ func (r *TagDescubiertoRepository) AsignarAEquipo(tagName string, equipoID int) 
 		WHERE tag_name = $2
 	`, equipoID, tagName)
 	return err
+}
+
+// ObtenerTagsAgrupados - Retorna sugerencias de equipos
+func (r *TagDescubiertoRepository) ObtenerTagsAgrupados() ([]models.TagAgrupado, error) {
+	rows, err := r.DB.Query(`
+        SELECT 
+            element_name,
+            element_path,
+            total_tags,
+            tags,
+            unidades,
+            ultimo_valor_max,
+            ultima_actualizacion
+        FROM vw_sugerencias_equipos
+        ORDER BY total_tags DESC
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var resultados []models.TagAgrupado
+	for rows.Next() {
+		var t models.TagAgrupado
+		var tagsArray, unidadesArray string
+		err := rows.Scan(
+			&t.ElementName,
+			&t.ElementPath,
+			&t.TotalTags,
+			&tagsArray,
+			&unidadesArray,
+			&t.UltimoValorMax,
+			&t.UltimaActualizacion,
+		)
+		if err != nil {
+			return nil, err
+		}
+		// Convertir arrays de PostgreSQL a slices
+		t.Tags = parseStringArray(tagsArray)
+		t.Unidades = parseStringArray(unidadesArray)
+		resultados = append(resultados, t)
+	}
+	return resultados, rows.Err()
+}
+
+// AsignarTagsAEquipo - Usa la función SQL para asignar tags
+func (r *TagDescubiertoRepository) AsignarTagsAEquipo(equipoID int, tagNames []string) (int, error) {
+	var count int
+	err := r.DB.QueryRow(`
+        SELECT asignar_tags_a_equipo($1, $2)
+    `, equipoID, tagNames).Scan(&count)
+	return count, err
+}
+
+func (r *TagDescubiertoRepository) ObtenerFuentesDisponibles() ([]models.FuenteDisponible, error) {
+	rows, err := r.DB.Query(`
+        SELECT pi_server, database_name, total_tags
+        FROM obtener_fuentes_disponibles()
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var fuentes []models.FuenteDisponible
+	for rows.Next() {
+		var f models.FuenteDisponible
+		err := rows.Scan(&f.PiServer, &f.DatabaseName, &f.TotalTags)
+		if err != nil {
+			return nil, err
+		}
+		fuentes = append(fuentes, f)
+	}
+	return fuentes, rows.Err()
 }

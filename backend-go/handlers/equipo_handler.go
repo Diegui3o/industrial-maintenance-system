@@ -15,8 +15,21 @@ import (
 )
 
 type EquipoHandler struct {
-	Service    *services.EquipoService
-	ConfigRepo *repository.ConfigRepository
+	Service            *services.EquipoService
+	ConfigRepo         *repository.ConfigRepository
+	TagDescubiertoRepo *repository.TagDescubiertoRepository
+}
+
+func NewEquipoHandler(
+	service *services.EquipoService,
+	configRepo *repository.ConfigRepository,
+	tagDescubiertoRepo *repository.TagDescubiertoRepository,
+) *EquipoHandler {
+	return &EquipoHandler{
+		Service:            service,
+		ConfigRepo:         configRepo,
+		TagDescubiertoRepo: tagDescubiertoRepo,
+	}
 }
 
 func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
@@ -215,4 +228,50 @@ func (h *EquipoHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) 
 	}
 
 	utils.SuccessJSON(w, http.StatusOK, tags)
+}
+
+func (h *EquipoHandler) CrearEquipoConTags(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Equipo   models.Equipo `json:"equipo"`
+		TagNames []string      `json:"tagNames"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
+		return
+	}
+
+	// Validar equipo
+	if req.Equipo.Codigo == "" || req.Equipo.Nombre == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "Código y nombre son requeridos")
+		return
+	}
+
+	// Crear equipo
+	err := h.Service.CrearEquipos(&req.Equipo)
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Error creando equipo: "+err.Error())
+		return
+	}
+
+	// Asignar tags si se proporcionaron
+	asignados := 0
+	if len(req.TagNames) > 0 && h.TagDescubiertoRepo != nil {
+		asignados, err = h.TagDescubiertoRepo.AsignarTagsAEquipo(req.Equipo.ID, req.TagNames)
+		if err != nil {
+			utils.SuccessJSON(w, http.StatusCreated, map[string]interface{}{
+				"mensaje":        "Equipo creado, pero hubo error al asignar tags",
+				"equipo":         req.Equipo,
+				"tags_asignados": 0,
+				"error":          err.Error(),
+			})
+			return
+		}
+	}
+
+	utils.SuccessJSON(w, http.StatusCreated, map[string]interface{}{
+		"mensaje":        "Equipo creado y tags asignados",
+		"equipo":         req.Equipo,
+		"tags_asignados": asignados,
+	})
 }
