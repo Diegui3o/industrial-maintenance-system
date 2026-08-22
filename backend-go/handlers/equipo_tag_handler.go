@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -22,16 +23,27 @@ func NewEquipoTagHandler(
 	}
 }
 
-// GetTagsByEquipo - GET /api/equipos/{id}/tags
 func (h *EquipoTagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) {
+	log.Println("🚀 GetTagsByEquipo EJECUTADO para equipo ID:", r.URL.Path)
+	log.Println("🔍 GetTagsByEquipo llamado") // ← AGREGAR
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
+		log.Printf("❌ Error convirtiendo ID: %v", err) // ← AGREGAR
 		utils.ErrorJSON(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 
-	// Buscar en tags_descubiertos (NO en datos_sensores)
+	log.Printf("🔍 Buscando tags para equipo ID: %d", id) // ← AGREGAR
+
+	if h.TagDescubiertoRepo == nil {
+		log.Println("❌ TagDescubiertoRepo es nil") // ← AGREGAR
+		utils.ErrorJSON(w, http.StatusInternalServerError, "Repositorio no inicializado")
+		return
+	}
+
+	// Buscar en tags_descubiertos
 	rows, err := h.TagDescubiertoRepo.DB.Query(`
         SELECT tag_name, unidad, ultimo_valor, ultima_actualizacion
         FROM tags_descubiertos
@@ -39,10 +51,13 @@ func (h *EquipoTagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Reques
         ORDER BY tag_name
     `, id)
 	if err != nil {
+		log.Printf("❌ Error en Query: %v", err) // ← AGREGAR
 		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags: "+err.Error())
 		return
 	}
 	defer rows.Close()
+
+	log.Println("✅ Query ejecutada correctamente") // ← AGREGAR
 
 	var tags []map[string]interface{}
 	for rows.Next() {
@@ -50,6 +65,7 @@ func (h *EquipoTagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Reques
 		var ultimoValor float64
 		var ultimaActualizacion interface{}
 		if err := rows.Scan(&tagName, &unidad, &ultimoValor, &ultimaActualizacion); err != nil {
+			log.Printf("❌ Error en Scan: %v", err) // ← AGREGAR
 			continue
 		}
 		tags = append(tags, map[string]interface{}{
@@ -61,9 +77,12 @@ func (h *EquipoTagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := rows.Err(); err != nil {
+		log.Printf("❌ Error en rows.Err(): %v", err) // ← AGREGAR
 		utils.ErrorJSON(w, http.StatusInternalServerError, "Error iterando resultados")
 		return
 	}
+
+	log.Printf("✅ Tags encontrados: %d", len(tags)) // ← AGREGAR
 
 	utils.SuccessJSON(w, http.StatusOK, tags)
 }

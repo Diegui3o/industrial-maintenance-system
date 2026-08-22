@@ -55,9 +55,6 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 	// 1. DATOS SIN EQUIPO → GUARDAR EN DESCUBIERTOS
 	// ============================================
 	if reading.EquipmentID <= 0 {
-		log.Printf("📌 Tag SIN EQUIPO detectado: %s = %.3f %s",
-			reading.TagName, reading.Value, reading.Unit)
-
 		// Verificar que TagName no esté vacío
 		if reading.TagName == "" {
 			log.Printf("⚠️ TagName vacío, ignorando")
@@ -81,8 +78,6 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 		if err != nil {
 			log.Printf("❌ Error guardando tag descubierto: %v", err)
 		} else {
-			log.Printf("✅ Tag descubierto guardado: %s (frecuencia: %d)",
-				reading.TagName, tag.Frecuencia)
 		}
 		return
 

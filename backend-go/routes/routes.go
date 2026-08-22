@@ -162,13 +162,13 @@ func SetupRoutes(
 	r.HandleFunc("/equipos/{id}/tiempo-real/{parametro}", tiempoRealHandler.GetUltimoValor).Methods("GET")
 	r.HandleFunc("/equipos/{id}/historico/{parametro}", tiempoRealHandler.GetHistoricoTag).Methods("GET")
 	r.HandleFunc("/equipos/{id}/tags", tiempoRealHandler.GetTagsByEquipo).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/tags", equipoHandler.GetTagsByEquipo).Methods("GET")
+	r.HandleFunc("/api/equipos/{id}/tags", equipoTagHandler.GetTagsByEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/tags/sin-equipo", piTagHandler.GetTagsSinEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/tags/sugerencias", piTagHandler.GetSugerenciasAgrupacion).Methods("GET")
 	r.HandleFunc("/api/pi/tags/asignar", piTagHandler.AsignarTagsEquipo).Methods("POST")
 	r.HandleFunc("/api/pi/tags/crear-equipo", piTagHandler.CrearEquipoConTags).Methods("POST")
 	r.HandleFunc("/api/pi/tags/equipo/{id}", piTagHandler.GetTagsByEquipo).Methods("GET")
-	r.HandleFunc("/api/pi/fuentes", piTagHandler.GetFuentesDisponibles).Methods("GET") // ← AGREGAR ESTA
+	r.HandleFunc("/api/pi/fuentes", piTagHandler.GetFuentesDisponibles).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/tags", equipoTagHandler.GetTagsByEquipo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/tiempo-real", equipoTagHandler.GetTiempoReal).Methods("GET")
 

@@ -119,8 +119,6 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("❌ Error guardando tag descubierto: %v", err)
 			} else {
-				log.Printf("📌 Tag descubierto guardado: %s (Elemento: %s)",
-					reading.TagName, elementName)
 			}
 		}
 
