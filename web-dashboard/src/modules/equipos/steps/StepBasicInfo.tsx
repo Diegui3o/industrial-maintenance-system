@@ -1,18 +1,16 @@
 import React from 'react';
 
 interface StepBasicInfoProps {
-  data: any;
-  updateData: (data: any) => void;
+  form: any;
+  update: (data: any) => void;
   onNext: () => void;
+  onPrev?: () => void;
+  onSubmit?: () => void;
 }
 
-export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
-  data,
-  updateData,
-  onNext,
-}) => {
+export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({ form, update, onNext }) => {
   const handleChange = (field: string, value: any) => {
-    updateData({ ...data, [field]: value });
+    update({ ...form, [field]: value });
   };
 
   return (
@@ -24,7 +22,7 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
         <input
           type="text"
           className="w-full border rounded px-3 py-2"
-          value={data.nombre || ''}
+          value={form.nombre || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('nombre', e.target.value)}
           placeholder="Ej: Motor Principal"
         />
@@ -35,7 +33,7 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
         <input
           type="text"
           className="w-full border rounded px-3 py-2"
-          value={data.codigo || ''}
+          value={form.codigo || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('codigo', e.target.value)}
           placeholder="Ej: MOT-001"
         />
@@ -45,7 +43,7 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
         <label className="block text-sm font-medium mb-1">Área</label>
         <select
           className="w-full border rounded px-3 py-2"
-          value={data.area || ''}
+          value={form.area || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('area', e.target.value)}
         >
           <option value="">Seleccionar...</option>
@@ -61,7 +59,7 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
         <input
           type="text"
           className="w-full border rounded px-3 py-2"
-          value={data.tipo || ''}
+          value={form.tipo || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('tipo', e.target.value)}
           placeholder="Ej: Motor, Bomba, Ventilador"
         />
@@ -70,7 +68,7 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
-          checked={data.critico || false}
+          checked={form.critico || false}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('critico', e.target.checked)}
         />
         <label className="text-sm">¿Es equipo crítico?</label>

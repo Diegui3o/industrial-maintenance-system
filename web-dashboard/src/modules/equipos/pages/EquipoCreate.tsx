@@ -77,8 +77,6 @@ export const EquipoCreate: React.FC = () => {
   };
 
   const StepComponent = STEPS[currentStep].component;
-
-  // Determinar si es el último paso para mostrar "Guardar" en lugar de "Siguiente"
   const isLastStep = currentStep === STEPS.length - 1;
 
   return (
@@ -110,15 +108,15 @@ export const EquipoCreate: React.FC = () => {
       {/* Step Component */}
       <div className="bg-white rounded-lg shadow p-6">
         <StepComponent
-          data={formData}
-          updateData={updateData}
+          form={formData}
+          update={updateData}
           onNext={handleNext}
           onPrev={handlePrev}
           onSubmit={handleSubmit}
         />
       </div>
 
-      {/* Botones de navegación globales (si los steps no tienen sus propios botones) */}
+      {/* Botones de navegación globales */}
       <div className="flex justify-between mt-6">
         <button
           className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"

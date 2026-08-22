@@ -6,7 +6,7 @@ import Button from '../../../shared/components/Button'
 import DatosBasicosStep from '../steps/DatosBasicosStep'
 import UbicacionStep from '../steps/UbicacionStep'
 import MonitoreoStep from '../steps/MonitoreoStep'
-import MantenimientoStep from '../steps/MantenimientoStep'
+import StepSensors from '../steps/StepSensors';
 import { type EquipoFormData, emptyForm } from '../hooks/useEquipoForm'
 import { createEquipo, createDispositivoRed, createConfigFuente, createMantenimiento } from '../../../shared/services/api'
 import { colors } from '../../../theme/colors'
@@ -83,18 +83,17 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
           activo: true,
         })
       }
-    if (form.tagsSeleccionados && form.tagsSeleccionados.length > 0) {
-      // Usar el nuevo endpoint crear-con-tags
-      await fetch(`/api/equipos/crear-con-tags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          equipo: { id: equipoId },
-          tagNames: form.tagsSeleccionados,
-          umbrales: form.umbrales || [],
-        }),
-      })
-    }
+      if (form.tagsSeleccionados && form.tagsSeleccionados.length > 0) {
+        await fetch(`/api/equipos/crear-con-tags`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            equipo: { id: equipoId },
+            tagNames: form.tagsSeleccionados,
+            umbrales: form.umbrales || [],
+          }),
+        })
+      }
       if (form.requiere_mantenimiento) {
         await createMantenimiento({
           equipo_id: equipoId,
@@ -117,6 +116,7 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
         })
       }
     },
+    
     onSuccess: () => {
       setFeedback('success')
       queryClient.invalidateQueries({ queryKey: ['equipos'] })
@@ -184,7 +184,7 @@ const handleSubmit = () => {
         {step === 0 && <DatosBasicosStep form={form} update={update} />}
         {step === 1 && <UbicacionStep form={form} update={update} />}
         {step === 2 && <MonitoreoStep form={form} update={update} />}
-        {step === 3 && STEPS.length > 3 && <MantenimientoStep form={form} update={update} />}
+        {step === 3 && <StepSensors form={form} update={update} />}
       </Card>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>

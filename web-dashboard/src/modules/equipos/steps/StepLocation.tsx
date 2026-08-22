@@ -1,21 +1,15 @@
 import React from 'react';
 
 interface StepLocationProps {
-  data: any;
-  updateData: (data: any) => void;
+  form: any;
+  update: (data: any) => void;
   onNext: () => void;
   onPrev: () => void;
 }
 
-export const StepLocation: React.FC<StepLocationProps> = ({
-  data,
-  updateData,
-  onNext,
-  onPrev,
-}) => {
-
+export const StepLocation: React.FC<StepLocationProps> = ({ form, update, onNext, onPrev }) => {
   const handleChange = (field: string, value: any) => {
-    updateData({ ...data, [field]: value });
+    update({ ...form, [field]: value });
   };
 
   return (
@@ -27,7 +21,7 @@ export const StepLocation: React.FC<StepLocationProps> = ({
         <input
           type="text"
           className="w-full border rounded px-3 py-2"
-          value={data.ubicacion_fisica || ''}
+          value={form.ubicacion_fisica || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('ubicacion_fisica', e.target.value)}
           placeholder="Ej: Nivel -540, Sala de control"
         />
@@ -37,11 +31,10 @@ export const StepLocation: React.FC<StepLocationProps> = ({
         <label className="block text-sm font-medium mb-1">Equipo padre (jerarquía)</label>
         <select
           className="w-full border rounded px-3 py-2"
-          value={data.activo_padre_id || ''}
+          value={form.activo_padre_id || ''}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('activo_padre_id', e.target.value ? parseInt(e.target.value) : null)}
         >
           <option value="">Ninguno (equipo raíz)</option>
-          {/* Opcional: puedes agregar equipos manualmente aquí */}
         </select>
       </div>
 
@@ -50,7 +43,7 @@ export const StepLocation: React.FC<StepLocationProps> = ({
         <input
           type="number"
           className="w-full border rounded px-3 py-2"
-          value={data.nivel_jerarquia || 0}
+          value={form.nivel_jerarquia || 0}  // ← CAMBIADO: data → form
           onChange={(e) => handleChange('nivel_jerarquia', parseInt(e.target.value) || 0)}
           min="0"
         />

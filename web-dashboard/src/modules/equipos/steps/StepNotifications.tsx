@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { getGrupos } from '../../../shared/services/api';
 
 interface StepNotificationsProps {
-  data: any;
-  updateData: (data: any) => void;
+  form: any;
+  update: (data: any) => void;
   onPrev: () => void;
   onSubmit: () => void;
 }
 
-export const StepNotifications: React.FC<StepNotificationsProps> = ({
-  data,
-  updateData,
-  onPrev,
-  onSubmit,
-}) => {
-  const [grupos, setGrupos] = useState([]);
+export const StepNotifications: React.FC<StepNotificationsProps> = ({ form, update, onPrev, onSubmit }) => {
+  const [grupos, setGrupos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Cargar grupos de WhatsApp
   useEffect(() => {
-    fetch('/api/whatsapp/grupos')
-      .then(res => res.json())
-      .then(setGrupos);
+    setLoading(true);
+    getGrupos()
+      .then(setGrupos)
+      .catch(() => setGrupos([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleChange = (field: string, value: any) => {
-    updateData({ ...data, [field]: value });
+    update({ ...form, [field]: value });
   };
 
   return (
@@ -34,14 +33,17 @@ export const StepNotifications: React.FC<StepNotificationsProps> = ({
         <label className="block text-sm font-medium mb-1">Grupos de WhatsApp</label>
         <select
           className="w-full border rounded px-3 py-2"
-          value={data.grupo_id || ''}
+          value={form.grupo_id || ''}
           onChange={(e) => handleChange('grupo_id', parseInt(e.target.value) || 0)}
         >
           <option value="">Seleccionar grupo...</option>
           {grupos.map((g: any) => (
-            <option key={g.id} value={g.id}>{g.nombre}</option>
+            <option key={g.id} value={g.id}>
+              {g.nombre}
+            </option>
           ))}
         </select>
+        {loading && <span className="text-sm text-gray-400">Cargando grupos...</span>}
       </div>
 
       <div className="border rounded p-4 space-y-2">
@@ -49,7 +51,7 @@ export const StepNotifications: React.FC<StepNotificationsProps> = ({
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={data.notificar_fallo || true}
+            checked={form.notificar_fallo ?? true}
             onChange={(e) => handleChange('notificar_fallo', e.target.checked)}
           />
           Equipo entra en FALLO
@@ -57,7 +59,7 @@ export const StepNotifications: React.FC<StepNotificationsProps> = ({
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={data.notificar_recuperacion || true}
+            checked={form.notificar_recuperacion ?? true}
             onChange={(e) => handleChange('notificar_recuperacion', e.target.checked)}
           />
           Equipo se RECUPERA
@@ -65,7 +67,7 @@ export const StepNotifications: React.FC<StepNotificationsProps> = ({
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={data.notificar_alarma || true}
+            checked={form.notificar_alarma ?? true}
             onChange={(e) => handleChange('notificar_alarma', e.target.checked)}
           />
           Se genera ALARMA por valor fuera de rango
