@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -186,4 +187,180 @@ func (h *PITagHandler) GetFuentesDisponibles(w http.ResponseWriter, r *http.Requ
 		fuentes = []models.FuenteDisponible{}
 	}
 	utils.SuccessJSON(w, http.StatusOK, fuentes)
+}
+
+func (h *PITagHandler) GetTagsJerarquia(w http.ResponseWriter, r *http.Request) {
+	fuente := r.URL.Query().Get("fuente")
+
+	var rows *sql.Rows
+	var err error
+
+	if fuente != "" {
+		rows, err = h.Repo.DB.Query(`
+            SELECT 
+                tag_name,
+                ruta_completa,
+                nivel_jerarquico,
+                elemento_padre,
+                unidad,
+                ultimo_valor
+            FROM tags_descubiertos
+            WHERE ruta_completa IS NOT NULL AND ruta_completa != ''
+              AND pi_server = $1
+            ORDER BY ruta_completa, tag_name
+        `, fuente)
+	} else {
+		rows, err = h.Repo.DB.Query(`
+            SELECT 
+                tag_name,
+                ruta_completa,
+                nivel_jerarquico,
+                elemento_padre,
+                unidad,
+                ultimo_valor
+            FROM tags_descubiertos
+            WHERE ruta_completa IS NOT NULL AND ruta_completa != ''
+            ORDER BY ruta_completa, tag_name
+        `)
+	}
+
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var tags []map[string]interface{}
+	for rows.Next() {
+		var tagName, rutaCompleta, elementoPadre, unidad string
+		var nivelJerarquico int
+		var ultimoValor sql.NullFloat64
+
+		err := rows.Scan(&tagName, &rutaCompleta, &nivelJerarquico, &elementoPadre, &unidad, &ultimoValor)
+		if err != nil {
+			continue
+		}
+
+		tag := map[string]interface{}{
+			"tag_name":         tagName,
+			"ruta_completa":    rutaCompleta,
+			"nivel_jerarquico": nivelJerarquico,
+			"elemento_padre":   elementoPadre,
+			"unidad":           unidad,
+		}
+		if ultimoValor.Valid {
+			tag["ultimo_valor"] = ultimoValor.Float64
+		}
+		tags = append(tags, tag)
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, tags)
+}
+
+func (h *PITagHandler) GetEstructuraTags(w http.ResponseWriter, r *http.Request) {
+	fuente := r.URL.Query().Get("fuente")
+
+	var rows *sql.Rows
+	var err error
+
+	query := `
+        SELECT 
+            tag_name,
+            COALESCE(ruta_completa, CONCAT('7937 - El Porvenir → ', COALESCE(element_name, 'SIN_ELEMENTO'))) as ruta_completa,
+            COALESCE(nivel_jerarquico, 2) as nivel_jerarquico,
+            COALESCE(elemento_padre, element_name) as elemento_padre,
+            COALESCE(unidad, 'N/A') as unidad
+        FROM tags_descubiertos
+        WHERE element_name IS NOT NULL AND element_name != ''
+    `
+
+	if fuente != "" {
+		query += " AND pi_server = $1 ORDER BY ruta_completa, tag_name"
+		rows, err = h.Repo.DB.Query(query, fuente)
+	} else {
+		query += " ORDER BY ruta_completa, tag_name"
+		rows, err = h.Repo.DB.Query(query)
+	}
+
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var tags []map[string]interface{}
+	for rows.Next() {
+		var tagName, rutaCompleta, elementoPadre, unidad string
+		var nivelJerarquico int
+
+		err := rows.Scan(&tagName, &rutaCompleta, &nivelJerarquico, &elementoPadre, &unidad)
+		if err != nil {
+			continue
+		}
+
+		tag := map[string]interface{}{
+			"tag_name":         tagName,
+			"ruta_completa":    rutaCompleta,
+			"nivel_jerarquico": nivelJerarquico,
+			"elemento_padre":   elementoPadre,
+			"unidad":           unidad,
+		}
+		tags = append(tags, tag)
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, tags)
+}
+
+func (h *PITagHandler) GetTagValor(w http.ResponseWriter, r *http.Request) {
+	tag := r.URL.Query().Get("tag")
+	fuente := r.URL.Query().Get("fuente")
+
+	if tag == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "tag es requerido")
+		return
+	}
+
+	var ultimoValor sql.NullFloat64
+	var unidad string
+	var ultimaActualizacion sql.NullTime
+
+	query := `
+        SELECT ultimo_valor, unidad, ultima_actualizacion
+        FROM tags_descubiertos
+        WHERE tag_name = $1
+    `
+
+	var err error
+	if fuente != "" {
+		query += " AND pi_server = $2"
+		err = h.Repo.DB.QueryRow(query, tag, fuente).Scan(&ultimoValor, &unidad, &ultimaActualizacion)
+	} else {
+		err = h.Repo.DB.QueryRow(query, tag).Scan(&ultimoValor, &unidad, &ultimaActualizacion)
+	}
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			utils.ErrorJSON(w, http.StatusNotFound, "Tag no encontrado")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := map[string]interface{}{
+		"tag":    tag,
+		"unidad": unidad,
+	}
+
+	if ultimoValor.Valid {
+		response["valor"] = ultimoValor.Float64
+	} else {
+		response["valor"] = nil
+	}
+
+	if ultimaActualizacion.Valid {
+		response["actualizado_en"] = ultimaActualizacion.Time
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, response)
 }

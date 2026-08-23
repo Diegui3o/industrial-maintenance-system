@@ -18,4 +18,10 @@ type SensorReading struct {
 	AttributeName string `json:"attributeName,omitempty"`
 	PIPointName   string `json:"piPointName,omitempty"`
 	ValueType     string `json:"valueType,omitempty"`
+
+	RutaCompleta       string `json:"rutaCompleta,omitempty"`
+	NivelJerarquico    int    `json:"nivelJerarquico,omitempty"`
+	ElementoPadre      string `json:"elementoPadre,omitempty"`
+	PathJerarquico     string `json:"pathJerarquico,omitempty"`
+	ElementosAncestros string `json:"elementosAncestros,omitempty"`
 }

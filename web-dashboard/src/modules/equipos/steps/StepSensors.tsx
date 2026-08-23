@@ -1,6 +1,6 @@
 // web-dashboard/src/modules/equipos/steps/StepSensors.tsx
 import { useState, useEffect } from 'react';
-import { getPIFuentes, getPITagsAgrupados } from '../../../shared/services/api';
+import { getPIFuentes } from '../../../shared/services/api';
 
 interface StepSensorsProps {
   form: any;
@@ -9,10 +9,19 @@ interface StepSensorsProps {
   onPrev?: () => void;
 }
 
+interface TagJerarquia {
+  tag_name: string;
+  ruta_completa: string;
+  nivel_jerarquico: number;
+  elemento_padre: string;
+  unidad: string;
+  ultimo_valor: number;
+}
+
 export default function StepSensors({ form, update, onNext, onPrev }: StepSensorsProps) {
   const [habilitado, setHabilitado] = useState(form.tieneSensores || false);
   const [fuentes, setFuentes] = useState<any[]>([]);
-  const [tagsAgrupados, setTagsAgrupados] = useState<any[]>([]);
+  const [tagsJerarquia, setTagsJerarquia] = useState<TagJerarquia[]>([]);
   const [cargando, setCargando] = useState(false);
 
   const fuenteSeleccionada = form.fuenteSeleccionada || '';
@@ -26,14 +35,18 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
     }
   }, [habilitado]);
 
-  // Cargar tags al seleccionar fuente
+  // Cargar tags con jerarquía al seleccionar fuente
   useEffect(() => {
-    if (habilitado && fuenteSeleccionada) {
-      setCargando(true);
-      getPITagsAgrupados(fuenteSeleccionada)
-        .then(setTagsAgrupados)
-        .finally(() => setCargando(false));
-    }
+      if (habilitado && fuenteSeleccionada) {
+          setCargando(true);
+          fetch(`/api/pi/tags/estructura?fuente=${encodeURIComponent(fuenteSeleccionada)}`)
+              .then(res => res.json())
+              .then(data => {
+                  setTagsJerarquia(data || []);
+              })
+              .catch(() => setTagsJerarquia([]))
+              .finally(() => setCargando(false));
+      }
   }, [habilitado, fuenteSeleccionada]);
 
   const toggleHabilitado = (checked: boolean) => {
@@ -53,14 +66,6 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
     update({ tagsSeleccionados: nuevos });
   };
 
-  const seleccionarTodos = (tags: string[]) => {
-    const nuevos = [...tagsSeleccionados];
-    tags.forEach((t: string) => {
-      if (!nuevos.includes(t)) nuevos.push(t);
-    });
-    update({ tagsSeleccionados: nuevos });
-  };
-
   const actualizarUmbral = (tag: string, campo: string, valor: any) => {
     const index = umbrales.findIndex((u: any) => u.parametro === tag);
     let nuevosUmbrales;
@@ -73,7 +78,58 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
     update({ umbrales: nuevosUmbrales });
   };
 
-  const totalTagsDisponibles = tagsAgrupados.reduce((acc, g) => acc + g.totalTags, 0);
+  // Función para renderizar la jerarquía como árbol
+  const renderJerarquia = (tags: TagJerarquia[]) => {
+    // Agrupar tags por su ruta
+    const grupos: { [key: string]: TagJerarquia[] } = {};
+    tags.forEach(tag => {
+      const ruta = tag.ruta_completa || 'SIN_JERARQUIA';
+      if (!grupos[ruta]) grupos[ruta] = [];
+      grupos[ruta].push(tag);
+    });
+
+    // Mostrar como árbol
+    return Object.entries(grupos).map(([ruta, tagsDelGrupo]) => {
+      const nivel = tagsDelGrupo[0]?.nivel_jerarquico || 0;
+      const indent = '  '.repeat(Math.max(0, nivel - 1));
+      
+      return (
+        <div key={ruta} style={{ marginBottom: 8, padding: 8, background: '#f9fafb', borderRadius: 6 }}>
+          <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>
+            {indent}📁 {ruta}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginLeft: 16 }}>
+            {tagsDelGrupo.map((tag) => (
+              <label
+                key={tag.tag_name}
+                style={{
+                  fontSize: 13,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  background: tagsSeleccionados.includes(tag.tag_name) ? '#dbeafe' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={tagsSeleccionados.includes(tag.tag_name)}
+                  onChange={() => toggleTag(tag.tag_name)}
+                />
+                {tag.tag_name}
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                  ({tag.unidad || 'N/A'})
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    });
+  };
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -155,7 +211,7 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
             )}
           </div>
 
-          {/* PASO 2: Seleccionar tags */}
+          {/* PASO 2: Seleccionar tags con JERARQUÍA */}
           {fuenteSeleccionada && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -163,7 +219,7 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
                   📋 2. Selecciona los tags que pertenecen a este equipo
                 </label>
                 <span style={{ fontSize: 13, color: '#666' }}>
-                  {tagsSeleccionados.length} de {totalTagsDisponibles} seleccionados
+                  {tagsSeleccionados.length} tags seleccionados
                 </span>
               </div>
 
@@ -171,62 +227,13 @@ export default function StepSensors({ form, update, onNext, onPrev }: StepSensor
                 <div style={{ textAlign: 'center', padding: 30, color: '#666' }}>
                   ⏳ Cargando tags...
                 </div>
-              ) : tagsAgrupados.length === 0 ? (
+              ) : tagsJerarquia.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 30, color: '#666', background: '#f9fafb', borderRadius: 8 }}>
                   ℹ️ No se encontraron tags para esta fuente
                 </div>
               ) : (
-                <div style={{ maxHeight: 350, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-                  {tagsAgrupados.map((grupo: any) => (
-                    <div key={grupo.elementName} style={{ marginBottom: 12, borderBottom: '1px solid #f3f4f6', paddingBottom: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: 14, color: '#1f2937' }}>
-                          🏭 {grupo.elementName}
-                        </strong>
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>
-                          {grupo.totalTags} tags
-                        </span>
-                        <button
-                          style={{
-                            fontSize: 12,
-                            color: '#C45A1A',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            textDecoration: 'underline'
-                          }}
-                          onClick={() => seleccionarTodos(grupo.tags)}
-                        >
-                          Seleccionar todos
-                        </button>
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                        {grupo.tags.map((tag: string) => (
-                          <label
-                            key={tag}
-                            style={{
-                              fontSize: 13,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              padding: '2px 8px',
-                              borderRadius: 4,
-                              background: tagsSeleccionados.includes(tag) ? '#dbeafe' : 'transparent',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s'
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={tagsSeleccionados.includes(tag)}
-                              onChange={() => toggleTag(tag)}
-                            />
-                            {tag}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
+                  {renderJerarquia(tagsJerarquia)}
                 </div>
               )}
             </div>

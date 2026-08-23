@@ -179,6 +179,9 @@ func SetupRoutes(
 	r.HandleFunc("/api/pi/tags/asignar-multiple", tagDescubiertoHandler.AsignarMultiplesTags).Methods("POST")
 	r.HandleFunc("/api/pi/tags/agrupados", piTagHandler.GetTagsAgrupados).Methods("GET")
 	r.HandleFunc("/api/equipos/crear-con-tags", equipoHandler.CrearEquipoConTags).Methods("POST")
+	r.HandleFunc("/api/pi/tags/jerarquia", piTagHandler.GetTagsJerarquia).Methods("GET")
+	r.HandleFunc("/api/pi/tags/estructura", piTagHandler.GetEstructuraTags).Methods("GET")
+	r.HandleFunc("/api/pi/tags/valor", piTagHandler.GetTagValor).Methods("GET")
 
 	r.HandleFunc("/api/incidentes", firestoreHandler.ListIncidentes).Methods("GET")
 	r.HandleFunc("/api/requerimientos", firestoreHandler.ListarRequerimientos).Methods("GET")

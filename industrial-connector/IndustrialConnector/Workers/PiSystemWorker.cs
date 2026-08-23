@@ -175,53 +175,37 @@ namespace IndustrialConnector.Workers
                     var events = _dataPipe.GetEvents();
                     var readings = new List<SensorReading>();
 
-                foreach (var dataPipeEvent in events)
-                {
-                    try
+                    foreach (var dataPipeEvent in events)
                     {
-                        var attribute = dataPipeEvent.Value?.Attribute;
-                        var value = dataPipeEvent.Value;
-
-                        if (attribute == null || value == null)
+                        try
                         {
-                            continue;
-                        }
+                            var attribute = dataPipeEvent.Value?.Attribute;
+                            var value = dataPipeEvent.Value;
 
-                        var reading = _reader.Read(attribute, value, _config.Server, _config.Database);
-                        
-                        if (reading == null)
-                        {
-                            continue;
-                        }
+                            if (attribute == null) continue;
 
-                        // ============================================
-                        // VALIDAR QUE TENGAMOS TAG NAME
-                        // ============================================
-                        if (string.IsNullOrWhiteSpace(reading.TagName))
-                        {
-                            // Intentar obtener el nombre del atributo
-                            if (!string.IsNullOrWhiteSpace(attribute.Name))
+                            // ============================================
+                            // LEER TODOS LOS TAGS (SIN FILTROS)
+                            // ============================================
+                            if (value == null)
                             {
-                                reading.TagName = attribute.Name;
-                            }
-                            else if (attribute.Element != null)
-                            {
-                                reading.TagName = attribute.Element.Name;
-                            }
-                            else
-                            {
-                                _logger.LogDebug("⏭️ Reading sin TagName ignorado");
                                 continue;
                             }
-                        }
 
-                        readings.Add(reading);
+                            var reading = _reader.Read(attribute, value, _config.Server, _config.Database);
+                            
+                            if (reading == null) continue;
+
+                            // ============================================
+                            // NO FILTRAR NADA - TODOS LOS TAGS SON VÁLIDOS
+                            // ============================================
+                            readings.Add(reading);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "⚠️ Error procesando evento DataPipe.");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "⚠️ Error procesando evento DataPipe.");
-                    }
-                }
 
                     // Guardar TODAS las lecturas en el buffer
                     foreach (var reading in readings)

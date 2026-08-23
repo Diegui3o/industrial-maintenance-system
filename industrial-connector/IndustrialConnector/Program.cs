@@ -112,18 +112,7 @@ namespace IndustrialConnector
 
             builder.Services.AddWindowsService();
 
-
-            // ============================================
-            // CREAR HOST
-            // ============================================
-
             var host = builder.Build();
-
-
-            // ============================================
-            // INFORMACIÓN DE INICIO
-            // ============================================
-
             Log.Information(
                 "🚀 Iniciando Industrial Connector");
 
@@ -144,11 +133,6 @@ namespace IndustrialConnector
             Log.Information(
                 "🔌 PI Server: {Server}",
                 piConfig?.Server);
-
-
-            // ============================================
-            // INICIAR APLICACIÓN
-            // ============================================
 
             await host.RunAsync();
         }

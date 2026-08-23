@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"backend/engine"
@@ -45,18 +44,13 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 	tagsValidos := 0
 
 	for _, reading := range batch {
-		// ============================================
-		// 1. VALIDAR TAG NAME
-		// ============================================
+
 		if reading.TagName == "" {
 			continue
 		}
 
 		tagsValidos++
 
-		// ============================================
-		// 2. PROCESAR TIMESTAMP
-		// ============================================
 		var timestamp time.Time
 		if reading.Timestamp != "" {
 			parsed, err := time.Parse(time.RFC3339, reading.Timestamp)
@@ -75,56 +69,37 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if reading.EquipmentID <= 0 {
-
-			elementName := reading.ElementName
-			elementPath := reading.ElementPath
-
-			if elementName == "" && strings.Contains(reading.TagName, ".") {
-				parts := strings.SplitN(reading.TagName, ".", 2)
-				elementName = parts[0]
-			}
-
-			// Si sigue vacío, usar el tag_name completo
-			if elementName == "" {
-				elementName = reading.TagName
-			}
-
-			if elementPath == "" {
-				cleanElementName := strings.ReplaceAll(elementName, "\\", "\\\\")
-				elementPath = "\\\\PEELPWVPIAP01NX\\\\BD El Porvenir\\\\" + cleanElementName
-			}
-
-			piServer := reading.PiServer
-			if piServer == "" {
-				piServer = "PEELPWVPIAP01NX"
-			}
-			databaseName := reading.Database
-			if databaseName == "" {
-				databaseName = " DB El Porvenir"
-			}
 			tag := &models.TagDescubierto{
 				TagName:             reading.TagName,
-				ElementName:         elementName,
-				ElementPath:         elementPath,
-				PiServer:            piServer,
-				DatabaseName:        databaseName,
+				ElementName:         reading.ElementName,
+				ElementPath:         reading.ElementPath,
+				PiServer:            reading.PiServer,
+				DatabaseName:        reading.Database,
 				RootElement:         reading.RootElement,
 				Unidad:              reading.Unit,
 				UltimoValor:         reading.Value,
 				UltimaActualizacion: timestamp,
 				Source:              reading.Source,
+				RutaCompleta:        reading.RutaCompleta,
+				NivelJerarquico:     reading.NivelJerarquico,
+				ElementoPadre:       reading.ElementoPadre,
+				PathJerarquico:      reading.PathJerarquico,
+				ElementosAncestros:  reading.ElementosAncestros,
 			}
+
+			log.Printf("📌 Guardando tag: %s | Ruta: %s | Nivel: %d",
+				tag.TagName, tag.RutaCompleta, tag.NivelJerarquico)
 
 			err := h.TagDescubiertoRepo.Upsert(tag)
 			if err != nil {
 				log.Printf("❌ Error guardando tag descubierto: %v", err)
 			} else {
+				log.Printf("✅ Tag descubierto guardado: %s (Elemento: %s)",
+					reading.TagName, reading.ElementName)
 			}
-		}
 
-		// ============================================
-		// 4. PROCESAR EN RULE ENGINE
-		// ============================================
+			continue
+		}
 		h.RuleEngine.ProcessSensorData(reading, timestamp)
 		procesados++
 	}

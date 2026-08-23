@@ -1,3 +1,4 @@
+// models/tag_descubierto.go
 package models
 
 import "time"
@@ -21,6 +22,12 @@ type TagDescubierto struct {
 	AsignadoAutomaticamente bool       `json:"asignado_automaticamente"`
 	CreadoEn                time.Time  `json:"creado_en"`
 	ActualizadoEn           *time.Time `json:"actualizado_en"`
+
+	RutaCompleta       string `json:"ruta_completa"`
+	NivelJerarquico    int    `json:"nivel_jerarquico"`
+	ElementoPadre      string `json:"elemento_padre"`
+	PathJerarquico     string `json:"path_jerarquico"`
+	ElementosAncestros string `json:"elementos_ancestros"`
 }
 
 // TagAgrupado para sugerencias

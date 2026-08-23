@@ -4,6 +4,7 @@ package repository
 
 import (
 	"database/sql"
+	"log"
 
 	"backend/models"
 )
@@ -16,23 +17,24 @@ func NewTagDescubiertoRepository(db *sql.DB) *TagDescubiertoRepository {
 	return &TagDescubiertoRepository{DB: db}
 }
 
-// ============================================
-// GET BY ID
-// ============================================
 func (r *TagDescubiertoRepository) GetByID(id int) (*models.TagDescubierto, error) {
 	var t models.TagDescubierto
 	err := r.DB.QueryRow(`
-		SELECT id, tag_name, tag_path, element_name, element_path,
-		       pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
-		       frecuencia, source, equipment_id, asignado_automaticamente,
-		       creado_en, actualizado_en
-		FROM tags_descubiertos
-		WHERE id = $1
-	`, id).Scan(
+        SELECT id, tag_name, tag_path, element_name, element_path,
+               pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
+               frecuencia, source, equipment_id, asignado_automaticamente,
+               creado_en, actualizado_en,
+               ruta_completa, nivel_jerarquico, elemento_padre,
+               path_jerarquico, elementos_ancestros
+        FROM tags_descubiertos
+        WHERE id = $1
+    `, id).Scan(
 		&t.ID, &t.TagName, &t.TagPath, &t.ElementName, &t.ElementPath,
 		&t.PIPointName, &t.Unidad, &t.UltimoValor, &t.UltimaActualizacion,
 		&t.Frecuencia, &t.Source, &t.EquipmentID, &t.AsignadoAutomaticamente,
 		&t.CreadoEn, &t.ActualizadoEn,
+		&t.RutaCompleta, &t.NivelJerarquico, &t.ElementoPadre,
+		&t.PathJerarquico, &t.ElementosAncestros,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -40,31 +42,35 @@ func (r *TagDescubiertoRepository) GetByID(id int) (*models.TagDescubierto, erro
 	return &t, err
 }
 
-// ============================================
-// EXISTE EQUIPO
-// ============================================
 func (r *TagDescubiertoRepository) ExisteEquipo(id int) (bool, error) {
 	var existe bool
 	err := r.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM equipos WHERE id = $1)", id).Scan(&existe)
 	return existe, err
 }
 
-// ============================================
-// ELIMINAR TAG
-// ============================================
 func (r *TagDescubiertoRepository) Eliminar(id int) error {
 	_, err := r.DB.Exec("DELETE FROM tags_descubiertos WHERE id = $1", id)
 	return err
 }
 
 func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
+	// ============================================
+	// LOG PARA VER LOS VALORES
+	// ============================================
+	log.Printf("🔍 Upsert: Tag=%s, Ruta=%s, Nivel=%d",
+		tag.TagName,
+		tag.RutaCompleta,
+		tag.NivelJerarquico)
+
 	var id int
 	err := r.DB.QueryRow(`
         INSERT INTO tags_descubiertos (
             tag_name, tag_path, element_name, element_path,
             pi_point_name, pi_server, database_name, root_element,
-            unidad, ultimo_valor, ultima_actualizacion, frecuencia, source
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12)
+            unidad, ultimo_valor, ultima_actualizacion, frecuencia, source,
+            ruta_completa, nivel_jerarquico, elemento_padre,
+            path_jerarquico, elementos_ancestros
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13, $14, $15, $16, $17)
         ON CONFLICT (tag_name) DO UPDATE SET
             tag_path = COALESCE(EXCLUDED.tag_path, tags_descubiertos.tag_path),
             element_name = COALESCE(EXCLUDED.element_name, tags_descubiertos.element_name),
@@ -77,7 +83,12 @@ func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
             ultimo_valor = EXCLUDED.ultimo_valor,
             ultima_actualizacion = EXCLUDED.ultima_actualizacion,
             frecuencia = tags_descubiertos.frecuencia + 1,
-            actualizado_en = NOW()
+            actualizado_en = NOW(),
+            ruta_completa = COALESCE(EXCLUDED.ruta_completa, tags_descubiertos.ruta_completa),
+            nivel_jerarquico = COALESCE(EXCLUDED.nivel_jerarquico, tags_descubiertos.nivel_jerarquico),
+            elemento_padre = COALESCE(EXCLUDED.elemento_padre, tags_descubiertos.elemento_padre),
+            path_jerarquico = COALESCE(EXCLUDED.path_jerarquico, tags_descubiertos.path_jerarquico),
+            elementos_ancestros = COALESCE(EXCLUDED.elementos_ancestros, tags_descubiertos.elementos_ancestros)
         RETURNING id
     `,
 		tag.TagName,
@@ -92,18 +103,23 @@ func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
 		tag.UltimoValor,
 		tag.UltimaActualizacion,
 		tag.Source,
+		tag.RutaCompleta,
+		tag.NivelJerarquico,
+		tag.ElementoPadre,
+		tag.PathJerarquico,
+		tag.ElementosAncestros,
 	).Scan(&id)
 
 	if err != nil {
+		log.Printf("❌ Upsert ERROR: %v", err)
 		return err
 	}
+
 	tag.ID = id
+	log.Printf("✅ Upsert exitoso: ID=%d, Tag=%s", id, tag.TagName)
 	return nil
 }
 
-// ============================================
-// OBTENER TODOS LOS TAGS SIN EQUIPO
-// ============================================
 func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, error) {
 	rows, err := r.DB.Query(`
 		SELECT id, tag_name, tag_path, element_name, element_path,
@@ -134,9 +150,6 @@ func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, erro
 	return tags, rows.Err()
 }
 
-// ============================================
-// ASIGNAR TAG A EQUIPO
-// ============================================
 func (r *TagDescubiertoRepository) AsignarAEquipo(tagName string, equipoID int) error {
 	_, err := r.DB.Exec(`
 		UPDATE tags_descubiertos 
