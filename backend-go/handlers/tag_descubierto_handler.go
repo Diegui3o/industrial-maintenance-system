@@ -153,49 +153,32 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Verificar que el equipo existe
 	existe, err := h.Repo.ExisteEquipo(data.EquipoID)
 	if err != nil {
-		utils.ErrorJSON(
-			w,
-			http.StatusInternalServerError,
-			"Error verificando equipo: "+err.Error(),
-		)
+		utils.ErrorJSON(w, http.StatusInternalServerError,
+			"Error verificando equipo: "+err.Error())
 		return
 	}
 
 	if !existe {
-		utils.ErrorJSON(
-			w,
-			http.StatusBadRequest,
-			"El equipo no existe",
-		)
+		utils.ErrorJSON(w, http.StatusBadRequest, "El equipo no existe")
 		return
 	}
 
-	// Asignar cada tag
 	asignados := 0
 	errores := []string{}
 
 	for _, tagID := range data.TagIDs {
-		if tagID <= 0 {
-			errores = append(
-				errores,
-				"tag_id inválido: "+strconv.Itoa(tagID),
-			)
-			continue
-		}
-
 		err := h.Repo.AsignarAEquipo(tagID, data.EquipoID)
+
 		if err != nil {
 			errores = append(
 				errores,
 				strconv.Itoa(tagID)+": "+err.Error(),
 			)
-			continue
+		} else {
+			asignados++
 		}
-
-		asignados++
 	}
 
 	response := map[string]interface{}{
@@ -203,8 +186,10 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 		"asignados": asignados,
 		"total":     len(data.TagIDs),
 	}
+
 	if len(errores) > 0 {
 		response["errores"] = errores
 	}
+
 	utils.SuccessJSON(w, http.StatusOK, response)
 }

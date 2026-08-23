@@ -7,8 +7,6 @@ import (
 	"log"
 
 	"backend/models"
-
-	"github.com/lib/pq"
 )
 
 type TagDescubiertoRepository struct {
@@ -193,10 +191,9 @@ func (r *TagDescubiertoRepository) AsignarAEquipo(tagID int, equipoID int) error
 	_, err := r.DB.Exec(`
 		UPDATE tags_descubiertos
 		SET equipo_id = $1,
-		    asignado_automaticamente = FALSE,
-		    actualizado_en = NOW()
+			asignado_automaticamente = FALSE,
+			actualizado_en = NOW()
 		WHERE id = $2
-		  AND equipo_id IS NULL
 	`, equipoID, tagID)
 
 	return err
@@ -246,12 +243,28 @@ func (r *TagDescubiertoRepository) ObtenerTagsAgrupados() ([]models.TagAgrupado,
 }
 
 // AsignarTagsAEquipo - Usa la función SQL para asignar tags
-func (r *TagDescubiertoRepository) AsignarTagsAEquipo(equipoID int, tagIDs []int) (int, error) {
+func (r *TagDescubiertoRepository) AsignarTagsAEquipo(
+	equipoID int,
+	tagNames []string,
+) (int, error) {
 	var count int
 
 	err := r.DB.QueryRow(`
-        SELECT asignar_tags_a_equipo($1, $2)
-    `, equipoID, pq.Array(tagIDs)).Scan(&count)
+		SELECT asignar_tags_a_equipo($1, $2)
+	`, equipoID, tagNames).Scan(&count)
+
+	return count, err
+}
+
+func (r *TagDescubiertoRepository) AsignarTagsAEquipoPorIDs(
+	equipoID int,
+	tagIDs []int,
+) (int, error) {
+	var count int
+
+	err := r.DB.QueryRow(`
+		SELECT asignar_tags_a_equipo_ids($1, $2)
+	`, equipoID, tagIDs).Scan(&count)
 
 	return count, err
 }
