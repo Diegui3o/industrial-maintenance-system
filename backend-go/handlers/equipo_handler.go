@@ -232,8 +232,8 @@ func (h *EquipoHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) 
 
 func (h *EquipoHandler) CrearEquipoConTags(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Equipo   models.Equipo `json:"equipo"`
-		TagNames []string      `json:"tagNames"`
+		Equipo models.Equipo `json:"equipo"`
+		TagIDs []int         `json:"tagIds"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -256,8 +256,8 @@ func (h *EquipoHandler) CrearEquipoConTags(w http.ResponseWriter, r *http.Reques
 
 	// Asignar tags si se proporcionaron
 	asignados := 0
-	if len(req.TagNames) > 0 && h.TagDescubiertoRepo != nil {
-		asignados, err = h.TagDescubiertoRepo.AsignarTagsAEquipo(req.Equipo.ID, req.TagNames)
+	if len(req.TagIDs) > 0 && h.TagDescubiertoRepo != nil {
+		asignados, err = h.TagDescubiertoRepo.AsignarTagsAEquipo(req.Equipo.ID, req.TagIDs)
 		if err != nil {
 			utils.SuccessJSON(w, http.StatusCreated, map[string]interface{}{
 				"mensaje":        "Equipo creado, pero hubo error al asignar tags",

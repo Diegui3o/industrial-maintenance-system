@@ -7,6 +7,8 @@ import (
 	"log"
 
 	"backend/models"
+
+	"github.com/lib/pq"
 )
 
 type TagDescubiertoRepository struct {
@@ -20,21 +22,41 @@ func NewTagDescubiertoRepository(db *sql.DB) *TagDescubiertoRepository {
 func (r *TagDescubiertoRepository) GetByID(id int) (*models.TagDescubierto, error) {
 	var t models.TagDescubierto
 	err := r.DB.QueryRow(`
-        SELECT id, tag_name, tag_path, element_name, element_path,
-               pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
-               frecuencia, source, equipment_id, asignado_automaticamente,
-               creado_en, actualizado_en,
-               ruta_completa, nivel_jerarquico, elemento_padre,
-               path_jerarquico, elementos_ancestros
+		SELECT id, tag_name, tag_path, element_name, element_path,
+			pi_point_name, pi_server, database_name, root_element,
+			unidad, ultimo_valor, ultima_actualizacion,
+			frecuencia, source, quality,
+			equipo_id, asignado_automaticamente,
+			creado_en, actualizado_en,
+			ruta_completa, nivel_jerarquico, elemento_padre,
+			path_jerarquico, elementos_ancestros
         FROM tags_descubiertos
         WHERE id = $1
     `, id).Scan(
-		&t.ID, &t.TagName, &t.TagPath, &t.ElementName, &t.ElementPath,
-		&t.PIPointName, &t.Unidad, &t.UltimoValor, &t.UltimaActualizacion,
-		&t.Frecuencia, &t.Source, &t.EquipmentID, &t.AsignadoAutomaticamente,
-		&t.CreadoEn, &t.ActualizadoEn,
-		&t.RutaCompleta, &t.NivelJerarquico, &t.ElementoPadre,
-		&t.PathJerarquico, &t.ElementosAncestros,
+		&t.ID,
+		&t.TagName,
+		&t.TagPath,
+		&t.ElementName,
+		&t.ElementPath,
+		&t.PIPointName,
+		&t.PiServer,
+		&t.DatabaseName,
+		&t.RootElement,
+		&t.Unidad,
+		&t.UltimoValor,
+		&t.UltimaActualizacion,
+		&t.Frecuencia,
+		&t.Source,
+		&t.Quality,
+		&t.EquipoID,
+		&t.AsignadoAutomaticamente,
+		&t.CreadoEn,
+		&t.ActualizadoEn,
+		&t.RutaCompleta,
+		&t.NivelJerarquico,
+		&t.ElementoPadre,
+		&t.PathJerarquico,
+		&t.ElementosAncestros,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -64,33 +86,50 @@ func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
 
 	var id int
 	err := r.DB.QueryRow(`
-        INSERT INTO tags_descubiertos (
-            tag_name, tag_path, element_name, element_path,
-            pi_point_name, pi_server, database_name, root_element,
-            unidad, ultimo_valor, ultima_actualizacion, frecuencia, source,
-            ruta_completa, nivel_jerarquico, elemento_padre,
-            path_jerarquico, elementos_ancestros
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13, $14, $15, $16, $17)
-        ON CONFLICT (tag_name) DO UPDATE SET
-            tag_path = COALESCE(EXCLUDED.tag_path, tags_descubiertos.tag_path),
-            element_name = COALESCE(EXCLUDED.element_name, tags_descubiertos.element_name),
-            element_path = COALESCE(EXCLUDED.element_path, tags_descubiertos.element_path),
-            pi_point_name = COALESCE(EXCLUDED.pi_point_name, tags_descubiertos.pi_point_name),
-            pi_server = COALESCE(EXCLUDED.pi_server, tags_descubiertos.pi_server),
-            database_name = COALESCE(EXCLUDED.database_name, tags_descubiertos.database_name),
-            root_element = COALESCE(EXCLUDED.root_element, tags_descubiertos.root_element),
-            unidad = COALESCE(EXCLUDED.unidad, tags_descubiertos.unidad),
-            ultimo_valor = EXCLUDED.ultimo_valor,
-            ultima_actualizacion = EXCLUDED.ultima_actualizacion,
-            frecuencia = tags_descubiertos.frecuencia + 1,
-            actualizado_en = NOW(),
-            ruta_completa = COALESCE(EXCLUDED.ruta_completa, tags_descubiertos.ruta_completa),
-            nivel_jerarquico = COALESCE(EXCLUDED.nivel_jerarquico, tags_descubiertos.nivel_jerarquico),
-            elemento_padre = COALESCE(EXCLUDED.elemento_padre, tags_descubiertos.elemento_padre),
-            path_jerarquico = COALESCE(EXCLUDED.path_jerarquico, tags_descubiertos.path_jerarquico),
-            elementos_ancestros = COALESCE(EXCLUDED.elementos_ancestros, tags_descubiertos.elementos_ancestros)
-        RETURNING id
-    `,
+		INSERT INTO tags_descubiertos (
+			tag_name,
+			tag_path,
+			element_name,
+			element_path,
+			pi_point_name,
+			pi_server,
+			database_name,
+			root_element,
+			unidad,
+			ultimo_valor,
+			ultima_actualizacion,
+			frecuencia,
+			source,
+			ruta_completa,
+			nivel_jerarquico,
+			elemento_padre,
+			path_jerarquico,
+			elementos_ancestros
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+			$11, 1, $12, $13, $14, $15, $16, $17
+		)
+		ON CONFLICT (tag_name, element_path, pi_point_name) DO UPDATE SET
+			tag_path = COALESCE(EXCLUDED.tag_path, tags_descubiertos.tag_path),
+			element_name = COALESCE(EXCLUDED.element_name, tags_descubiertos.element_name),
+			element_path = COALESCE(EXCLUDED.element_path, tags_descubiertos.element_path),
+			pi_point_name = COALESCE(EXCLUDED.pi_point_name, tags_descubiertos.pi_point_name),
+			pi_server = COALESCE(EXCLUDED.pi_server, tags_descubiertos.pi_server),
+			database_name = COALESCE(EXCLUDED.database_name, tags_descubiertos.database_name),
+			root_element = COALESCE(EXCLUDED.root_element, tags_descubiertos.root_element),
+			unidad = COALESCE(EXCLUDED.unidad, tags_descubiertos.unidad),
+			ultimo_valor = EXCLUDED.ultimo_valor,
+			ultima_actualizacion = EXCLUDED.ultima_actualizacion,
+			frecuencia = tags_descubiertos.frecuencia + 1,
+			actualizado_en = NOW(),
+			ruta_completa = COALESCE(EXCLUDED.ruta_completa, tags_descubiertos.ruta_completa),
+			nivel_jerarquico = COALESCE(EXCLUDED.nivel_jerarquico, tags_descubiertos.nivel_jerarquico),
+			elemento_padre = COALESCE(EXCLUDED.elemento_padre, tags_descubiertos.elemento_padre),
+			path_jerarquico = COALESCE(EXCLUDED.path_jerarquico, tags_descubiertos.path_jerarquico),
+			elementos_ancestros = COALESCE(EXCLUDED.elementos_ancestros, tags_descubiertos.elementos_ancestros)
+		RETURNING id
+	`,
 		tag.TagName,
 		tag.TagPath,
 		tag.ElementName,
@@ -123,11 +162,11 @@ func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
 func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, error) {
 	rows, err := r.DB.Query(`
 		SELECT id, tag_name, tag_path, element_name, element_path,
-		       pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
-		       frecuencia, source, equipment_id, asignado_automaticamente,
-		       creado_en, actualizado_en
+			pi_point_name, unidad, ultimo_valor, ultima_actualizacion,
+			frecuencia, source, equipo_id, asignado_automaticamente,
+			creado_en, actualizado_en
 		FROM tags_descubiertos
-		WHERE equipment_id IS NULL
+		WHERE equipo_id IS NULL
 		ORDER BY frecuencia DESC, tag_name
 	`)
 	if err != nil {
@@ -141,7 +180,7 @@ func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, erro
 		if err := rows.Scan(&t.ID, &t.TagName, &t.TagPath, &t.ElementName,
 			&t.ElementPath, &t.PIPointName, &t.Unidad, &t.UltimoValor,
 			&t.UltimaActualizacion, &t.Frecuencia, &t.Source,
-			&t.EquipmentID, &t.AsignadoAutomaticamente,
+			&t.EquipoID, &t.AsignadoAutomaticamente,
 			&t.CreadoEn, &t.ActualizadoEn); err != nil {
 			return nil, err
 		}
@@ -150,12 +189,16 @@ func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, erro
 	return tags, rows.Err()
 }
 
-func (r *TagDescubiertoRepository) AsignarAEquipo(tagName string, equipoID int) error {
+func (r *TagDescubiertoRepository) AsignarAEquipo(tagID int, equipoID int) error {
 	_, err := r.DB.Exec(`
-		UPDATE tags_descubiertos 
-		SET equipment_id = $1, asignado_automaticamente = FALSE, actualizado_en = NOW()
-		WHERE tag_name = $2
-	`, equipoID, tagName)
+		UPDATE tags_descubiertos
+		SET equipo_id = $1,
+		    asignado_automaticamente = FALSE,
+		    actualizado_en = NOW()
+		WHERE id = $2
+		  AND equipo_id IS NULL
+	`, equipoID, tagID)
+
 	return err
 }
 
@@ -203,11 +246,13 @@ func (r *TagDescubiertoRepository) ObtenerTagsAgrupados() ([]models.TagAgrupado,
 }
 
 // AsignarTagsAEquipo - Usa la función SQL para asignar tags
-func (r *TagDescubiertoRepository) AsignarTagsAEquipo(equipoID int, tagNames []string) (int, error) {
+func (r *TagDescubiertoRepository) AsignarTagsAEquipo(equipoID int, tagIDs []int) (int, error) {
 	var count int
+
 	err := r.DB.QueryRow(`
         SELECT asignar_tags_a_equipo($1, $2)
-    `, equipoID, tagNames).Scan(&count)
+    `, equipoID, pq.Array(tagIDs)).Scan(&count)
+
 	return count, err
 }
 

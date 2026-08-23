@@ -61,17 +61,25 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 			return
 		}
 
-		// Guardar en tags_descubiertos
 		tag := &models.TagDescubierto{
 			TagName:             reading.TagName,
 			TagPath:             reading.ElementPath,
 			ElementName:         reading.ElementName,
 			ElementPath:         reading.ElementPath,
 			PIPointName:         reading.PIPointName,
+			PiServer:            reading.PiServer,
+			DatabaseName:        reading.Database,
+			RootElement:         reading.RootElement,
 			Unidad:              reading.Unit,
 			UltimoValor:         reading.Value,
 			UltimaActualizacion: timestamp,
 			Source:              reading.Source,
+			Quality:             reading.Quality,
+			RutaCompleta:        reading.RutaCompleta,
+			NivelJerarquico:     reading.NivelJerarquico,
+			ElementoPadre:       reading.ElementoPadre,
+			PathJerarquico:      reading.PathJerarquico,
+			ElementosAncestros:  reading.ElementosAncestros,
 		}
 
 		err := e.TagDescubiertoRepo.Upsert(tag)

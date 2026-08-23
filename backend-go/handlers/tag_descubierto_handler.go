@@ -69,8 +69,8 @@ func (h *TagDescubiertoHandler) GetTagDescubierto(w http.ResponseWriter, r *http
 // Asigna un tag descubierto a un equipo
 func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		TagName  string `json:"tag_name"`
-		EquipoID int    `json:"equipo_id"`
+		TagID    int `json:"tag_id"`
+		EquipoID int `json:"equipo_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -78,8 +78,8 @@ func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if data.TagName == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, "tag_name es requerido")
+	if data.TagID <= 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "tag_id debe ser mayor a 0")
 		return
 	}
 	if data.EquipoID <= 0 {
@@ -99,7 +99,7 @@ func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Asignar tag al equipo
-	err = h.Repo.AsignarAEquipo(data.TagName, data.EquipoID)
+	err = h.Repo.AsignarAEquipo(data.TagID, data.EquipoID)
 	if err != nil {
 		utils.ErrorJSON(w, http.StatusInternalServerError, "Error asignando tag: "+err.Error())
 		return
@@ -107,7 +107,7 @@ func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Reques
 
 	utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
 		"mensaje":   "Tag asignado correctamente",
-		"tag_name":  data.TagName,
+		"tag_id":    data.TagID,
 		"equipo_id": data.EquipoID,
 	})
 }
@@ -132,14 +132,10 @@ func (h *TagDescubiertoHandler) EliminarTag(w http.ResponseWriter, r *http.Reque
 	utils.SuccessJSON(w, http.StatusOK, map[string]string{"mensaje": "Tag eliminado correctamente"})
 }
 
-// ============================================
-// POST /api/pi/tags/asignar-multiple
-// ============================================
-// Asigna múltiples tags a un equipo (para agilizar el proceso)
 func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		Tags     []string `json:"tags"`
-		EquipoID int      `json:"equipo_id"`
+		TagIDs   []int `json:"tag_ids"`
+		EquipoID int   `json:"equipo_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -147,10 +143,11 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 		return
 	}
 
-	if len(data.Tags) == 0 {
-		utils.ErrorJSON(w, http.StatusBadRequest, "Se requiere al menos un tag")
+	if len(data.TagIDs) == 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "Se requiere al menos un tag_id")
 		return
 	}
+
 	if data.EquipoID <= 0 {
 		utils.ErrorJSON(w, http.StatusBadRequest, "equipo_id debe ser mayor a 0")
 		return
@@ -159,30 +156,52 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 	// Verificar que el equipo existe
 	existe, err := h.Repo.ExisteEquipo(data.EquipoID)
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, "Error verificando equipo: "+err.Error())
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			"Error verificando equipo: "+err.Error(),
+		)
 		return
 	}
+
 	if !existe {
-		utils.ErrorJSON(w, http.StatusBadRequest, "El equipo no existe")
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"El equipo no existe",
+		)
 		return
 	}
 
 	// Asignar cada tag
 	asignados := 0
 	errores := []string{}
-	for _, tagName := range data.Tags {
-		err := h.Repo.AsignarAEquipo(tagName, data.EquipoID)
-		if err != nil {
-			errores = append(errores, tagName+": "+err.Error())
-		} else {
-			asignados++
+
+	for _, tagID := range data.TagIDs {
+		if tagID <= 0 {
+			errores = append(
+				errores,
+				"tag_id inválido: "+strconv.Itoa(tagID),
+			)
+			continue
 		}
+
+		err := h.Repo.AsignarAEquipo(tagID, data.EquipoID)
+		if err != nil {
+			errores = append(
+				errores,
+				strconv.Itoa(tagID)+": "+err.Error(),
+			)
+			continue
+		}
+
+		asignados++
 	}
 
 	response := map[string]interface{}{
 		"mensaje":   "Tags asignados",
 		"asignados": asignados,
-		"total":     len(data.Tags),
+		"total":     len(data.TagIDs),
 	}
 	if len(errores) > 0 {
 		response["errores"] = errores

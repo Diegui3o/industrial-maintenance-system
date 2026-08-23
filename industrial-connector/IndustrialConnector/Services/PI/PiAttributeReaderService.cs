@@ -22,17 +22,12 @@ namespace IndustrialConnector.Services.PI
             string piServer,
             string database)
         {
-            // ============================================
-            // 1. VALIDAR QUE EXISTA EL ATRIBUTO
-            // ============================================
+
             if (attribute == null)
             {
                 return null;
             }
 
-            // ============================================
-            // 2. OBTENER EL ELEMENTO
-            // ============================================
             var element = attribute.Element;
             if (element == null)
             {
@@ -40,14 +35,7 @@ namespace IndustrialConnector.Services.PI
                 return null;
             }
 
-            // ============================================
-            // 3. OBTENER NOMBRE DEL TAG
-            // ============================================
             string tagName = attribute.Name ?? "TAG_SIN_NOMBRE";
-
-            // ============================================
-            // 4. CAPTURAR JERARQUÍA COMPLETA
-            // ============================================
             var rutaCompleta = new List<string>();
             var elementoActual = element;
             var elementName = "";
@@ -74,17 +62,11 @@ namespace IndustrialConnector.Services.PI
             string pathJerarquico = string.Join(" → ", rutaCompleta);
             int nivel = rutaCompleta.Count;
 
-            // ============================================
-            // ElementName: Usar el último elemento de la ruta
-            // ============================================
             if (string.IsNullOrEmpty(elementName))
             {
                 elementName = rutaCompleta.LastOrDefault() ?? "";
             }
 
-            // ============================================
-            // OBTENER ELEMENTO PADRE
-            // ============================================
             string elementoPadre = "";
             try
             {
@@ -98,16 +80,12 @@ namespace IndustrialConnector.Services.PI
                 elementoPadre = "";
             }
 
-            // ============================================
-            // 5. OBTENER VALOR
-            // ============================================
             double numericValue = 0;
             bool hasValue = false;
             string quality = "NoValue";
             string valueType = "Unknown";
             string rawValue = "";
 
-            // En el método Read, asegura que los valores no numéricos se guarden como texto
             if (value != null && value.Value != null)
             {
                 rawValue = value.Value.ToString() ?? "";
@@ -135,14 +113,9 @@ namespace IndustrialConnector.Services.PI
                 quality = "NoValue";
                 rawValue = "null";
             }
-            // ============================================
-            // 6. OBTENER UNIDAD
-            // ============================================
+
             string unidad = attribute.DefaultUOM?.Abbreviation ?? "N/A";
 
-            // ============================================
-            // 7. OBTENER TIMESTAMP
-            // ============================================
             DateTime timestamp = DateTime.UtcNow;
             try
             {
@@ -153,9 +126,6 @@ namespace IndustrialConnector.Services.PI
             }
             catch { }
 
-            // ============================================
-            // 8. CREAR EL READING - AHORA CON ElementName CORRECTO
-            // ============================================
             var reading = new SensorReading
             {
                 EquipmentId = 0,

@@ -18,7 +18,7 @@ type TagDescubierto struct {
 	UltimaActualizacion     time.Time  `json:"ultima_actualizacion"`
 	Frecuencia              int        `json:"frecuencia"`
 	Source                  string     `json:"source"`
-	EquipmentID             *int       `json:"equipment_id"`
+	EquipoID                *int       `json:"equipo_id"`
 	AsignadoAutomaticamente bool       `json:"asignado_automaticamente"`
 	CreadoEn                time.Time  `json:"creado_en"`
 	ActualizadoEn           *time.Time `json:"actualizado_en"`
