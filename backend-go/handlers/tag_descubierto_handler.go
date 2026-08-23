@@ -155,8 +155,11 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 
 	existe, err := h.Repo.ExisteEquipo(data.EquipoID)
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError,
-			"Error verificando equipo: "+err.Error())
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			"Error verificando equipo: "+err.Error(),
+		)
 		return
 	}
 
@@ -165,31 +168,23 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 		return
 	}
 
-	asignados := 0
-	errores := []string{}
+	asignados, err := h.Repo.AsignarTagsAEquipoPorIDs(
+		data.EquipoID,
+		data.TagIDs,
+	)
 
-	for _, tagID := range data.TagIDs {
-		err := h.Repo.AsignarAEquipo(tagID, data.EquipoID)
-
-		if err != nil {
-			errores = append(
-				errores,
-				strconv.Itoa(tagID)+": "+err.Error(),
-			)
-		} else {
-			asignados++
-		}
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			"Error asignando tags: "+err.Error(),
+		)
+		return
 	}
 
-	response := map[string]interface{}{
+	utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
 		"mensaje":   "Tags asignados",
 		"asignados": asignados,
 		"total":     len(data.TagIDs),
-	}
-
-	if len(errores) > 0 {
-		response["errores"] = errores
-	}
-
-	utils.SuccessJSON(w, http.StatusOK, response)
+	})
 }

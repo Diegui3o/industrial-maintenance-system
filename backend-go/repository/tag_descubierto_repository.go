@@ -173,17 +173,65 @@ func (r *TagDescubiertoRepository) GetSinEquipo() ([]models.TagDescubierto, erro
 	defer rows.Close()
 
 	var tags []models.TagDescubierto
+
 	for rows.Next() {
 		var t models.TagDescubierto
-		if err := rows.Scan(&t.ID, &t.TagName, &t.TagPath, &t.ElementName,
-			&t.ElementPath, &t.PIPointName, &t.Unidad, &t.UltimoValor,
-			&t.UltimaActualizacion, &t.Frecuencia, &t.Source,
-			&t.EquipoID, &t.AsignadoAutomaticamente,
-			&t.CreadoEn, &t.ActualizadoEn); err != nil {
+
+		var (
+			tagPath      sql.NullString
+			elementName  sql.NullString
+			elementPath  sql.NullString
+			piPointName  sql.NullString
+			unidad       sql.NullString
+			source       sql.NullString
+			equipoID     sql.NullInt64
+			ultimoValor  sql.NullFloat64
+			ultimaActual sql.NullTime
+		)
+
+		if err := rows.Scan(
+			&t.ID,
+			&t.TagName,
+			&tagPath,
+			&elementName,
+			&elementPath,
+			&piPointName,
+			&unidad,
+			&ultimoValor,
+			&ultimaActual,
+			&t.Frecuencia,
+			&source,
+			&equipoID,
+			&t.AsignadoAutomaticamente,
+			&t.CreadoEn,
+			&t.ActualizadoEn,
+		); err != nil {
 			return nil, err
 		}
+
+		t.TagPath = tagPath.String
+		t.ElementName = elementName.String
+		t.ElementPath = elementPath.String
+		t.PIPointName = piPointName.String
+		t.Unidad = unidad.String
+		t.Source = source.String
+
+		if equipoID.Valid {
+			id := int(equipoID.Int64)
+			t.EquipoID = &id
+		}
+
+		if ultimoValor.Valid {
+			t.UltimoValor = ultimoValor.Float64
+		}
+
+		if ultimaActual.Valid {
+			t.UltimaActualizacion = ultimaActual.Time
+		}
+
 		tags = append(tags, t)
 	}
+
 	return tags, rows.Err()
 }
 
