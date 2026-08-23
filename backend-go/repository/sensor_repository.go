@@ -26,63 +26,139 @@ func (r *SensorRepository) GuardarDato(
 	calidad string,
 	timestampOriginal time.Time,
 ) error {
-	// Validar que el equipo existe, si no, crearlo automáticamente
-	if equipoID > 0 {
-		var existe bool
-		err := r.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM equipos WHERE id = $1)", equipoID).Scan(&existe)
-		if err != nil {
-			log.Printf("⚠️ Error verificando equipo %d: %v", equipoID, err)
-		} else if !existe {
-			// Crear equipo automáticamente
-			_, err = r.DB.Exec(`
-                INSERT INTO equipos (id, codigo, nombre, area, estado_equipo, critico)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, equipoID, fmt.Sprintf("PI-%d", equipoID), fmt.Sprintf("Equipo PI %d", equipoID), "PI System", "activo", false)
-			if err != nil {
-				log.Printf("⚠️ Error creando equipo %d: %v", equipoID, err)
-			} else {
-				log.Printf("✅ Equipo %d creado automáticamente", equipoID)
 
-				// Registrar en equipos_automaticos
-				_, _ = r.DB.Exec(`
-                    INSERT INTO equipos_automaticos (equipo_id, creado_automaticamente, fuente_creacion)
-                    VALUES ($1, true, 'PI_System')
-                    ON CONFLICT (equipo_id) DO NOTHING
-                `, equipoID)
-			}
-		}
+	if equipoID <= 0 {
+		return fmt.Errorf(
+			"no se puede guardar dato sin equipo: parametro=%s",
+			parametro,
+		)
 	}
 
-	// Insertar en histórico (datos_sensores)
-	// El trigger actualizará automáticamente ultimo_valor_sensor
-	_, err := r.DB.Exec(`
-        INSERT INTO datos_sensores (
-            equipo_id, 
-            parametro, 
-            valor, 
-            unidad, 
-            fuente, 
-            calidad,
-            recibido_en
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, NOW()))
-    `, equipoID, parametro, valor, unidad, fuente, calidad, timestampOriginal)
+	if parametro == "" {
+		return fmt.Errorf("no se puede guardar dato sin parametro")
+	}
+
+	var existe bool
+
+	err := r.DB.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM equipos WHERE id = $1)",
+		equipoID,
+	).Scan(&existe)
 
 	if err != nil {
-		return fmt.Errorf("error guardando dato: %w", err)
+		return fmt.Errorf(
+			"error verificando equipo %d: %w",
+			equipoID,
+			err,
+		)
 	}
 
-	// Registrar el tag en pi_tags para descubrimiento automático
-	if equipoID > 0 && parametro != "" {
-		_, _ = r.DB.Exec(`
-            INSERT INTO pi_tags (tag_name, equipment_id, unidad, fuente)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (tag_name, equipment_id) DO UPDATE SET
-                ultima_actualizacion = NOW(),
-                ultimo_valor = $5,
-                activo = true
-        `, parametro, equipoID, unidad, fuente, valor)
+	if !existe {
+		return fmt.Errorf(
+			"equipo %d no existe",
+			equipoID,
+		)
 	}
+
+	_, err = r.DB.Exec(`
+		INSERT INTO datos_sensores (
+			equipo_id,
+			parametro,
+			valor,
+			unidad,
+			fuente,
+			calidad,
+			recibido_en
+		)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			COALESCE($7, NOW())
+		)
+	`,
+		equipoID,
+		parametro,
+		valor,
+		unidad,
+		fuente,
+		calidad,
+		timestampOriginal,
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"error guardando dato: %w",
+			err,
+		)
+	}
+
+	_, err = r.DB.Exec(`
+		UPDATE pi_tags
+		SET
+			ultima_actualizacion = NOW(),
+			ultimo_valor = $5,
+			unidad = $3,
+			fuente = $4,
+			activo = true
+		WHERE tag_name = $1
+		AND equipment_id = $2
+	`,
+		parametro,
+		equipoID,
+		unidad,
+		fuente,
+		valor,
+	)
+
+	if err != nil {
+		log.Printf(
+			"⚠️ Error actualizando pi_tags: Equipo=%d | Tag=%s | Error=%v",
+			equipoID,
+			parametro,
+			err,
+		)
+	}
+	if equipoID > 0 && parametro != "" {
+
+		_, err = r.DB.Exec(`
+		UPDATE pi_tags
+		SET
+			ultima_actualizacion = NOW(),
+			ultimo_valor = $3,
+			unidad = $4,
+			fuente = $5,
+			activo = true
+		WHERE tag_name = $1
+		  AND equipment_id = $2
+	`,
+			parametro,
+			equipoID,
+			valor,
+			unidad,
+			fuente,
+		)
+
+		if err != nil {
+			log.Printf(
+				"⚠️ Error actualizando pi_tags: Equipo=%d | Tag=%s | Error=%v",
+				equipoID,
+				parametro,
+				err,
+			)
+		}
+	}
+	log.Printf(
+		"💾 Dato guardado: Equipo=%d | Tag=%s | Valor=%.3f | Unidad=%s | Fuente=%s",
+		equipoID,
+		parametro,
+		valor,
+		unidad,
+		fuente,
+	)
 
 	return nil
 }

@@ -12,9 +12,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ============================================
-// TagDescubiertoHandler
-// ============================================
 type TagDescubiertoHandler struct {
 	Repo *repository.TagDescubiertoRepository
 }
@@ -23,10 +20,6 @@ func NewTagDescubiertoHandler(repo *repository.TagDescubiertoRepository) *TagDes
 	return &TagDescubiertoHandler{Repo: repo}
 }
 
-// ============================================
-// GET /api/pi/tags/descubiertos
-// ============================================
-// Lista todos los tags descubiertos sin equipo asignado
 func (h *TagDescubiertoHandler) GetTagsDescubiertos(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.Repo.GetSinEquipo()
 	if err != nil {
@@ -39,10 +32,6 @@ func (h *TagDescubiertoHandler) GetTagsDescubiertos(w http.ResponseWriter, r *ht
 	utils.SuccessJSON(w, http.StatusOK, tags)
 }
 
-// ============================================
-// GET /api/pi/tags/descubiertos/{id}
-// ============================================
-// Obtiene un tag descubierto por ID
 func (h *TagDescubiertoHandler) GetTagDescubierto(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -63,10 +52,6 @@ func (h *TagDescubiertoHandler) GetTagDescubierto(w http.ResponseWriter, r *http
 	utils.SuccessJSON(w, http.StatusOK, tag)
 }
 
-// ============================================
-// POST /api/pi/tags/asignar
-// ============================================
-// Asigna un tag descubierto a un equipo
 func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		TagID    int `json:"tag_id"`
@@ -112,10 +97,6 @@ func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// ============================================
-// DELETE /api/pi/tags/descubiertos/{id}
-// ============================================
-// Elimina un tag descubierto (si fue asignado por error o es spam)
 func (h *TagDescubiertoHandler) EliminarTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])

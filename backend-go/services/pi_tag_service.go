@@ -98,8 +98,5 @@ func (s *PITagService) CrearYAsignarTags(
 		return equipo.ID, fmt.Errorf("equipo creado pero error asignando tags: %w", err)
 	}
 
-	// 3. Asignar prioridad por defecto (normal)
-	// Esto se puede hacer después desde el frontend
-
 	return equipo.ID, nil
 }

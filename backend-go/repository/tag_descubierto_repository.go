@@ -1,10 +1,11 @@
 // repository/tag_descubierto_repository.go
-
 package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 
 	"backend/models"
 
@@ -76,9 +77,7 @@ func (r *TagDescubiertoRepository) Eliminar(id int) error {
 }
 
 func (r *TagDescubiertoRepository) Upsert(tag *models.TagDescubierto) error {
-	// ============================================
-	// LOG PARA VER LOS VALORES
-	// ============================================
+
 	log.Printf("🔍 Upsert: Tag=%s, Ruta=%s, Nivel=%d",
 		tag.TagName,
 		tag.RutaCompleta,
@@ -309,13 +308,37 @@ func (r *TagDescubiertoRepository) AsignarTagsAEquipoPorIDs(
 	equipoID int,
 	tagIDs []int,
 ) (int, error) {
+
+	log.Printf(
+		"🔧 AsignarTagsAEquipoPorIDs: EquipoID=%d | TagIDs=%v",
+		equipoID,
+		tagIDs,
+	)
+
 	var count int
 
 	err := r.DB.QueryRow(`
-                SELECT asignar_tags_a_equipo_ids($1, $2)
-        `, equipoID, pq.Array(tagIDs)).Scan(&count)
+		SELECT asignar_tags_a_equipo_ids($1, $2::INTEGER[])
+	`, equipoID, pq.Array(tagIDs)).Scan(&count)
 
-	return count, err
+	if err != nil {
+		log.Printf(
+			"❌ Error asignando tags: EquipoID=%d | TagIDs=%v | Error=%v",
+			equipoID,
+			tagIDs,
+			err,
+		)
+		return 0, err
+	}
+
+	log.Printf(
+		"✅ Tags asignados correctamente: EquipoID=%d | Solicitados=%d | Asignados=%d",
+		equipoID,
+		len(tagIDs),
+		count,
+	)
+
+	return count, nil
 }
 
 func (r *TagDescubiertoRepository) ObtenerFuentesDisponibles() ([]models.FuenteDisponible, error) {
@@ -339,90 +362,6 @@ func (r *TagDescubiertoRepository) ObtenerFuentesDisponibles() ([]models.FuenteD
 	}
 	return fuentes, rows.Err()
 }
-func (r *TagDescubiertoRepository) ObtenerTagsPorFuente(
-	fuente string,
-) ([]models.TagDescubierto, error) {
-
-	query := `
-		SELECT
-			id,
-			tag_name,
-			tag_path,
-			element_name,
-			element_path,
-			pi_point_name,
-			pi_server,
-			database_name,
-			root_element,
-			unidad,
-			ultimo_valor,
-			ultima_actualizacion,
-			frecuencia,
-			source,
-			equipo_id,
-			asignado_automaticamente,
-			creado_en,
-			actualizado_en,
-			ruta_completa,
-			nivel_jerarquico,
-			elemento_padre,
-			path_jerarquico,
-			elementos_ancestros
-		FROM tags_descubiertos
-		WHERE pi_server = $1
-		ORDER BY ruta_completa, tag_name
-	`
-
-	rows, err := r.DB.Query(query, fuente)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var tags []models.TagDescubierto
-
-	for rows.Next() {
-		var t models.TagDescubierto
-
-		err := rows.Scan(
-			&t.ID,
-			&t.TagName,
-			&t.TagPath,
-			&t.ElementName,
-			&t.ElementPath,
-			&t.PIPointName,
-			&t.PiServer,
-			&t.DatabaseName,
-			&t.RootElement,
-			&t.Unidad,
-			&t.UltimoValor,
-			&t.UltimaActualizacion,
-			&t.Frecuencia,
-			&t.Source,
-			&t.EquipoID,
-			&t.AsignadoAutomaticamente,
-			&t.CreadoEn,
-			&t.ActualizadoEn,
-			&t.RutaCompleta,
-			&t.NivelJerarquico,
-			&t.ElementoPadre,
-			&t.PathJerarquico,
-			&t.ElementosAncestros,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		tags = append(tags, t)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return tags, nil
-}
 
 func (r *TagDescubiertoRepository) ObtenerEquipoIDPorTag(
 	tagName string,
@@ -439,6 +378,17 @@ func (r *TagDescubiertoRepository) ObtenerEquipoIDPorTag(
 
 	var equipoID sql.NullInt64
 
+	if strings.TrimSpace(piPointName) == "" {
+
+		log.Printf(
+			"⚠️ PIPoint vacío: no se realizará búsqueda alternativa | Tag=%s | ElementPath=%s",
+			tagName,
+			elementPath,
+		)
+
+		return nil, nil
+	}
+
 	err := r.DB.QueryRow(`
 		SELECT equipo_id
 		FROM tags_descubiertos
@@ -453,37 +403,66 @@ func (r *TagDescubiertoRepository) ObtenerEquipoIDPorTag(
 		piPointName,
 	).Scan(&equipoID)
 
-	if err == sql.ErrNoRows {
+	if err == nil && equipoID.Valid {
+
+		id := int(equipoID.Int64)
+
 		log.Printf(
-			"🔎 Sin asignación encontrada: Tag=%s | PIPoint=%s",
+			"✅ ASIGNACIÓN EXACTA: Tag=%s | PIPoint=%s → EquipoID=%d",
 			tagName,
 			piPointName,
+			id,
 		)
-		return nil, nil
+
+		return &id, nil
 	}
 
-	if err != nil {
-		log.Printf(
-			"❌ Error consultando asignación: Tag=%s | PIPoint=%s | Error=%v",
-			tagName,
-			piPointName,
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf(
+			"error buscando asignación exacta: %w",
 			err,
 		)
-		return nil, err
 	}
 
-	if !equipoID.Valid {
-		return nil, nil
+	err = r.DB.QueryRow(`
+		SELECT equipo_id
+		FROM tags_descubiertos
+		WHERE pi_point_name = $1
+		  AND tag_name = $2
+		  AND equipo_id IS NOT NULL
+		ORDER BY actualizado_en DESC
+		LIMIT 1
+	`,
+		piPointName,
+		tagName,
+	).Scan(&equipoID)
+
+	if err == nil && equipoID.Valid {
+
+		id := int(equipoID.Int64)
+
+		log.Printf(
+			"🔗 ASIGNACIÓN POR PIPoint: PIPoint=%s | Tag=%s → EquipoID=%d",
+			piPointName,
+			tagName,
+			id,
+		)
+
+		return &id, nil
 	}
 
-	id := int(equipoID.Int64)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf(
+			"error buscando asignación por PIPoint: %w",
+			err,
+		)
+	}
 
 	log.Printf(
-		"✅ ASIGNACIÓN ENCONTRADA: Tag=%s | PIPoint=%s → EquipoID=%d",
+		"🔎 Sin asignación encontrada: Tag=%s | PIPoint=%s",
 		tagName,
 		piPointName,
-		id,
 	)
 
-	return &id, nil
+	return nil, nil
 }

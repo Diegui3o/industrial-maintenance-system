@@ -4,6 +4,7 @@ package engine
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"backend/models"
@@ -21,6 +22,9 @@ type RuleEngine struct {
 	EquipoRepo         *repository.EquipoRepository
 	Dispatcher         *services.DispatcherService
 	TagDescubiertoRepo *repository.TagDescubiertoRepository
+
+	tagEquipoCache map[string]int
+	tagCacheMu     sync.RWMutex
 }
 
 func NewRuleEngine(
@@ -44,72 +48,131 @@ func NewRuleEngine(
 		EquipoRepo:         equipoRepo,
 		Dispatcher:         dispatcher,
 		TagDescubiertoRepo: tagDescubiertoRepo,
+
+		tagEquipoCache: make(map[string]int),
 	}
 }
 
 func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp time.Time) {
-	log.Printf("🔍 ProcessSensorData: Equipo=%d, Tag=%s, Valor=%.3f",
-		reading.EquipmentID, reading.TagName, reading.Value)
+	log.Printf(
+		"🔍 ProcessSensorData: Equipo=%d, Tag=%s, Valor=%.3f",
+		reading.EquipmentID,
+		reading.TagName,
+		reading.Value,
+	)
 
 	if reading.EquipmentID <= 0 {
 
 		if reading.TagName == "" {
-			log.Printf("⚠️ TagName vacío, ignorando")
+			log.Printf("⚠️ TagName vacío, ignorando lectura")
 			return
 		}
 
-		equipoID, err := e.TagDescubiertoRepo.ObtenerEquipoIDPorTag(
-			reading.TagName,
-			reading.ElementPath,
-			reading.PIPointName,
-		)
+		if equipoID, existe := e.obtenerEquipoDesdeCache(reading); existe {
 
-		if err != nil {
-			log.Printf("❌ Error buscando asignación del tag %s: %v",
-				reading.TagName, err)
-		}
+			reading.EquipmentID = equipoID
 
-		if equipoID != nil {
-			reading.EquipmentID = *equipoID
-
-			log.Printf("🔗 Asignación encontrada: Tag=%s → EquipoID=%d",
+			log.Printf(
+				"⚡ ASIGNACIÓN DESDE CACHÉ: Tag=%s | PIPoint=%s → EquipoID=%d",
 				reading.TagName,
-				reading.EquipmentID)
+				reading.PIPointName,
+				reading.EquipmentID,
+			)
 
 		} else {
 
-			tag := &models.TagDescubierto{
-				TagName:             reading.TagName,
-				TagPath:             reading.ElementPath,
-				ElementName:         reading.ElementName,
-				ElementPath:         reading.ElementPath,
-				PIPointName:         reading.PIPointName,
-				PiServer:            reading.PiServer,
-				DatabaseName:        reading.Database,
-				RootElement:         reading.RootElement,
-				Unidad:              reading.Unit,
-				UltimoValor:         reading.Value,
-				UltimaActualizacion: timestamp,
-				Source:              reading.Source,
-				Quality:             reading.Quality,
-				RutaCompleta:        reading.RutaCompleta,
-				NivelJerarquico:     reading.NivelJerarquico,
-				ElementoPadre:       reading.ElementoPadre,
-				PathJerarquico:      reading.PathJerarquico,
-				ElementosAncestros:  reading.ElementosAncestros,
+			equipoID, err := e.TagDescubiertoRepo.ObtenerEquipoIDPorTag(
+				reading.TagName,
+				reading.ElementPath,
+				reading.PIPointName,
+			)
+
+			if err != nil {
+				log.Printf(
+					"❌ Error buscando asignación: Tag=%s | ElementPath=%s | PIPoint=%s | Error=%v",
+					reading.TagName,
+					reading.ElementPath,
+					reading.PIPointName,
+					err,
+				)
+				return
 			}
 
-			if err := e.TagDescubiertoRepo.Upsert(tag); err != nil {
-				log.Printf("❌ Error guardando tag descubierto: %v", err)
-			}
+			if equipoID != nil {
 
-			return
+				reading.EquipmentID = *equipoID
+
+				e.guardarEquipoEnCache(
+					reading,
+					reading.EquipmentID,
+				)
+
+				log.Printf(
+					"🔗 ASIGNACIÓN APLICADA: Tag=%s | PIPoint=%s → EquipoID=%d",
+					reading.TagName,
+					reading.PIPointName,
+					reading.EquipmentID,
+				)
+
+			} else {
+
+				tag := &models.TagDescubierto{
+					TagName:             reading.TagName,
+					TagPath:             reading.ElementPath,
+					ElementName:         reading.ElementName,
+					ElementPath:         reading.ElementPath,
+					PIPointName:         reading.PIPointName,
+					PiServer:            reading.PiServer,
+					DatabaseName:        reading.Database,
+					RootElement:         reading.RootElement,
+					Unidad:              reading.Unit,
+					UltimoValor:         reading.Value,
+					UltimaActualizacion: timestamp,
+					Source:              reading.Source,
+					Quality:             reading.Quality,
+					RutaCompleta:        reading.RutaCompleta,
+					NivelJerarquico:     reading.NivelJerarquico,
+					ElementoPadre:       reading.ElementoPadre,
+					PathJerarquico:      reading.PathJerarquico,
+					ElementosAncestros:  reading.ElementosAncestros,
+				}
+
+				if err := e.TagDescubiertoRepo.Upsert(tag); err != nil {
+					log.Printf(
+						"❌ Error guardando tag descubierto: Tag=%s | PIPoint=%s | Error=%v",
+						reading.TagName,
+						reading.PIPointName,
+						err,
+					)
+				} else {
+					log.Printf(
+						"🆕 Tag sin equipo: Tag=%s | PIPoint=%s",
+						reading.TagName,
+						reading.PIPointName,
+					)
+				}
+
+				return
+			}
 		}
 	}
 
-	decision := e.DecisionService.DecidirGuardado(reading, timestamp)
+	if reading.EquipmentID <= 0 {
+		log.Printf(
+			"⚠️ Lectura sin EquipoID después de la resolución: Tag=%s | PIPoint=%s",
+			reading.TagName,
+			reading.PIPointName,
+		)
+		return
+	}
+
+	decision := e.DecisionService.DecidirGuardado(
+		reading,
+		timestamp,
+	)
 
 	if decision.Guardar {
+
 		err := e.SensorRepo.GuardarDato(
 			reading.EquipmentID,
 			reading.TagName,
@@ -119,18 +182,44 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 			reading.Quality,
 			timestamp,
 		)
+
 		if err != nil {
-			log.Printf("❌ Error guardando dato: %v", err)
+			log.Printf(
+				"❌ Error guardando dato: %v",
+				err,
+			)
 		} else {
-			log.Printf("✅ Dato GUARDADO: Equipo=%d, %s=%.3f %s",
-				reading.EquipmentID, reading.TagName, reading.Value, reading.Unit)
+			log.Printf(
+				"💾 Dato guardado: Equipo=%d | Tag=%s | Valor=%.3f | Unidad=%s | Fuente=%s",
+				reading.EquipmentID,
+				reading.TagName,
+				reading.Value,
+				reading.Unit,
+				reading.Source,
+			)
+
+			log.Printf(
+				"✅ Dato GUARDADO: Equipo=%d, %s=%.3f %s",
+				reading.EquipmentID,
+				reading.TagName,
+				reading.Value,
+				reading.Unit,
+			)
 		}
+
 	} else {
-		log.Printf("⏭️ Dato NO guardado: Equipo=%d, %s=%.3f %s (motivo: %s)",
-			reading.EquipmentID, reading.TagName, reading.Value, reading.Unit, decision.Motivo)
+
+		log.Printf(
+			"⏭️ Dato NO guardado: Equipo=%d, %s=%.3f %s (motivo: %s)",
+			reading.EquipmentID,
+			reading.TagName,
+			reading.Value,
+			reading.Unit,
+			decision.Motivo,
+		)
 	}
 
-	e.SensorRepo.ActualizarUltimoValor(
+	err := e.SensorRepo.ActualizarUltimoValor(
 		reading.EquipmentID,
 		reading.TagName,
 		reading.Value,
@@ -140,36 +229,95 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 		timestamp,
 	)
 
-	umbrales, err := e.ConfigRepo.ObtenerUmbrales(reading.EquipmentID, reading.TagName)
-	if err != nil || umbrales == nil {
+	if err != nil {
+		log.Printf(
+			"⚠️ Error actualizando último valor: Equipo=%d | Tag=%s | Error=%v",
+			reading.EquipmentID,
+			reading.TagName,
+			err,
+		)
+	}
+
+	umbrales, err := e.ConfigRepo.ObtenerUmbrales(
+		reading.EquipmentID,
+		reading.TagName,
+	)
+
+	if err != nil {
+		log.Printf(
+			"⚠️ Error obteniendo umbrales: Equipo=%d | Tag=%s | Error=%v",
+			reading.EquipmentID,
+			reading.TagName,
+			err,
+		)
 		return
 	}
 
-	if (umbrales.UmbralMin != nil && reading.Value < *umbrales.UmbralMin) ||
-		(umbrales.UmbralMax != nil && reading.Value > *umbrales.UmbralMax) {
+	if umbrales == nil {
+		return
+	}
 
-		log.Printf("🚨 ALARMA: %s = %.3f está fuera de rango", reading.TagName, reading.Value)
+	fueraDeRango :=
+		(umbrales.UmbralMin != nil && reading.Value < *umbrales.UmbralMin) ||
+			(umbrales.UmbralMax != nil && reading.Value > *umbrales.UmbralMax)
 
-		evento := &models.DatoEvento{
-			EquipoID:        reading.EquipmentID,
-			TipoEvento:      "alarma",
-			Descripcion:     fmt.Sprintf("%s = %.3f %s (fuera de rango)", reading.TagName, reading.Value, reading.Unit),
-			ValorNuevo:      &reading.Value,
-			Parametro:       reading.TagName,
-			TimestampEvento: timestamp,
+	if !fueraDeRango {
+		return
+	}
+
+	log.Printf(
+		"🚨 ALARMA: Equipo=%d | %s=%.3f está fuera de rango",
+		reading.EquipmentID,
+		reading.TagName,
+		reading.Value,
+	)
+
+	evento := &models.DatoEvento{
+		EquipoID:   reading.EquipmentID,
+		TipoEvento: "alarma",
+		Descripcion: fmt.Sprintf(
+			"%s = %.3f %s (fuera de rango)",
+			reading.TagName,
+			reading.Value,
+			reading.Unit,
+		),
+		ValorNuevo:      &reading.Value,
+		Parametro:       reading.TagName,
+		TimestampEvento: timestamp,
+	}
+
+	if err := e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento); err != nil {
+		log.Printf(
+			"⚠️ Error guardando evento de alarma: %v",
+			err,
+		)
+	}
+
+	if e.EventoService != nil {
+		if err := e.EventoService.CambiarEstadoEquipo(
+			reading.EquipmentID,
+			"fallo",
+			"Valor fuera de rango: "+reading.TagName,
+		); err != nil {
+			log.Printf(
+				"⚠️ Error cambiando estado del equipo: %v",
+				err,
+			)
 		}
-		e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento)
+	}
 
-		if e.EventoService != nil {
-			e.EventoService.CambiarEstadoEquipo(reading.EquipmentID, "fallo",
-				"Valor fuera de rango: "+reading.TagName)
-		}
+	if e.AlarmaService != nil {
+		motivoAlarma := fmt.Sprintf(
+			"%s = %.3f %s (fuera de rango)",
+			reading.TagName,
+			reading.Value,
+			reading.Unit,
+		)
 
-		if e.AlarmaService != nil {
-			motivoAlarma := fmt.Sprintf("%s = %.3f %s (fuera de rango)",
-				reading.TagName, reading.Value, reading.Unit)
-			e.AlarmaService.GenerarAlarmaPorFallo(reading.EquipmentID, motivoAlarma)
-		}
+		e.AlarmaService.GenerarAlarmaPorFallo(
+			reading.EquipmentID,
+			motivoAlarma,
+		)
 	}
 }
 
@@ -219,4 +367,44 @@ func (e *RuleEngine) ProcessPingRecovery(equipoID int, latency float64) {
 	e.Dispatcher.Dispatch(equipoID, "recuperacion", "info", motivo)
 
 	log.Printf("🟢 Equipo %d y sus hijos recuperados", equipoID)
+}
+
+func (e *RuleEngine) obtenerEquipoDesdeCache(
+	reading models.SensorReading,
+) (int, bool) {
+
+	clave := reading.TagName + "|" +
+		reading.ElementPath + "|" +
+		reading.PIPointName
+
+	e.tagCacheMu.RLock()
+	equipoID, existe := e.tagEquipoCache[clave]
+	e.tagCacheMu.RUnlock()
+
+	return equipoID, existe
+}
+
+func (e *RuleEngine) guardarEquipoEnCache(
+	reading models.SensorReading,
+	equipoID int,
+) {
+
+	if equipoID <= 0 {
+		return
+	}
+
+	clave := reading.TagName + "|" +
+		reading.ElementPath + "|" +
+		reading.PIPointName
+
+	e.tagCacheMu.Lock()
+	e.tagEquipoCache[clave] = equipoID
+	e.tagCacheMu.Unlock()
+
+	log.Printf(
+		"🧠 Caché asignación: Tag=%s | PIPoint=%s → EquipoID=%d",
+		reading.TagName,
+		reading.PIPointName,
+		equipoID,
+	)
 }

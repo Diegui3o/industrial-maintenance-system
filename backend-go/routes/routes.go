@@ -201,7 +201,6 @@ func SetupRoutes(
 		"/api/firestore/{collection}/{documentID}",
 		firestoreHandler.GetDocument,
 	).Methods("GET")
-	// Jerarquía
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
 
 	return r
