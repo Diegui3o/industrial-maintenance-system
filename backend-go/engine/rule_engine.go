@@ -51,49 +51,62 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 	log.Printf("🔍 ProcessSensorData: Equipo=%d, Tag=%s, Valor=%.3f",
 		reading.EquipmentID, reading.TagName, reading.Value)
 
-	// ============================================
-	// 1. DATOS SIN EQUIPO → GUARDAR EN DESCUBIERTOS
-	// ============================================
 	if reading.EquipmentID <= 0 {
-		// Verificar que TagName no esté vacío
+
 		if reading.TagName == "" {
 			log.Printf("⚠️ TagName vacío, ignorando")
 			return
 		}
 
-		tag := &models.TagDescubierto{
-			TagName:             reading.TagName,
-			TagPath:             reading.ElementPath,
-			ElementName:         reading.ElementName,
-			ElementPath:         reading.ElementPath,
-			PIPointName:         reading.PIPointName,
-			PiServer:            reading.PiServer,
-			DatabaseName:        reading.Database,
-			RootElement:         reading.RootElement,
-			Unidad:              reading.Unit,
-			UltimoValor:         reading.Value,
-			UltimaActualizacion: timestamp,
-			Source:              reading.Source,
-			Quality:             reading.Quality,
-			RutaCompleta:        reading.RutaCompleta,
-			NivelJerarquico:     reading.NivelJerarquico,
-			ElementoPadre:       reading.ElementoPadre,
-			PathJerarquico:      reading.PathJerarquico,
-			ElementosAncestros:  reading.ElementosAncestros,
-		}
+		equipoID, err := e.TagDescubiertoRepo.ObtenerEquipoIDPorTag(
+			reading.TagName,
+			reading.ElementPath,
+			reading.PIPointName,
+		)
 
-		err := e.TagDescubiertoRepo.Upsert(tag)
 		if err != nil {
-			log.Printf("❌ Error guardando tag descubierto: %v", err)
-		} else {
+			log.Printf("❌ Error buscando asignación del tag %s: %v",
+				reading.TagName, err)
 		}
-		return
 
+		if equipoID != nil {
+			reading.EquipmentID = *equipoID
+
+			log.Printf("🔗 Asignación encontrada: Tag=%s → EquipoID=%d",
+				reading.TagName,
+				reading.EquipmentID)
+
+		} else {
+
+			tag := &models.TagDescubierto{
+				TagName:             reading.TagName,
+				TagPath:             reading.ElementPath,
+				ElementName:         reading.ElementName,
+				ElementPath:         reading.ElementPath,
+				PIPointName:         reading.PIPointName,
+				PiServer:            reading.PiServer,
+				DatabaseName:        reading.Database,
+				RootElement:         reading.RootElement,
+				Unidad:              reading.Unit,
+				UltimoValor:         reading.Value,
+				UltimaActualizacion: timestamp,
+				Source:              reading.Source,
+				Quality:             reading.Quality,
+				RutaCompleta:        reading.RutaCompleta,
+				NivelJerarquico:     reading.NivelJerarquico,
+				ElementoPadre:       reading.ElementoPadre,
+				PathJerarquico:      reading.PathJerarquico,
+				ElementosAncestros:  reading.ElementosAncestros,
+			}
+
+			if err := e.TagDescubiertoRepo.Upsert(tag); err != nil {
+				log.Printf("❌ Error guardando tag descubierto: %v", err)
+			}
+
+			return
+		}
 	}
 
-	// ============================================
-	// 2. DATOS CON EQUIPO → GUARDAR NORMAL
-	// ============================================
 	decision := e.DecisionService.DecidirGuardado(reading, timestamp)
 
 	if decision.Guardar {
@@ -117,9 +130,6 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 			reading.EquipmentID, reading.TagName, reading.Value, reading.Unit, decision.Motivo)
 	}
 
-	// ============================================
-	// 3. ACTUALIZAR ÚLTIMO VALOR (SIEMPRE)
-	// ============================================
 	e.SensorRepo.ActualizarUltimoValor(
 		reading.EquipmentID,
 		reading.TagName,
@@ -130,9 +140,6 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 		timestamp,
 	)
 
-	// ============================================
-	// 4. EVALUAR UMBRALES (ALARMAS)
-	// ============================================
 	umbrales, err := e.ConfigRepo.ObtenerUmbrales(reading.EquipmentID, reading.TagName)
 	if err != nil || umbrales == nil {
 		return

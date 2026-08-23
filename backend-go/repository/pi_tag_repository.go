@@ -17,23 +17,20 @@ func NewPITagRepository(db *sql.DB) *PITagRepository {
 	return &PITagRepository{DB: db}
 }
 
-// GetTagsSinEquipo - Obtiene tags de PI System sin equipo asignado
 func (r *PITagRepository) GetTagsSinEquipo() ([]models.PITagDiscovery, error) {
 	query := `
-        SELECT 
-            parametro,
-            unidad,
-            COUNT(*) as frecuencia,
-            MAX(valor) as ultimo_valor,
-            MAX(recibido_en) as ultima_actualizacion
-        FROM datos_sensores 
-        WHERE (equipo_id = 0 OR equipo_id IS NULL)
-            AND fuente = 'PI_System'
-            AND parametro IS NOT NULL 
-            AND parametro != ''
-        GROUP BY parametro, unidad
-        ORDER BY parametro
-    `
+		SELECT
+			tag_name,
+			COALESCE(unidad, '') AS unidad,
+			frecuencia,
+			ultimo_valor,
+			ultima_actualizacion
+		FROM tags_descubiertos
+		WHERE equipo_id IS NULL
+		  AND tag_name IS NOT NULL
+		  AND tag_name != ''
+		ORDER BY tag_name
+	`
 
 	rows, err := r.DB.Query(query)
 	if err != nil {
@@ -42,19 +39,26 @@ func (r *PITagRepository) GetTagsSinEquipo() ([]models.PITagDiscovery, error) {
 	defer rows.Close()
 
 	var tags []models.PITagDiscovery
+
 	for rows.Next() {
 		var t models.PITagDiscovery
 		var ultimoValor sql.NullFloat64
 		var ultimaActualizacion sql.NullTime
 
-		if err := rows.Scan(&t.Parametro, &t.Unidad, &t.Frecuencia,
-			&ultimoValor, &ultimaActualizacion); err != nil {
+		if err := rows.Scan(
+			&t.Parametro,
+			&t.Unidad,
+			&t.Frecuencia,
+			&ultimoValor,
+			&ultimaActualizacion,
+		); err != nil {
 			return nil, err
 		}
 
 		if ultimoValor.Valid {
 			t.UltimoValor = ultimoValor.Float64
 		}
+
 		if ultimaActualizacion.Valid {
 			t.UltimaActualizacion = ultimaActualizacion.Time
 		}
@@ -65,32 +69,30 @@ func (r *PITagRepository) GetTagsSinEquipo() ([]models.PITagDiscovery, error) {
 	return tags, rows.Err()
 }
 
-// GetSugerenciasAgrupacion - Obtiene sugerencias de agrupación automática
 func (r *PITagRepository) GetSugerenciasAgrupacion() ([]models.PITagSugerencia, error) {
 	query := `
-        WITH tag_groups AS (
-            SELECT 
-                SUBSTRING(parametro FROM '^[^_]+') as prefijo,
-                ARRAY_AGG(DISTINCT parametro ORDER BY parametro) as tags,
-                ARRAY_AGG(DISTINCT unidad ORDER BY unidad) as unidades,
-                COUNT(DISTINCT parametro) as cantidad
-            FROM datos_sensores 
-            WHERE (equipo_id = 0 OR equipo_id IS NULL)
-                AND fuente = 'PI_System'
-                AND parametro IS NOT NULL 
-                AND parametro != ''
-            GROUP BY SUBSTRING(parametro FROM '^[^_]+')
-            HAVING COUNT(DISTINCT parametro) > 1
-        )
-        SELECT 
-            prefijo,
-            cantidad,
-            tags,
-            unidades,
-            CONCAT('Equipo ', prefijo) as equipo_sugerido
-        FROM tag_groups
-        ORDER BY cantidad DESC, prefijo
-    `
+		WITH tag_groups AS (
+			SELECT
+				SUBSTRING(tag_name FROM '^[^_]+') AS prefijo,
+				ARRAY_AGG(DISTINCT tag_name ORDER BY tag_name) AS tags,
+				ARRAY_AGG(DISTINCT COALESCE(unidad, '') ORDER BY COALESCE(unidad, '')) AS unidades,
+				COUNT(DISTINCT tag_name) AS cantidad
+			FROM tags_descubiertos
+			WHERE equipo_id IS NULL
+			  AND tag_name IS NOT NULL
+			  AND tag_name != ''
+			GROUP BY SUBSTRING(tag_name FROM '^[^_]+')
+			HAVING COUNT(DISTINCT tag_name) > 1
+		)
+		SELECT
+			prefijo,
+			cantidad,
+			tags,
+			unidades,
+			CONCAT('Equipo ', prefijo) AS equipo_sugerido
+		FROM tag_groups
+		ORDER BY cantidad DESC, prefijo
+	`
 
 	rows, err := r.DB.Query(query)
 	if err != nil {
@@ -99,15 +101,21 @@ func (r *PITagRepository) GetSugerenciasAgrupacion() ([]models.PITagSugerencia, 
 	defer rows.Close()
 
 	var sugerencias []models.PITagSugerencia
+
 	for rows.Next() {
 		var s models.PITagSugerencia
 		var tagsArray, unidadesArray string
 
-		if err := rows.Scan(&s.Prefijo, &s.Cantidad, &tagsArray, &unidadesArray, &s.EquipoSugerido); err != nil {
+		if err := rows.Scan(
+			&s.Prefijo,
+			&s.Cantidad,
+			&tagsArray,
+			&unidadesArray,
+			&s.EquipoSugerido,
+		); err != nil {
 			return nil, err
 		}
 
-		// Parsear arrays de PostgreSQL
 		s.Tags = parseStringArray(tagsArray)
 		s.Unidades = parseStringArray(unidadesArray)
 
@@ -123,9 +131,9 @@ func (r *PITagRepository) AsignarTagsEquipo(equipoID int, tags []string) error {
 		return fmt.Errorf("no hay tags para asignar")
 	}
 
-	// Crear placeholders para la consulta
 	placeholders := make([]string, len(tags))
 	args := make([]interface{}, len(tags)+1)
+
 	args[0] = equipoID
 
 	for i, tag := range tags {
@@ -134,47 +142,53 @@ func (r *PITagRepository) AsignarTagsEquipo(equipoID int, tags []string) error {
 	}
 
 	query := fmt.Sprintf(`
-        UPDATE datos_sensores 
-        SET equipo_id = $1 
-        WHERE parametro IN (%s) 
-            AND (equipo_id = 0 OR equipo_id IS NULL)
-            AND fuente = 'PI_System'
-    `, strings.Join(placeholders, ", "))
+		UPDATE tags_descubiertos
+		SET
+			equipo_id = $1,
+			asignado_automaticamente = FALSE,
+			actualizado_en = NOW()
+		WHERE tag_name IN (%s)
+		  AND equipo_id IS NULL
+	`, strings.Join(placeholders, ", "))
 
 	_, err := r.DB.Exec(query, args...)
 	return err
 }
 
-// GetTagsByEquipo - Obtiene tags asignados a un equipo
 func (r *PITagRepository) GetTagsByEquipo(equipoID int) ([]models.PITagEquipo, error) {
 	query := `
-        SELECT 
-            e.id as equipo_id,
-            e.nombre as equipo_nombre,
-            ARRAY_AGG(DISTINCT ds.parametro ORDER BY ds.parametro) as tags,
-            COUNT(DISTINCT ds.parametro) as total_tags
-        FROM equipos e
-        LEFT JOIN datos_sensores ds ON e.id = ds.equipo_id
-        WHERE e.id = $1
-            AND ds.fuente = 'PI_System'
-            AND ds.parametro IS NOT NULL
-        GROUP BY e.id, e.nombre
-    `
+		SELECT
+			e.id AS equipo_id,
+			e.nombre AS equipo_nombre,
+			ARRAY_AGG(DISTINCT td.tag_name ORDER BY td.tag_name) AS tags,
+			COUNT(DISTINCT td.tag_name) AS total_tags
+		FROM equipos e
+		LEFT JOIN tags_descubiertos td
+			ON e.id = td.equipo_id
+		WHERE e.id = $1
+		GROUP BY e.id, e.nombre
+	`
 
 	var result models.PITagEquipo
 	var tagsArray string
 
 	err := r.DB.QueryRow(query, equipoID).Scan(
-		&result.EquipoID, &result.EquipoNombre, &tagsArray, &result.TotalTags)
+		&result.EquipoID,
+		&result.EquipoNombre,
+		&tagsArray,
+		&result.TotalTags,
+	)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	result.Tags = parseStringArray(tagsArray)
+
 	return []models.PITagEquipo{result}, nil
 }
 

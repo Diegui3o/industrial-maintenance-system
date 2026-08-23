@@ -11,6 +11,8 @@ import (
 	"backend/repository"
 	"backend/services"
 	"backend/utils"
+
+	"github.com/gorilla/mux"
 )
 
 type PITagHandler struct {
@@ -132,22 +134,23 @@ func (h *PITagHandler) CrearEquipoConTags(w http.ResponseWriter, r *http.Request
 
 // GET /api/pi/tags/equipo/{id}
 func (h *PITagHandler) GetTagsByEquipo(w http.ResponseWriter, r *http.Request) {
-	vars := r.URL.Query()
-	idStr := vars.Get("id")
-	if idStr == "" {
-		// Si no viene ID, usar el de la URL
-		idStr = r.URL.Path[len("/api/pi/tags/equipo/"):]
-	}
+	vars := mux.Vars(r)
+
+	idStr := vars["id"]
 
 	equipoID, err := strconv.Atoi(idStr)
-	if err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "ID inválido")
+	if err != nil || equipoID <= 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "ID de equipo inválido")
 		return
 	}
 
-	tags, err := h.Service.Repo.GetTagsByEquipo(equipoID)
+	tags, err := h.Repo.GetTagsByEquipo(equipoID)
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusInternalServerError, "Error obteniendo tags del equipo")
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			"Error obteniendo tags del equipo",
+		)
 		return
 	}
 

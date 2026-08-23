@@ -17,38 +17,76 @@ namespace IndustrialConnector.Services
             _logger = logger;
         }
 
-        public async Task<bool> SendDataAsync(string jsonData, string apiKey)
+        public async Task<bool> SendDataAsync(
+            string jsonData,
+            string apiKey,
+            string endpoint)
         {
             try
             {
-                var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
-                _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+                var content = new StringContent(
+                    jsonData,
+                    Encoding.UTF8,
+                    "application/json"
+                );
 
-                var response = await _httpClient.PostAsync("/api/v1/eventos/sensor", content);
+                _httpClient.DefaultRequestHeaders.Clear();
+
+                _httpClient.DefaultRequestHeaders.Add(
+                    "X-API-Key",
+                    apiKey
+                );
+
+                _httpClient.DefaultRequestHeaders.Add(
+                    "Accept",
+                    "application/json"
+                );
+
+                var response = await _httpClient.PostAsync(
+                    endpoint,
+                    content
+                );
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    _logger.LogTrace("✅ Respuesta: {Response}", responseBody);
+                    var responseBody =
+                        await response.Content.ReadAsStringAsync();
+
+                    _logger.LogTrace(
+                        "✅ Respuesta: {Response}",
+                        responseBody
+                    );
+
                     return true;
                 }
-                else
-                {
-                    var errorBody = await response.Content.ReadAsStringAsync();
-                    _logger.LogError(" Error HTTP {StatusCode}: {Error}", response.StatusCode, errorBody);
-                    return false;
-                }
+
+                var errorBody =
+                    await response.Content.ReadAsStringAsync();
+
+                _logger.LogError(
+                    "❌ Error HTTP {StatusCode}: {Error}",
+                    response.StatusCode,
+                    errorBody
+                );
+
+                return false;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, " Error de red al enviar datos");
+                _logger.LogError(
+                    ex,
+                    "❌ Error de red al enviar datos"
+                );
+
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, " Error inesperado en SendDataAsync");
+                _logger.LogError(
+                    ex,
+                    "❌ Error inesperado en SendDataAsync"
+                );
+
                 return false;
             }
         }

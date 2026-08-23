@@ -100,13 +100,15 @@ namespace IndustrialConnector.Workers
                     _logger.LogInformation($"📤 JSON a enviar: {preview}");
                 }
 
-                var success = await _exporter.SendDataAsync(json, _config.ApiKey);
+                var success = await _exporter.SendDataAsync(
+                    json,
+                    _config.ApiKey,
+                    _config.Endpoint
+                );
 
                 if (success)
                 {
-                    // ============================================
-                    // USAR MÉTODOS DE HEALTH SERVICE
-                    // ============================================
+
                     _health.RegisterSentReadings(batch.Count, _buffer.Count);
                     _health.UpdateBufferCount(_buffer.Count);
                     return true;

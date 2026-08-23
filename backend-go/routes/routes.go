@@ -84,7 +84,8 @@ func SetupRoutes(
 		DB:      db,
 	}
 	tiempoRealHandler := handlers.NewTiempoRealHandler(sensorRepo)
-	sensorHandler := handlers.NewSensorHandler(ruleEngine, tagDescubiertoRepo)
+	sensorHandler := handlers.NewSensorHandler(ruleEngine)
+
 	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 	firestoreHandler := handlers.NewFirestoreHandler(
@@ -170,7 +171,6 @@ func SetupRoutes(
 	r.HandleFunc("/api/pi/tags/equipo/{id}", piTagHandler.GetTagsByEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/fuentes", piTagHandler.GetFuentesDisponibles).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/tags", equipoTagHandler.GetTagsByEquipo).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/tiempo-real", equipoTagHandler.GetTiempoReal).Methods("GET")
 
 	r.HandleFunc("/api/pi/tags/descubiertos", tagDescubiertoHandler.GetTagsDescubiertos).Methods("GET")
 	r.HandleFunc("/api/pi/tags/descubiertos/{id}", tagDescubiertoHandler.GetTagDescubierto).Methods("GET")

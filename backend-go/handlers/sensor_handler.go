@@ -9,26 +9,21 @@ import (
 
 	"backend/engine"
 	"backend/models"
-	"backend/repository"
 	"backend/utils"
 )
 
 type SensorHandler struct {
-	RuleEngine         *engine.RuleEngine
-	TagDescubiertoRepo *repository.TagDescubiertoRepository
+	RuleEngine *engine.RuleEngine
 }
 
 func NewSensorHandler(
 	ruleEngine *engine.RuleEngine,
-	tagDescubiertoRepo *repository.TagDescubiertoRepository,
 ) *SensorHandler {
 	return &SensorHandler{
-		RuleEngine:         ruleEngine,
-		TagDescubiertoRepo: tagDescubiertoRepo,
+		RuleEngine: ruleEngine,
 	}
 }
 
-// RecibirBatch: POST /api/v1/eventos/sensor
 func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 	var batch []models.SensorReading
 
@@ -40,104 +35,103 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("📥 Recibido batch con %d lecturas", len(batch))
 
-	if len(batch) > 0 {
-		first := batch[0]
-
-		log.Printf(
-			"🔎 PRIMERA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
-			first.TagName,
-			first.ElementName,
-			first.RootElement,
-			first.ElementPath,
-			first.RutaCompleta,
-			first.NivelJerarquico,
-			first.ElementoPadre,
-			first.PIPointName,
-		)
-
-		last := batch[len(batch)-1]
-
-		log.Printf(
-			"🔎 ÚLTIMA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
-			last.TagName,
-			last.ElementName,
-			last.RootElement,
-			last.ElementPath,
-			last.RutaCompleta,
-			last.NivelJerarquico,
-			last.ElementoPadre,
-			last.PIPointName,
-		)
+	if len(batch) == 0 {
+		utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
+			"mensaje":    "Batch vacío",
+			"procesados": 0,
+		})
+		return
 	}
+
+	first := batch[0]
+
+	log.Printf(
+		"🔎 PRIMERA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
+		first.TagName,
+		first.ElementName,
+		first.RootElement,
+		first.ElementPath,
+		first.RutaCompleta,
+		first.NivelJerarquico,
+		first.ElementoPadre,
+		first.PIPointName,
+	)
+
+	last := batch[len(batch)-1]
+
+	log.Printf(
+		"🔎 ÚLTIMA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
+		last.TagName,
+		last.ElementName,
+		last.RootElement,
+		last.ElementPath,
+		last.RutaCompleta,
+		last.NivelJerarquico,
+		last.ElementoPadre,
+		last.PIPointName,
+	)
 
 	procesados := 0
 	tagsValidos := 0
+	errores := 0
 
 	for _, reading := range batch {
 
 		if reading.TagName == "" {
+			log.Printf("⚠️ Lectura ignorada: TagName vacío")
 			continue
 		}
 
 		tagsValidos++
 
-		var timestamp time.Time
+		timestamp := time.Now()
+
 		if reading.Timestamp != "" {
 			parsed, err := time.Parse(time.RFC3339, reading.Timestamp)
+
 			if err != nil {
-				parsed, err = time.Parse("2006-01-02T15:04:05Z", reading.Timestamp)
-				if err != nil {
-					timestamp = time.Now()
-				} else {
+				parsed, err = time.Parse(
+					"2006-01-02T15:04:05Z",
+					reading.Timestamp,
+				)
+
+				if err == nil {
 					timestamp = parsed
+				} else {
+					log.Printf(
+						"⚠️ Timestamp inválido para tag %s: %s. Se usará hora actual.",
+						reading.TagName,
+						reading.Timestamp,
+					)
 				}
 			} else {
 				timestamp = parsed
 			}
-		} else {
-			timestamp = time.Now()
 		}
 
-		if reading.EquipmentID <= 0 {
-			tag := &models.TagDescubierto{
-				TagName:             reading.TagName,
-				ElementName:         reading.ElementName,
-				ElementPath:         reading.ElementPath,
-				PiServer:            reading.PiServer,
-				DatabaseName:        reading.Database,
-				RootElement:         reading.RootElement,
-				Unidad:              reading.Unit,
-				UltimoValor:         reading.Value,
-				UltimaActualizacion: timestamp,
-				Source:              reading.Source,
-				RutaCompleta:        reading.RutaCompleta,
-				NivelJerarquico:     reading.NivelJerarquico,
-				ElementoPadre:       reading.ElementoPadre,
-				PathJerarquico:      reading.PathJerarquico,
-				ElementosAncestros:  reading.ElementosAncestros,
-			}
+		// ============================================
+		// TODO EL PROCESAMIENTO PASA POR RULE ENGINE
+		// ============================================
 
-			log.Printf("📌 Guardando tag: %s | Ruta: %s | Nivel: %d",
-				tag.TagName, tag.RutaCompleta, tag.NivelJerarquico)
+		h.RuleEngine.ProcessSensorData(
+			reading,
+			timestamp,
+		)
 
-			err := h.TagDescubiertoRepo.Upsert(tag)
-			if err != nil {
-				log.Printf("❌ Error guardando tag descubierto: %v", err)
-			} else {
-				log.Printf("✅ Tag descubierto guardado: %s (Elemento: %s)",
-					reading.TagName, reading.ElementName)
-			}
-
-			continue
-		}
-		h.RuleEngine.ProcessSensorData(reading, timestamp)
 		procesados++
 	}
 
-	log.Printf("📊 Procesados: %d, Tags válidos: %d", procesados, tagsValidos)
+	log.Printf(
+		"📊 Batch finalizado | Procesados=%d | Tags válidos=%d | Errores=%d",
+		procesados,
+		tagsValidos,
+		errores,
+	)
 
 	utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
 		"mensaje":    "Batch procesado",
 		"procesados": procesados,
+		"validos":    tagsValidos,
+		"errores":    errores,
 	})
 }

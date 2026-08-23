@@ -21,7 +21,7 @@ export const StepLocation: React.FC<StepLocationProps> = ({ form, update, onNext
         <input
           type="text"
           className="w-full border rounded px-3 py-2"
-          value={form.ubicacion_fisica || ''}  // ← CAMBIADO: data → form
+          value={form.ubicacion_fisica || ''}
           onChange={(e) => handleChange('ubicacion_fisica', e.target.value)}
           placeholder="Ej: Nivel -540, Sala de control"
         />
@@ -31,7 +31,7 @@ export const StepLocation: React.FC<StepLocationProps> = ({ form, update, onNext
         <label className="block text-sm font-medium mb-1">Equipo padre (jerarquía)</label>
         <select
           className="w-full border rounded px-3 py-2"
-          value={form.activo_padre_id || ''}  // ← CAMBIADO: data → form
+          value={form.activo_padre_id || ''}
           onChange={(e) => handleChange('activo_padre_id', e.target.value ? parseInt(e.target.value) : null)}
         >
           <option value="">Ninguno (equipo raíz)</option>
@@ -43,7 +43,7 @@ export const StepLocation: React.FC<StepLocationProps> = ({ form, update, onNext
         <input
           type="number"
           className="w-full border rounded px-3 py-2"
-          value={form.nivel_jerarquia || 0}  // ← CAMBIADO: data → form
+          value={form.nivel_jerarquia || 0}
           onChange={(e) => handleChange('nivel_jerarquia', parseInt(e.target.value) || 0)}
           min="0"
         />
