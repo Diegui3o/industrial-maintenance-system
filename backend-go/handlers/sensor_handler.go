@@ -40,6 +40,36 @@ func (h *SensorHandler) RecibirBatch(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("📥 Recibido batch con %d lecturas", len(batch))
 
+	if len(batch) > 0 {
+		first := batch[0]
+
+		log.Printf(
+			"🔎 PRIMERA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
+			first.TagName,
+			first.ElementName,
+			first.RootElement,
+			first.ElementPath,
+			first.RutaCompleta,
+			first.NivelJerarquico,
+			first.ElementoPadre,
+			first.PIPointName,
+		)
+
+		last := batch[len(batch)-1]
+
+		log.Printf(
+			"🔎 ÚLTIMA LECTURA | Tag=%s | Elemento=%s | Root=%s | ElementPath=%s | Ruta=%s | Nivel=%d | Padre=%s | PIPoint=%s",
+			last.TagName,
+			last.ElementName,
+			last.RootElement,
+			last.ElementPath,
+			last.RutaCompleta,
+			last.NivelJerarquico,
+			last.ElementoPadre,
+			last.PIPointName,
+		)
+	}
+
 	procesados := 0
 	tagsValidos := 0
 

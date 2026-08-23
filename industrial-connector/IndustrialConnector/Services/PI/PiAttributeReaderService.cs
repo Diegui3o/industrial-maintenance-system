@@ -31,7 +31,7 @@ namespace IndustrialConnector.Services.PI
             }
 
             // ============================================
-            // 2. OBTENER EL ELEMENTO (SIEMPRE)
+            // 2. OBTENER EL ELEMENTO
             // ============================================
             var element = attribute.Element;
             if (element == null)
@@ -50,35 +50,41 @@ namespace IndustrialConnector.Services.PI
             // ============================================
             var rutaCompleta = new List<string>();
             var elementoActual = element;
+            var elementName = "";
 
-            // Usar un enfoque diferente para obtener el parent
             while (elementoActual != null)
             {
                 rutaCompleta.Insert(0, elementoActual.Name);
                 
-                // Intentar obtener el Parent como AFElement
-                try
+                if (rutaCompleta.Count == 1)
                 {
-                    // Usar reflexión o la propiedad correcta
-                    var parentProperty = elementoActual.GetType().GetProperty("Parent");
-                    if (parentProperty != null)
-                    {
-                        elementoActual = parentProperty.GetValue(elementoActual) as AFElement;
-                    }
-                    else
-                    {
-                        // Si no tiene Parent, salir
-                        elementoActual = null;
-                    }
+                    elementName = elementoActual.Name ?? "";
                 }
-                catch
+                
+                if (elementoActual is AFElement elem)
+                {
+                    elementoActual = elem.Parent;
+                }
+                else
                 {
                     elementoActual = null;
                 }
             }
-            
+
             string pathJerarquico = string.Join(" → ", rutaCompleta);
             int nivel = rutaCompleta.Count;
+
+            // ============================================
+            // ElementName: Usar el último elemento de la ruta
+            // ============================================
+            if (string.IsNullOrEmpty(elementName))
+            {
+                elementName = rutaCompleta.LastOrDefault() ?? "";
+            }
+
+            // ============================================
+            // OBTENER ELEMENTO PADRE
+            // ============================================
             string elementoPadre = "";
             try
             {
@@ -93,35 +99,36 @@ namespace IndustrialConnector.Services.PI
             }
 
             // ============================================
-            // 5. OBTENER VALOR (SIEMPRE, aunque sea nulo)
+            // 5. OBTENER VALOR
             // ============================================
             double numericValue = 0;
             bool hasValue = false;
             string quality = "NoValue";
             string valueType = "Unknown";
+            string rawValue = "";
 
-            if (value != null)
+            // En el método Read, asegura que los valores no numéricos se guarden como texto
+            if (value != null && value.Value != null)
             {
-                quality = value.IsGood ? "Good" : value.Status.ToString();
+                rawValue = value.Value.ToString();
+                valueType = value.Value.GetType().Name;
                 
-                if (value.Value != null)
+                try
                 {
-                    try
-                    {
-                        numericValue = Convert.ToDouble(value.Value);
-                        hasValue = true;
-                        valueType = value.Value.GetType().Name;
-                    }
-                    catch
-                    {
-                        // No es numérico, pero guardamos el tag igual
-                        hasValue = false;
-                        valueType = value.Value.GetType().Name;
-                        _logger.LogDebug($"⚠️ Valor no numérico: {tagName} = {value.Value}");
-                    }
+                    numericValue = Convert.ToDouble(value.Value);
+                    hasValue = true;
+                }
+                catch
+                {
+                    hasValue = false;
+                    _logger.LogDebug($"⚠️ Valor no numérico: {tagName} = {rawValue}");
                 }
             }
-
+            else
+            {
+                quality = "NoValue";
+                rawValue = "null";
+            }
             // ============================================
             // 6. OBTENER UNIDAD
             // ============================================
@@ -141,7 +148,7 @@ namespace IndustrialConnector.Services.PI
             catch { }
 
             // ============================================
-            // 8. CREAR EL READING - SIEMPRE
+            // 8. CREAR EL READING - AHORA CON ElementName CORRECTO
             // ============================================
             var reading = new SensorReading
             {
@@ -157,7 +164,7 @@ namespace IndustrialConnector.Services.PI
                 PiServer = piServer,
                 Database = database,
                 RootElement = rutaCompleta.FirstOrDefault() ?? "",
-                ElementName = element.Name ?? "",
+                ElementName = elementName,
                 ElementPath = element.GetPath() ?? "",
                 AttributeName = attribute.Name ?? "",
                 PIPointName = GetPIPointName(attribute) ?? "",
@@ -171,11 +178,12 @@ namespace IndustrialConnector.Services.PI
             };
 
             _logger.LogDebug(
-                "📊 PI: {Tag} = {Value} {Unit} | 📁 {Ruta}",
+                "📊 PI: {Tag} = {Value} {Unit} | 📁 {Ruta} | 🔹 Element: {Element}",
                 reading.TagName,
                 hasValue ? reading.Value.ToString() : "SIN VALOR",
                 reading.Unit,
-                reading.RutaCompleta);
+                reading.RutaCompleta,
+                reading.ElementName);
 
             return reading;
         }

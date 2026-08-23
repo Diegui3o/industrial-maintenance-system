@@ -23,6 +23,7 @@ type TagDescubierto struct {
 	CreadoEn                time.Time  `json:"creado_en"`
 	ActualizadoEn           *time.Time `json:"actualizado_en"`
 
+	Quality            string `json:"quality"`
 	RutaCompleta       string `json:"ruta_completa"`
 	NivelJerarquico    int    `json:"nivel_jerarquico"`
 	ElementoPadre      string `json:"elemento_padre"`

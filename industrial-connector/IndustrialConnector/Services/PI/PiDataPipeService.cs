@@ -1,14 +1,23 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using OSIsoft.AF;
 using OSIsoft.AF.Asset;
 using OSIsoft.AF.Data;
 
 namespace IndustrialConnector.Services.PI
 {
     /// <summary>
-    /// Administra el AFDataPipe utilizado para recibir
-    /// cambios de atributos PI.
+    /// Administra AFDataPipe para recibir eventos de cambio
+    /// de atributos PI/AF.
+    ///
+    /// Responsabilidades:
+    /// - Registrar atributos con DataReference.
+    /// - Recibir eventos iniciales.
+    /// - Recibir cambios posteriores.
+    /// - Exponer únicamente eventos AFDataPipeEvent.
+    ///
+    /// Este servicio no realiza lecturas masivas mediante GetValue().
     /// </summary>
     public class PiDataPipeService : IDisposable
     {
@@ -28,7 +37,7 @@ namespace IndustrialConnector.Services.PI
         }
 
         /// <summary>
-        /// Registra los atributos en el DataPipe.
+        /// Registra los atributos seleccionados en AFDataPipe.
         /// </summary>
         public bool Initialize(
             IEnumerable<AFAttribute> attributes)
@@ -37,8 +46,7 @@ namespace IndustrialConnector.Services.PI
             {
                 DisposePipe();
 
-                _pipe =
-                    new AFDataPipe();
+                _pipe = new AFDataPipe();
 
                 _attributes.Clear();
 
@@ -60,22 +68,20 @@ namespace IndustrialConnector.Services.PI
                 if (_attributes.Count == 0)
                 {
                     _logger.LogWarning(
-                        "⚠️ No hay atributos para registrar en DataPipe.");
+                        "No hay atributos con DataReference para registrar en AFDataPipe.");
 
                     return false;
                 }
 
                 var list =
-                    new List<AFAttribute>(
-                        _attributes);
+                    new List<AFAttribute>(_attributes);
 
                 _logger.LogInformation(
-                    "🔌 Registrando {Count} atributos en AFDataPipe...",
+                    "Registrando {Count} atributos en AFDataPipe...",
                     list.Count);
 
                 var result =
-                    _pipe.AddSignupsWithInitEvents(
-                        list);
+                    _pipe.AddSignupsWithInitEvents(list);
 
                 if (result.HasErrors)
                 {
@@ -83,24 +89,34 @@ namespace IndustrialConnector.Services.PI
                     {
                         _logger.LogError(
                             error.Value,
-                            "❌ Error registrando atributo {Attribute}",
+                            "Error registrando atributo {Attribute}",
                             error.Key.Name);
                     }
                 }
 
-                _initialized = true;
+                _initialized =
+                    !result.HasErrors;
 
-                _logger.LogInformation(
-                    "✅ AFDataPipe activo. Atributos registrados: {Count}",
-                    _attributes.Count);
+                if (_initialized)
+                {
+                    _logger.LogInformation(
+                        "AFDataPipe inicializado correctamente. " +
+                        "Atributos registrados: {Count}",
+                        _attributes.Count);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "AFDataPipe se inicializó con errores.");
+                }
 
-                return true;
+                return _initialized;
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error inicializando AFDataPipe.");
+                    "Error inicializando AFDataPipe.");
 
                 _initialized = false;
 
@@ -109,79 +125,68 @@ namespace IndustrialConnector.Services.PI
         }
 
         /// <summary>
-        /// Obtiene los eventos pendientes del DataPipe.
+        /// Obtiene los eventos pendientes del AFDataPipe.
+        ///
+        /// El resultado contiene:
+        /// - eventos iniciales generados por la suscripción;
+        /// - cambios posteriores de los atributos registrados.
         /// </summary>
-        public List<AFDataPipeEvent> GetEvents()
+        public AFListResults<AFAttribute, AFDataPipeEvent> GetEvents()
         {
-            var events =
-                new List<AFDataPipeEvent>();
-
-            if (!_initialized ||
-                _pipe == null)
+            if (!_initialized || _pipe == null)
             {
-                return events;
+                return new AFListResults<AFAttribute, AFDataPipeEvent>();
             }
 
             try
             {
-                bool hasMoreEvents = true;
-
-                while (hasMoreEvents)
-                {
-                    var result =
-                        _pipe.GetUpdateEvents(
-                            out hasMoreEvents);
-
-                    if (result == null)
-                    {
-                        break;
-                    }
-
-                    foreach (var dataPipeEvent
-                             in result.Results)
-                    {
-                        if (dataPipeEvent != null)
-                        {
-                            events.Add(
-                                dataPipeEvent);
-                        }
-                    }
-
-                    if (result.HasErrors)
-                    {
-                        foreach (var error
-                                 in result.Errors)
-                        {
-                            _logger.LogWarning(
-                                error.Value,
-                                "⚠️ Error obteniendo evento de {Attribute}",
-                                error.Key.Name);
-                        }
-                    }
-                }
-
-                return events;
+                return _pipe.GetUpdateEvents();
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "❌ Error obteniendo eventos de AFDataPipe.");
+                    "Error obteniendo eventos desde AFDataPipe.");
 
-                return events;
+                return new AFListResults<AFAttribute, AFDataPipeEvent>();
             }
         }
 
-        public int SignupCount =>
-            _attributes.Count;
-
-        public void Dispose()
+        /// <summary>
+        /// Obtiene solamente la lista de eventos.
+        /// </summary>
+        public IList<AFDataPipeEvent> GetEventResults()
         {
-            DisposePipe();
+            var result = GetEvents();
 
-            GC.SuppressFinalize(this);
+            return result.Results;
         }
 
+        /// <summary>
+        /// Cantidad de atributos registrados actualmente.
+        /// </summary>
+        public int RegisteredCount
+        {
+            get
+            {
+                return _attributes.Count;
+            }
+        }
+
+        /// <summary>
+        /// Indica si el DataPipe está inicializado.
+        /// </summary>
+        public bool IsInitialized
+        {
+            get
+            {
+                return _initialized && _pipe != null;
+            }
+        }
+
+        /// <summary>
+        /// Libera el DataPipe actual.
+        /// </summary>
         private void DisposePipe()
         {
             try
@@ -189,7 +194,6 @@ namespace IndustrialConnector.Services.PI
                 if (_pipe != null)
                 {
                     _pipe.Dispose();
-
                     _pipe = null;
                 }
             }
@@ -197,10 +201,20 @@ namespace IndustrialConnector.Services.PI
             {
                 _logger.LogWarning(
                     ex,
-                    "⚠️ Error liberando AFDataPipe.");
+                    "Error liberando AFDataPipe.");
             }
 
             _initialized = false;
+        }
+
+        /// <summary>
+        /// Libera todos los recursos del servicio.
+        /// </summary>
+        public void Dispose()
+        {
+            DisposePipe();
+
+            GC.SuppressFinalize(this);
         }
     }
 }
