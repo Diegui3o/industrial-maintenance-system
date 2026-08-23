@@ -41,9 +41,6 @@ namespace IndustrialConnector.Services.PI
         {
             try
             {
-                _logger.LogInformation(
-                    "🔌 Conectando a PI System mediante AF SDK...");
-
                 _piSystems = new PISystems();
 
                 if (_piSystems.Count == 0)
@@ -72,14 +69,6 @@ namespace IndustrialConnector.Services.PI
 
                     return false;
                 }
-
-                _logger.LogInformation(
-                    "AF Server seleccionado: {Server}",
-                    _piSystem.Name);
-
-                // ============================================
-                // CONECTAR
-                // ============================================
 
                 if (!_piSystem.ConnectionInfo.IsConnected)
                 {

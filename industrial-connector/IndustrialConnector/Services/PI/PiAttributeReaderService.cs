@@ -110,18 +110,24 @@ namespace IndustrialConnector.Services.PI
             // En el método Read, asegura que los valores no numéricos se guarden como texto
             if (value != null && value.Value != null)
             {
-                rawValue = value.Value.ToString();
+                rawValue = value.Value.ToString() ?? "";
                 valueType = value.Value.GetType().Name;
-                
+
                 try
                 {
                     numericValue = Convert.ToDouble(value.Value);
                     hasValue = true;
+                    quality = "Good";
                 }
                 catch
                 {
                     hasValue = false;
-                    _logger.LogDebug($"⚠️ Valor no numérico: {tagName} = {rawValue}");
+                    quality = "Good";
+
+                    _logger.LogDebug(
+                        "⚠️ Valor no numérico: {Tag} = {Value}",
+                        tagName,
+                        rawValue);
                 }
             }
             else
@@ -155,6 +161,7 @@ namespace IndustrialConnector.Services.PI
                 EquipmentId = 0,
                 TagName = tagName,
                 Value = hasValue ? numericValue : 0,
+                RawValue = rawValue,
                 Unit = unidad,
                 Quality = quality,
                 Source = "PI_System",

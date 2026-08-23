@@ -45,10 +45,6 @@ namespace IndustrialConnector.Services.PI
                     return null;
                 }
 
-                _logger.LogInformation(
-                    "✅ AF Database seleccionada: {Database}",
-                    database.Name);
-
                 return database;
             }
             catch (Exception ex)

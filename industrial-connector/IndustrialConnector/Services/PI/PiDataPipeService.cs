@@ -38,6 +38,7 @@ namespace IndustrialConnector.Services.PI
 
         /// <summary>
         /// Registra los atributos seleccionados en AFDataPipe.
+        /// Los atributos incompatibles se omiten individualmente.
         /// </summary>
         public bool Initialize(
             IEnumerable<AFAttribute> attributes)
@@ -49,6 +50,13 @@ namespace IndustrialConnector.Services.PI
                 _pipe = new AFDataPipe();
 
                 _attributes.Clear();
+
+                // =====================================================
+                // 1. FILTRAR ATRIBUTOS CON DATA REFERENCE
+                // =====================================================
+
+                var candidates =
+                    new List<AFAttribute>();
 
                 foreach (var attribute in attributes)
                 {
@@ -62,10 +70,10 @@ namespace IndustrialConnector.Services.PI
                         continue;
                     }
 
-                    _attributes.Add(attribute);
+                    candidates.Add(attribute);
                 }
 
-                if (_attributes.Count == 0)
+                if (candidates.Count == 0)
                 {
                     _logger.LogWarning(
                         "No hay atributos con DataReference para registrar en AFDataPipe.");
@@ -73,44 +81,115 @@ namespace IndustrialConnector.Services.PI
                     return false;
                 }
 
-                var list =
-                    new List<AFAttribute>(_attributes);
-
                 _logger.LogInformation(
                     "Registrando {Count} atributos en AFDataPipe...",
-                    list.Count);
+                    candidates.Count);
 
-                var result =
-                    _pipe.AddSignupsWithInitEvents(list);
+                // =====================================================
+                // 2. REGISTRAR ATRIBUTOS
+                // =====================================================
+
+                AFListResults<AFAttribute, AFDataPipeEvent> result;
+
+                try
+                {
+                    result =
+                        _pipe.AddSignupsWithInitEvents(candidates);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Error general registrando atributos en AFDataPipe.");
+
+                    return false;
+                }
+
+                // =====================================================
+                // 3. PROCESAR ERRORES INDIVIDUALES
+                // =====================================================
+
+                var errorAttributes =
+                    new HashSet<AFAttribute>();
 
                 if (result.HasErrors)
                 {
                     foreach (var error in result.Errors)
                     {
-                        _logger.LogError(
+                        errorAttributes.Add(error.Key);
+
+                        _logger.LogWarning(
                             error.Value,
-                            "Error registrando atributo {Attribute}",
+                            "⚠️ Atributo omitido de AFDataPipe: {Attribute}",
                             error.Key.Name);
                     }
                 }
 
-                _initialized =
-                    !result.HasErrors;
+                // =====================================================
+                // 4. DETERMINAR ATRIBUTOS REGISTRADOS
+                // =====================================================
 
-                if (_initialized)
+                foreach (var attribute in candidates)
                 {
-                    _logger.LogInformation(
-                        "AFDataPipe inicializado correctamente. " +
-                        "Atributos registrados: {Count}",
-                        _attributes.Count);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "AFDataPipe se inicializó con errores.");
+                    if (!errorAttributes.Contains(attribute))
+                    {
+                        _attributes.Add(attribute);
+                    }
                 }
 
-                return _initialized;
+                // =====================================================
+                // 5. ESTADO FINAL
+                // =====================================================
+
+                var requestedCount =
+                    candidates.Count;
+
+                var registeredCount =
+                    _attributes.Count;
+
+                var omittedCount =
+                    requestedCount - registeredCount;
+
+                _logger.LogInformation(
+                    "📊 AFDataPipe | Solicitados: {Requested} | Registrados: {Registered} | Omitidos: {Omitted}",
+                    requestedCount,
+                    registeredCount,
+                    omittedCount);
+
+                // =====================================================
+                // 6. SI AL MENOS UNO FUNCIONA, EL PIPE FUNCIONA
+                // =====================================================
+
+                if (registeredCount > 0)
+                {
+                    _initialized = true;
+
+                    if (omittedCount > 0)
+                    {
+                        _logger.LogWarning(
+                            "⚠️ AFDataPipe inicializado parcialmente. " +
+                            "Se omitieron {Omitted} atributos incompatibles.",
+                            omittedCount);
+                    }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "✅ AFDataPipe inicializado correctamente.");
+                    }
+
+                    return true;
+                }
+
+                // =====================================================
+                // 7. NINGÚN ATRIBUTO PUDO REGISTRARSE
+                // =====================================================
+
+                _initialized = false;
+
+                _logger.LogError(
+                    "❌ Ningún atributo pudo registrarse en AFDataPipe.");
+
+                return false;
             }
             catch (Exception ex)
             {

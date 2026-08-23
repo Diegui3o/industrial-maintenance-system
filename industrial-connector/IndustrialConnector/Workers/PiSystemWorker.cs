@@ -63,7 +63,7 @@ namespace IndustrialConnector.Workers
             CancellationToken stoppingToken)
         {
             _logger.LogInformation(
-                "🔌 PI System Worker iniciado - MONITOREO CONTROLADO");
+                "🔌 PI System Worker iniciado ");
 
             // =====================================================
             // 1. CONEXIÓN CON PI SYSTEM
@@ -223,7 +223,7 @@ namespace IndustrialConnector.Workers
             _logger.LogInformation(
                 "✅ AFDataPipe inicializado correctamente. Atributos registrados: {Count}",
                 _dataPipe.RegisteredCount);
-                
+
             // =====================================================
             // 10. CICLO DE MONITOREO MEDIANTE AFDataPipe
             // =====================================================

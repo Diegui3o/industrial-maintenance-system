@@ -41,6 +41,7 @@ namespace IndustrialConnector.Models
         // VALOR
         // ============================================
         public double Value { get; set; }
+        public string? RawValue { get; set; }
         public string? Unit { get; set; }
 
         // ============================================
