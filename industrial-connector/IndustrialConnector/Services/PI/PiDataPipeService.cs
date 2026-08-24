@@ -7,18 +7,6 @@ using OSIsoft.AF.Data;
 
 namespace IndustrialConnector.Services.PI
 {
-    /// <summary>
-    /// Administra AFDataPipe para recibir eventos de cambio
-    /// de atributos PI/AF.
-    ///
-    /// Responsabilidades:
-    /// - Registrar atributos con DataReference.
-    /// - Recibir eventos iniciales.
-    /// - Recibir cambios posteriores.
-    /// - Exponer únicamente eventos AFDataPipeEvent.
-    ///
-    /// Este servicio no realiza lecturas masivas mediante GetValue().
-    /// </summary>
     public class PiDataPipeService : IDisposable
     {
         private readonly ILogger<PiDataPipeService> _logger;
@@ -36,10 +24,6 @@ namespace IndustrialConnector.Services.PI
             _logger = logger;
         }
 
-        /// <summary>
-        /// Registra los atributos seleccionados en AFDataPipe.
-        /// Los atributos incompatibles se omiten individualmente.
-        /// </summary>
         public bool Initialize(
             IEnumerable<AFAttribute> attributes)
         {
@@ -50,10 +34,6 @@ namespace IndustrialConnector.Services.PI
                 _pipe = new AFDataPipe();
 
                 _attributes.Clear();
-
-                // =====================================================
-                // 1. FILTRAR ATRIBUTOS CON DATA REFERENCE
-                // =====================================================
 
                 var candidates =
                     new List<AFAttribute>();
@@ -85,10 +65,6 @@ namespace IndustrialConnector.Services.PI
                     "Registrando {Count} atributos en AFDataPipe...",
                     candidates.Count);
 
-                // =====================================================
-                // 2. REGISTRAR ATRIBUTOS
-                // =====================================================
-
                 AFListResults<AFAttribute, AFDataPipeEvent> result;
 
                 try
@@ -104,10 +80,6 @@ namespace IndustrialConnector.Services.PI
 
                     return false;
                 }
-
-                // =====================================================
-                // 3. PROCESAR ERRORES INDIVIDUALES
-                // =====================================================
 
                 var errorAttributes =
                     new HashSet<AFAttribute>();
@@ -125,10 +97,6 @@ namespace IndustrialConnector.Services.PI
                     }
                 }
 
-                // =====================================================
-                // 4. DETERMINAR ATRIBUTOS REGISTRADOS
-                // =====================================================
-
                 foreach (var attribute in candidates)
                 {
                     if (!errorAttributes.Contains(attribute))
@@ -136,10 +104,6 @@ namespace IndustrialConnector.Services.PI
                         _attributes.Add(attribute);
                     }
                 }
-
-                // =====================================================
-                // 5. ESTADO FINAL
-                // =====================================================
 
                 var requestedCount =
                     candidates.Count;
@@ -155,10 +119,6 @@ namespace IndustrialConnector.Services.PI
                     requestedCount,
                     registeredCount,
                     omittedCount);
-
-                // =====================================================
-                // 6. SI AL MENOS UNO FUNCIONA, EL PIPE FUNCIONA
-                // =====================================================
 
                 if (registeredCount > 0)
                 {
@@ -180,10 +140,6 @@ namespace IndustrialConnector.Services.PI
                     return true;
                 }
 
-                // =====================================================
-                // 7. NINGÚN ATRIBUTO PUDO REGISTRARSE
-                // =====================================================
-
                 _initialized = false;
 
                 _logger.LogError(
@@ -203,13 +159,6 @@ namespace IndustrialConnector.Services.PI
             }
         }
 
-        /// <summary>
-        /// Obtiene los eventos pendientes del AFDataPipe.
-        ///
-        /// El resultado contiene:
-        /// - eventos iniciales generados por la suscripción;
-        /// - cambios posteriores de los atributos registrados.
-        /// </summary>
         public AFListResults<AFAttribute, AFDataPipeEvent> GetEvents()
         {
             if (!_initialized || _pipe == null)
@@ -231,9 +180,6 @@ namespace IndustrialConnector.Services.PI
             }
         }
 
-        /// <summary>
-        /// Obtiene solamente la lista de eventos.
-        /// </summary>
         public IList<AFDataPipeEvent> GetEventResults()
         {
             var result = GetEvents();
@@ -241,9 +187,6 @@ namespace IndustrialConnector.Services.PI
             return result.Results;
         }
 
-        /// <summary>
-        /// Cantidad de atributos registrados actualmente.
-        /// </summary>
         public int RegisteredCount
         {
             get
@@ -252,9 +195,6 @@ namespace IndustrialConnector.Services.PI
             }
         }
 
-        /// <summary>
-        /// Indica si el DataPipe está inicializado.
-        /// </summary>
         public bool IsInitialized
         {
             get
@@ -263,9 +203,6 @@ namespace IndustrialConnector.Services.PI
             }
         }
 
-        /// <summary>
-        /// Libera el DataPipe actual.
-        /// </summary>
         private void DisposePipe()
         {
             try
@@ -286,9 +223,6 @@ namespace IndustrialConnector.Services.PI
             _initialized = false;
         }
 
-        /// <summary>
-        /// Libera todos los recursos del servicio.
-        /// </summary>
         public void Dispose()
         {
             DisposePipe();
