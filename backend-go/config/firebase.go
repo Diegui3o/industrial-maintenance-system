@@ -10,25 +10,19 @@ import (
 	"google.golang.org/api/option"
 )
 
-// ConnectFirestore crea una conexión reutilizable con Firestore.
+// ConnectFirestore intenta conectar con Firestore de forma opcional.
 //
-// Variables de entorno:
-//
-// FIREBASE_PROJECT_ID
-// GOOGLE_APPLICATION_CREDENTIALS
-//
-// Ejemplo:
-//
-// FIREBASE_PROJECT_ID=mi-proyecto
-// GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/firebase.json
-//
-// En desarrollo local también puede apuntar a una ruta de Windows.
+// Firebase NO es una dependencia obligatoria del sistema.
+// Si no está configurado o no se puede establecer la conexión,
+// devuelve nil y el backend continúa funcionando normalmente.
 func ConnectFirestore() *firestore.Client {
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
 	credentialsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
+	// Firebase no está configurado.
 	if projectID == "" {
-		log.Fatal("FIREBASE_PROJECT_ID no está configurado")
+		log.Println("Firestore no configurado. Se continuará sin conexión a Firebase.")
+		return nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -46,7 +40,6 @@ func ConnectFirestore() *firestore.Client {
 			option.WithCredentialsFile(credentialsFile),
 		)
 	} else {
-		// Permite utilizar Application Default Credentials.
 		client, err = firestore.NewClient(
 			ctx,
 			projectID,
@@ -54,10 +47,20 @@ func ConnectFirestore() *firestore.Client {
 	}
 
 	if err != nil {
-		log.Fatalf("Error conectando con Firestore: %v", err)
+		log.Printf("Firestore no disponible: %v. Se continuará sin conexión a Firebase.", err)
+		return nil
 	}
 
 	log.Println("Firestore conectado correctamente")
 
 	return client
+}
+
+// CloseFirestore cierra el cliente solamente si existe.
+func CloseFirestore(client *firestore.Client) {
+	if client != nil {
+		if err := client.Close(); err != nil {
+			log.Printf("Error cerrando Firestore: %v", err)
+		}
+	}
 }

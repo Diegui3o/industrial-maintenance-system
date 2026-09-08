@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_instancias (
     estado TEXT NOT NULL DEFAULT 'pendiente'
         CHECK (estado IN ('pendiente', 'conectado', 'desconectado', 'error')),
     ruta_sesion TEXT NOT NULL UNIQUE,
-    usuario_id INT REFERENCES usuarios(id),
+    usuario_id INT UNIQUE REFERENCES usuarios(id),
     creado_en TIMESTAMPTZ DEFAULT NOW(),
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );

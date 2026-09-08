@@ -50,7 +50,10 @@ func (s *Scheduler) pingLoop() {
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
+		if len(fuentes) == 0 {
+			time.Sleep(10 * time.Second)
+			continue
+		}
 		for _, fuente := range fuentes {
 			equipoID := fuente.EquipoID
 
