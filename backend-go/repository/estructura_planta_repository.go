@@ -48,22 +48,29 @@ func (r *EstructuraPlantaRepository) ListarProcesos() ([]models.ProcesoPlanta, e
 	return resultado, rows.Err()
 }
 
-func (r *EstructuraPlantaRepository) CrearProceso(p *models.ProcesoPlanta) error {
+func (r *EstructuraPlantaRepository) CrearProceso(
+	p *models.ProcesoPlanta,
+) error {
 	err := r.DB.QueryRow(`
 		INSERT INTO procesos_planta (
 			nombre,
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, TRUE)
 		RETURNING id
 	`,
 		p.Nombre,
 		p.Descripcion,
-		p.Activo,
 	).Scan(&p.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	p.Activo = true
+
+	return nil
 }
 
 // ==================== SUBPROCESOS ====================
@@ -110,16 +117,21 @@ func (r *EstructuraPlantaRepository) CrearSubproceso(s *models.SubprocesoPlanta)
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, TRUE)
 		RETURNING id
 	`,
 		s.ProcesoID,
 		s.Nombre,
 		s.Descripcion,
-		s.Activo,
 	).Scan(&s.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	s.Activo = true
+
+	return nil
 }
 
 // ==================== EQUIPO → SUBPROCESO ====================
@@ -210,15 +222,20 @@ func (r *EstructuraPlantaRepository) CrearClasificacion(
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, TRUE)
 		RETURNING id
 	`,
 		c.Nombre,
 		c.Descripcion,
-		c.Activo,
 	).Scan(&c.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	c.Activo = true
+
+	return nil
 }
 
 func (r *EstructuraPlantaRepository) AsignarClasificacion(
@@ -284,15 +301,20 @@ func (r *EstructuraPlantaRepository) CrearSistema(
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, TRUE)
 		RETURNING id
 	`,
 		s.Nombre,
 		s.Descripcion,
-		s.Activo,
 	).Scan(&s.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	s.Activo = true
+
+	return nil
 }
 
 func (r *EstructuraPlantaRepository) AsignarSistema(
@@ -365,17 +387,22 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, TRUE)
 		RETURNING id
 	`,
 		c.EquipoID,
 		c.Codigo,
 		c.Nombre,
 		c.Descripcion,
-		c.Activo,
 	).Scan(&c.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	c.Activo = true
+
+	return nil
 }
 
 // ==================== REPUESTOS ====================
@@ -423,16 +450,21 @@ func (r *EstructuraPlantaRepository) CrearRepuesto(
 			descripcion,
 			activo
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, TRUE)
 		RETURNING id
 	`,
 		rep.Codigo,
 		rep.Nombre,
 		rep.Descripcion,
-		rep.Activo,
 	).Scan(&rep.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	rep.Activo = true
+
+	return nil
 }
 
 func (r *EstructuraPlantaRepository) AsignarRepuestoComponente(
@@ -1525,9 +1557,10 @@ func (r *EstructuraPlantaRepository) CrearSubprocesoSistema(
 		INSERT INTO subprocesos_sistema_planta (
 			sistema_id,
 			nombre,
-			descripcion
+			descripcion,
+			activo
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, $3, TRUE)
 		RETURNING id, sistema_id, nombre, descripcion, activo
 	`,
 		item.SistemaID,
@@ -1630,9 +1663,10 @@ func (r *EstructuraPlantaRepository) CrearSubcomponente(
 			componente_id,
 			codigo,
 			nombre,
-			descripcion
+			descripcion,
+			activo
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, $4, TRUE)
 		RETURNING
 			id,
 			componente_id,

@@ -141,3 +141,19 @@ func (r *TipoEquipoRepository) ListarPorEquipo(
 
 	return resultado, rows.Err()
 }
+func (r *TipoEquipoRepository) Desasignar(
+	equipoID int,
+	tipoEquipoID int,
+) error {
+
+	_, err := r.DB.Exec(`
+		DELETE FROM equipo_tipo
+		WHERE equipo_id = $1
+		  AND tipo_equipo_id = $2
+	`,
+		equipoID,
+		tipoEquipoID,
+	)
+
+	return err
+}

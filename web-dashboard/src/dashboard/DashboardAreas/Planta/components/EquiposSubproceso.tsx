@@ -1,31 +1,47 @@
 import { useEffect, useState } from 'react';
+
 import {
   asignarEquipoSubproceso,
   getEquiposPorSubproceso,
   type Equipo,
   type Subproceso,
 } from '../services/plantaApi';
+
 import { EquipoSelector } from './EquipoSelector';
-import { ComponentesEquipo } from './ComponentesEquipo';
 import { EquipoClasificacionSistema } from './EquipoClasificacionSistema';
+import { ComponentesEquipo } from './ComponentesEquipo';
 
 interface Props {
   subproceso: Subproceso | null;
+
+  /**
+   * Permite informar al componente padre
+   * qué equipo fue seleccionado.
+   */
+  onSelectEquipo?: (equipo: Equipo) => void;
+
+  /**
+   * Permite ocultar los componentes cuando
+   * PlantaEstructura los mostrará como bloque independiente.
+   *
+   * Por defecto permanece true para no romper
+   * otros usos existentes.
+   */
+  mostrarComponentes?: boolean;
 }
 
 export function EquiposSubproceso({
   subproceso,
+  onSelectEquipo,
+  mostrarComponentes = true,
 }: Props) {
-  const [equipos, setEquipos] =
-    useState<Equipo[]>([]);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
 
   const [equipoSeleccionado, setEquipoSeleccionado] =
     useState<Equipo | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [guardando, setGuardando] =
-    useState(false);
-
+  const [guardando, setGuardando] = useState(false);
   const [mostrarSelector, setMostrarSelector] =
     useState(false);
 
@@ -47,7 +63,8 @@ export function EquiposSubproceso({
 
         return (
           resultado.find(
-            (equipo) => equipo.id === actual.id
+            (equipo) =>
+              equipo.id === actual.id
           ) || null
         );
       });
@@ -58,6 +75,7 @@ export function EquiposSubproceso({
       );
 
       setEquipos([]);
+      setEquipoSeleccionado(null);
     } finally {
       setLoading(false);
     }
@@ -71,9 +89,18 @@ export function EquiposSubproceso({
     if (subproceso) {
       cargar();
     }
-  }, [subproceso]);
+  }, [subproceso?.id]);
 
-  const asignar = async (equipo: Equipo) => {
+  const seleccionarEquipo = (
+    equipo: Equipo
+  ) => {
+    setEquipoSeleccionado(equipo);
+    onSelectEquipo?.(equipo);
+  };
+
+  const asignar = async (
+    equipo: Equipo
+  ) => {
     if (!subproceso || guardando) return;
 
     setGuardando(true);
@@ -87,7 +114,8 @@ export function EquiposSubproceso({
       await cargar();
 
       setMostrarSelector(false);
-      setEquipoSeleccionado(equipo);
+
+      seleccionarEquipo(equipo);
     } catch (error) {
       console.error(
         'Error asignando equipo:',
@@ -107,132 +135,143 @@ export function EquiposSubproceso({
   }
 
   return (
-    <>
-      <section className="planta-card planta-equipos-card">
+    <div>
 
-        <div className="planta-card-header">
-          <div>
-            <h3>Equipos</h3>
+      {/* ==================== ACCIONES ==================== */}
 
-            <p>
-              {subproceso.nombre} ·{' '}
-              {equipos.length} equipo(s)
-            </p>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginBottom: 16,
+        }}
+      >
+        <button
+          type="button"
+          className="planta-add-btn"
+          onClick={() =>
+            setMostrarSelector(
+              !mostrarSelector
+            )
+          }
+        >
+          {mostrarSelector
+            ? 'Cerrar'
+            : '+ Asignar equipo'}
+        </button>
+      </div>
+
+      {/* ==================== SELECTOR ==================== */}
+
+      {mostrarSelector && (
+        <div className="planta-selector-container">
+
+          <div className="planta-selector-title">
+            <strong>
+              Seleccionar equipo existente
+            </strong>
+
+            <span>
+              Los equipos se crean desde el módulo
+              de Equipos.
+            </span>
           </div>
 
-          <button
-            className="planta-add-btn"
-            onClick={() =>
-              setMostrarSelector(
-                !mostrarSelector
-              )
-            }
-          >
-            {mostrarSelector
-              ? 'Cerrar'
-              : '+ Asignar equipo'}
-          </button>
+          <EquipoSelector
+            equiposAsignados={equipos}
+            onAsignar={asignar}
+            guardando={guardando}
+          />
+
         </div>
+      )}
 
-        {mostrarSelector && (
-          <div className="planta-selector-container">
+      {/* ==================== LISTA DE EQUIPOS ==================== */}
 
-            <div className="planta-selector-title">
-              <strong>
-                Seleccionar equipo existente
-              </strong>
+      {loading ? (
+        <div className="planta-empty">
+          Cargando equipos...
+        </div>
+      ) : equipos.length === 0 ? (
+        <div className="planta-alert warning">
 
-              <span>
-                Los equipos se crean y editan desde
-                el módulo Equipos.
-              </span>
-            </div>
+          <strong>
+            Este subproceso no tiene equipos
+          </strong>
 
-            <EquipoSelector
-              equiposAsignados={equipos}
-              onAsignar={asignar}
-              guardando={guardando}
-            />
-          </div>
-        )}
+          <span>
+            Asigna un equipo existente para continuar.
+          </span>
 
+        </div>
+      ) : (
         <div className="planta-list">
 
-          {loading && (
-            <div className="planta-empty">
-              Cargando equipos...
-            </div>
-          )}
+          {equipos.map((equipo) => (
+            <button
+              key={equipo.id}
+              type="button"
+              className={`planta-list-item ${
+                equipoSeleccionado?.id === equipo.id
+                  ? 'selected'
+                  : ''
+              }`}
+              onClick={() =>
+                seleccionarEquipo(equipo)
+              }
+            >
+              <div>
 
-          {!loading &&
-            equipos.length === 0 && (
-              <div className="planta-alert warning">
                 <strong>
-                  Subproceso sin equipos
+                  {equipo.codigo} — {equipo.nombre}
                 </strong>
 
-                <span>
-                  Selecciona “Asignar equipo” para
-                  comenzar.
-                </span>
+                <small>
+                  {equipo.tipo || 'Sin tipo'}
+
+                  {equipo.fabricante
+                    ? ` · ${equipo.fabricante}`
+                    : ''}
+
+                  {equipo.modelo
+                    ? ` · ${equipo.modelo}`
+                    : ''}
+                </small>
+
               </div>
-            )}
 
-          {!loading &&
-            equipos.map((equipo) => (
-              <button
-                key={equipo.id}
-                className={`planta-list-item ${
-                  equipoSeleccionado?.id === equipo.id
-                    ? 'selected'
-                    : ''
-                }`}
-                onClick={() =>
-                  setEquipoSeleccionado(equipo)
-                }
-              >
-                <div>
-                  <strong>
-                    {equipo.codigo} —{' '}
-                    {equipo.nombre}
-                  </strong>
+              <span>
+                {equipo.estado_equipo ||
+                  'Sin estado'}
+              </span>
 
-                  <small>
-                    {equipo.tipo ||
-                      'Sin tipo'}
-                    {equipo.fabricante
-                      ? ` · ${equipo.fabricante}`
-                      : ''}
-                    {equipo.modelo
-                      ? ` · ${equipo.modelo}`
-                      : ''}
-                  </small>
-                </div>
+            </button>
+          ))}
 
-                <span>
-                  {equipo.estado_equipo ||
-                    'Sin estado'}
-                </span>
-              </button>
-            ))}
         </div>
-      </section>
+      )}
+
+      {/* ==================== CLASIFICACIÓN ==================== */}
 
       {equipoSeleccionado && (
-        <>
-          <div style={{ marginTop: 20 }}>
-            <EquipoClasificacionSistema
-              equipo={equipoSeleccionado}
-            />
-          </div>
+        <div style={{ marginTop: 20 }}>
+          <EquipoClasificacionSistema
+            equipo={equipoSeleccionado}
+          />
+        </div>
+      )}
 
+      {/* ==================== COMPONENTES ==================== */}
+
+      {equipoSeleccionado &&
+        mostrarComponentes && (
           <div style={{ marginTop: 20 }}>
             <ComponentesEquipo
               equipo={equipoSeleccionado}
             />
           </div>
-        </>
-      )}
-    </>
+        )}
+
+    </div>
   );
 }

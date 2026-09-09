@@ -686,3 +686,17 @@ export async function getTiposEquipoPorEquipo(
     `/planta/equipos/${equipoId}/tipos`
   )
 }
+export async function desasignarTipoEquipo(
+  equipoId: number,
+  tipoEquipoId: number
+): Promise<void> {
+  await request<void>(
+    `/planta/equipos/${equipoId}/tipos`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({
+        tipo_equipo_id: tipoEquipoId,
+      }),
+    }
+  )
+}

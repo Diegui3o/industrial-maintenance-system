@@ -199,3 +199,60 @@ func (h *TipoEquipoHandler) ListarPorEquipo(
 		resultado,
 	)
 }
+func (h *TipoEquipoHandler) Desasignar(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	equipoID, err := strconv.Atoi(
+		mux.Vars(r)["equipo_id"],
+	)
+
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"equipo_id inválido",
+		)
+		return
+	}
+
+	var req asignarTipoEquipoRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"datos inválidos",
+		)
+		return
+	}
+
+	if req.TipoEquipoID <= 0 {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"tipo_equipo_id inválido",
+		)
+		return
+	}
+
+	if err := h.Service.Desasignar(
+		equipoID,
+		req.TipoEquipoID,
+	); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	utils.SuccessJSON(
+		w,
+		http.StatusOK,
+		map[string]interface{}{
+			"ok": true,
+		},
+	)
+}

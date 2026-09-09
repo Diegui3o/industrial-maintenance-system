@@ -5,6 +5,7 @@ import {
   getTiposEquipo,
   crearTipoEquipo,
   asignarTipoEquipo,
+  desasignarTipoEquipo,
 } from '../../../dashboard/DashboardAreas/Planta/services/plantaApi'
 
 const BASE = '/api'
@@ -119,55 +120,67 @@ export function useEquipoEdit(
           'Error al guardar equipo'
         )
       }
-
       // 2. Guardar tipos de equipo
-      if (
-        form.tipos &&
-        form.tipos.length > 0
+      const tiposActuales =
+        await getTiposEquipoPorEquipo(equipoId)
+
+      const idsActuales = new Set(
+        tiposActuales.map((tipo) => tipo.id)
+      )
+
+      let tiposCatalogo =
+        await getTiposEquipo()
+
+      const tiposSeleccionados =
+        form.tipos || []
+
+      const idsSeleccionados: number[] = []
+
+      for (
+        const nombreTipo of tiposSeleccionados
       ) {
-        let tiposCatalogo =
-          await getTiposEquipo()
+        let tipoExistente =
+          tiposCatalogo.find(
+            (tipo) =>
+              tipo.nombre.toUpperCase() ===
+              nombreTipo.toUpperCase()
+          )
 
-        for (
-          const nombreTipo of form.tipos
-        ) {
-          let tipoExistente =
-            tiposCatalogo.find(
-              (tipo) =>
-                tipo.nombre.toUpperCase() ===
-                nombreTipo.toUpperCase()
-            )
+        if (!tipoExistente) {
+          const codigo =
+            nombreTipo
+              .normalize('NFD')
+              .replace(
+                /[\u0300-\u036f]/g,
+                ''
+              )
+              .replace(
+                /[^A-Z0-9]+/gi,
+                '-'
+              )
+              .replace(
+                /^-|-$/g,
+                ''
+              )
+              .toUpperCase()
 
-          if (!tipoExistente) {
-            const codigo =
-              nombreTipo
-                .normalize('NFD')
-                .replace(
-                  /[\u0300-\u036f]/g,
-                  ''
-                )
-                .replace(
-                  /[^A-Z0-9]+/gi,
-                  '-'
-                )
-                .replace(
-                  /^-|-$/g,
-                  ''
-                )
-                .toUpperCase()
+          tipoExistente =
+            await crearTipoEquipo({
+              codigo,
+              nombre: nombreTipo,
+            })
 
-            tipoExistente =
-              await crearTipoEquipo({
-                codigo,
-                nombre: nombreTipo,
-              })
+          tiposCatalogo = [
+            ...tiposCatalogo,
+            tipoExistente,
+          ]
+        }
 
-            tiposCatalogo = [
-              ...tiposCatalogo,
-              tipoExistente,
-            ]
-          }
+        idsSeleccionados.push(
+          tipoExistente.id
+        )
 
+        if (!idsActuales.has(tipoExistente.id)) {
           await asignarTipoEquipo(
             equipoId,
             tipoExistente.id
@@ -175,6 +188,21 @@ export function useEquipoEdit(
         }
       }
 
+      // Eliminar tipos que fueron desmarcados
+      for (
+        const tipoActual of tiposActuales
+      ) {
+        if (
+          !idsSeleccionados.includes(
+            tipoActual.id
+          )
+        ) {
+          await desasignarTipoEquipo(
+            equipoId,
+            tipoActual.id
+          )
+        }
+      }
       // 3. Guardar dispositivo de red
       if (
         form.ip &&

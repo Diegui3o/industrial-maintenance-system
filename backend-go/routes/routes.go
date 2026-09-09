@@ -478,5 +478,10 @@ func SetupRoutes(
 		tipoEquipoHandler.Asignar,
 	).Methods("POST")
 
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/tipos",
+		tipoEquipoHandler.Desasignar,
+	).Methods("DELETE")
+
 	return r
 }

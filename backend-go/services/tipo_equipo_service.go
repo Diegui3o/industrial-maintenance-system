@@ -39,3 +39,13 @@ func (s *TipoEquipoService) ListarPorEquipo(
 ) ([]models.TipoEquipo, error) {
 	return s.Repo.ListarPorEquipo(equipoID)
 }
+func (s *TipoEquipoService) Desasignar(
+	equipoID int,
+	tipoEquipoID int,
+) error {
+
+	return s.Repo.Desasignar(
+		equipoID,
+		tipoEquipoID,
+	)
+}
