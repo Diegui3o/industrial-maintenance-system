@@ -5,6 +5,10 @@ import Card from '../../../shared/components/Card'
 import Badge from '../../../shared/components/Badge'
 import Button from '../../../shared/components/Button'
 import { getEquipo, getEquipoTags, getEquipoTiempoReal } from '../../../shared/services/api'
+import {
+  getEquipoPlantaDetalle,
+  type EquipoPlantaDetalle,
+} from '../../../dashboard/DashboardAreas/Planta/services/plantaApi'
 import { spacing } from '../../../theme/colors'
 
 interface Props {
@@ -17,8 +21,10 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
   const [detalle, setDetalle] = useState<any>(null)
   const [dispositivo, setDispositivo] = useState<any>(null)
   const [ping, setPing] = useState<any>(null)
-  const [tags, setTags] = useState<any[]>([])  // ← AGREGADO
-  const [tiempoReal, setTiempoReal] = useState<any[]>([])  // ← AGREGADO
+  const [tags, setTags] = useState<any[]>([])
+  const [estructura, setEstructura] =
+  useState<EquipoPlantaDetalle | null>(null)
+  const [tiempoReal, setTiempoReal] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,6 +34,9 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
         setDetalle(data.equipo || data)
         setDispositivo(data.dispositivo || null)
         setPing(data.ping || null)
+        const estructuraData =
+          await getEquipoPlantaDetalle(equipo.id)
+        setEstructura(estructuraData)
 
         // Cargar tags del equipo
         const tagsData = await getEquipoTags(equipo.id)
@@ -72,6 +81,15 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
           <Field label="Área" value={detalle.area} />
           <Field label="Tipo" value={detalle.tipo} />
           <Field label="Fase o Nivel" value={detalle.fase} />
+          <Field
+            label="Fase de Ubicación"
+            value={detalle.fase_ubicacion}
+          />
+
+          <Field
+            label="Área Funcional"
+            value={detalle.area_funcional}
+          />
           <Field label="Fabricante" value={detalle.fabricante} />
           <Field label="Modelo" value={detalle.modelo} />
           <Field label="N° Serie" value={detalle.numero_serie} />
@@ -90,6 +108,59 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
           <Field label="Tag Industrial" value={detalle.tag} />
           <Field label="Ubicación Física" value={detalle.ubicacion_fisica} />
           <Field label="Descripción" value={detalle.descripcion_larga} />
+          <Card padding={24} hover={false}>
+            <h3 style={{ marginBottom: 16 }}>
+              Estructura del Equipo
+            </h3>
+
+            {estructura?.proceso &&
+              estructura?.subproceso && (
+                <>
+                  <Field
+                    label="Estructura"
+                    value="Proceso"
+                  />
+
+                  <Field
+                    label="Proceso"
+                    value={estructura.proceso.nombre}
+                  />
+
+                  <Field
+                    label="Subproceso"
+                    value={estructura.subproceso.nombre}
+                  />
+                </>
+              )}
+
+            {estructura?.sistema &&
+              estructura?.subproceso_sistema && (
+                <>
+                  <Field
+                    label="Estructura"
+                    value="Sistema"
+                  />
+
+                  <Field
+                    label="Sistema"
+                    value={estructura.sistema.nombre}
+                  />
+
+                  <Field
+                    label="Subproceso"
+                    value={estructura.subproceso_sistema.nombre}
+                  />
+                </>
+              )}
+
+            {!estructura?.proceso &&
+              !estructura?.sistema && (
+                <div>
+                  Este equipo todavía no está asociado
+                  a un subproceso.
+                </div>
+              )}
+          </Card>
         </Card>
       </div>
 

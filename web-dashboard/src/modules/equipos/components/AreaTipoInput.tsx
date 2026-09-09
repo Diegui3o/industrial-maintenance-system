@@ -1,123 +1,177 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { colors } from '../../../theme/colors';
 
 interface Props {
   areaInicial: string;
-  tipoInicial: string;
+  tiposIniciales: string[];
   onChangeArea: (area: string) => void;
-  onChangeTipo: (tipo: string) => void;
+  onChangeTipos: (tipos: string[]) => void;
 }
 
-const AREAS = ['MINA', 'PLANTA', 'INFRAESTRUCTURA'] as const;
+const AREAS = [
+  'MINA',
+  'PLANTA',
+  'INFRAESTRUCTURA',
+] as const;
 
 const OPCIONES_POR_AREA: Record<string, string[]> = {
-  MINA: ['VARIADOR', 'ESTACION', 'GEOFONO', 'WAPSI', 'TELEFONO', 'MODULO GEOESTACION'],
-  PLANTA: ['BOMBA', 'MOTOR', 'CHANCADORA', 'FAJA TRANSPORTADORA', 'ZARANDA', 'MOLINO'],
-  INFRAESTRUCTURA: ['SERVIDOR', 'SWITCH', 'RADIO', 'FIBRA OPTICA', 'UPS', 'PC'],
+  MINA: [
+    'VARIADOR',
+    'ESTACION',
+    'GEOFONO',
+    'WAPSI',
+    'TELEFONO',
+    'MODULO GEOESTACION',
+  ],
+
+  PLANTA: [
+    'PLANTA ELECTRICA (T-EPLANT)',
+    'PLANTA MECANICA (T-MPLANT)',
+    'PLANTA INSTRUMENTAL (T-EIPLAN)',
+  ],
+
+  INFRAESTRUCTURA: [
+    'SERVIDOR',
+    'SWITCH',
+    'RADIO',
+    'FIBRA OPTICA',
+    'UPS',
+    'PC',
+    'SUPERFICIE (T-ESUPER)',
+  ],
 };
 
-export function AreaTipoInput({ areaInicial, tipoInicial, onChangeArea, onChangeTipo }: Props) {
+export function AreaTipoInput({
+  areaInicial,
+  tiposIniciales,
+  onChangeArea,
+  onChangeTipos,
+}: Props) {
   const [area, setArea] = useState(areaInicial);
-  const [tipo, setTipo] = useState(tipoInicial);
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [filtradas, setFiltradas] = useState<string[]>([]);
+  const [tipos, setTipos] = useState<string[]>(
+    tiposIniciales || []
+  );
 
   useEffect(() => {
     setArea(areaInicial);
-    setTipo(tipoInicial);
-  }, [areaInicial, tipoInicial]);
+    setTipos(tiposIniciales || []);
+  }, [areaInicial, tiposIniciales]);
 
-  const manejarCambioArea = (nuevaArea: string) => {
+  const manejarCambioArea = (
+    nuevaArea: string
+  ) => {
     setArea(nuevaArea);
-    setTipo('');
+    setTipos([]);
+
     onChangeArea(nuevaArea);
-    onChangeTipo('');
+    onChangeTipos([]);
   };
 
-  const manejarCambioTipo = (valor: string) => {
-    const valorMayus = valor.toUpperCase();
-    setTipo(valorMayus);
-    onChangeTipo(valorMayus);
+  const alternarTipo = (
+    tipo: string
+  ) => {
+    const existe = tipos.includes(tipo);
 
-    if (valorMayus.length > 0 && area) {
-      const opciones = OPCIONES_POR_AREA[area] || [];
-      const coincidencias = opciones.filter(op => op.includes(valorMayus));
-      setFiltradas(coincidencias);
-      setMostrarSugerencias(coincidencias.length > 0);
-    } else {
-      setFiltradas([]);
-      setMostrarSugerencias(false);
-    }
+    const nuevosTipos = existe
+      ? tipos.filter((item) => item !== tipo)
+      : [...tipos, tipo];
+
+    setTipos(nuevosTipos);
+    onChangeTipos(nuevosTipos);
   };
 
-  const seleccionarSugerencia = (opcion: string) => {
-    setTipo(opcion);
-    onChangeTipo(opcion);
-    setMostrarSugerencias(false);
-  };
+  const opciones =
+    OPCIONES_POR_AREA[area] || [];
 
   return (
     <div style={{ display: 'contents' }}>
+
       <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>ÁREA *</label>
-        <select value={area} onChange={(e) => manejarCambioArea(e.target.value)} style={selectStyle}>
-          <option value="">Seleccionar área</option>
-          {AREAS.map((op) => (
-            <option key={op} value={op}>{op}</option>
+        <label style={labelStyle}>
+          ÁREA *
+        </label>
+
+        <select
+          value={area}
+          onChange={(e) =>
+            manejarCambioArea(e.target.value)
+          }
+          style={selectStyle}
+        >
+          <option value="">
+            Seleccionar área
+          </option>
+
+          {AREAS.map((opcion) => (
+            <option
+              key={opcion}
+              value={opcion}
+            >
+              {opcion}
+            </option>
           ))}
         </select>
       </div>
 
-      <div style={{ marginBottom: 14, position: 'relative' }}>
-        <label style={labelStyle}>TIPO *</label>
-        <input
-          value={tipo}
-          onChange={(e) => manejarCambioTipo(e.target.value)}
-          onFocus={() => {
-            if (area && OPCIONES_POR_AREA[area]?.length > 0) {
-              setFiltradas(OPCIONES_POR_AREA[area]);
-              setMostrarSugerencias(true);
-            }
-          }}
-          onBlur={() => setTimeout(() => setMostrarSugerencias(false), 200)}
-          placeholder={area ? 'Escribir o seleccionar tipo...' : 'Primero elija área'}
-          disabled={!area}
-          style={inputStyle}
-        />
+      <div style={{ marginBottom: 14 }}>
 
-        {mostrarSugerencias && filtradas.length > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            background: '#fff',
-            border: `1px solid ${colors.border}`,
-            borderRadius: 8,
-            marginTop: 4,
-            maxHeight: 160,
-            overflowY: 'auto',
-            zIndex: 50,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          }}>
-            {filtradas.map((op) => (
-              <div
-                key={op}
-                onMouseDown={() => seleccionarSugerencia(op)}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  color: '#1F2329',
-                  borderBottom: '1px solid #F0F1F4',
-                }}
-              >
-                {op}
-              </div>
-            ))}
+        <label style={labelStyle}>
+          TIPO *
+        </label>
+
+        {!area ? (
+          <div style={disabledBoxStyle}>
+            Primero elija área
+          </div>
+        ) : (
+          <div style={tipoContainerStyle}>
+
+            {opciones.map((opcion) => {
+              const seleccionado =
+                tipos.includes(opcion);
+
+              return (
+                <label
+                  key={opcion}
+                  style={{
+                    ...tipoOptionStyle,
+                    ...(seleccionado
+                      ? tipoSeleccionadoStyle
+                      : {}),
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={seleccionado}
+                    onChange={() =>
+                      alternarTipo(opcion)
+                    }
+                  />
+
+                  <span>
+                    {opcion}
+                  </span>
+                </label>
+              );
+            })}
+
           </div>
         )}
+
+        {tipos.length > 0 && (
+          <div style={seleccionadosStyle}>
+            <strong>
+              Tipos seleccionados:
+            </strong>
+
+            <div style={{ marginTop: 4 }}>
+              {tipos.join(', ')}
+            </div>
+          </div>
+        )}
+
       </div>
+
     </div>
   );
 }
@@ -141,11 +195,46 @@ const selectStyle: React.CSSProperties = {
   background: '#fff',
 };
 
-const inputStyle: React.CSSProperties = {
+const tipoContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  padding: 10,
+  border: `1px solid ${colors.border}`,
+  borderRadius: 8,
+  background: '#fff',
+};
+
+const tipoOptionStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 10px',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: 13,
+};
+
+const tipoSeleccionadoStyle: React.CSSProperties = {
+  background: '#FFF4D6',
+  fontWeight: 600,
+};
+
+const seleccionadosStyle: React.CSSProperties = {
+  marginTop: 8,
+  padding: '8px 10px',
+  borderRadius: 6,
+  background: '#F7F7F7',
+  fontSize: 12,
+};
+
+const disabledBoxStyle: React.CSSProperties = {
   width: '100%',
+  boxSizing: 'border-box',
   padding: '10px 12px',
   border: `1px solid ${colors.border}`,
   borderRadius: 8,
   fontSize: 14,
-  textTransform: 'uppercase',
+  color: colors.text.muted,
+  background: '#F7F7F7',
 };

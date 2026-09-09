@@ -3,6 +3,8 @@ export interface EquipoFormData {
   nombre: string
   area: string
   tipo: string
+  tipo_ids: number[]
+  tipos: string[]
   fase: string
   fabricante: string
   modelo: string
@@ -11,6 +13,9 @@ export interface EquipoFormData {
   fecha_instalacion: string
   tipo_padre: 'proceso' | 'sistema' | ''
   subproceso_padre_id: number | null
+
+  fase_ubicacion: string
+  area_funcional: string
 
   activo_padre_id: number | null
   nivel_jerarquia: number
@@ -63,10 +68,14 @@ export interface EquipoFormData {
 }
 
 export const emptyForm: EquipoFormData = {
-  codigo: '', nombre: '', area: '', tipo: '', fase: '', fabricante: '', modelo: '',
+  codigo: '', nombre: '', area: '', tipo: '',
+tipo_ids: [],
+tipos: [], fase: '', fabricante: '', modelo: '',
   numero_serie: '', estado_equipo: 'activo', fecha_instalacion: '',
   tipo_padre: '',
   subproceso_padre_id: null,
+  fase_ubicacion: '',
+  area_funcional: '',
   activo_padre_id: null, nivel_jerarquia: 0, tag: '', ubicacion_fisica: '', descripcion_larga: '',
   es_dispositivo_red: false, tipo_dispositivo: '', ip: '', puerto: 0,
   protocolo: '', usuario_red: '', password_hash: '',

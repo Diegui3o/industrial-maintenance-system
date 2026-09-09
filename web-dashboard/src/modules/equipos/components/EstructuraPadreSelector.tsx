@@ -1,178 +1,150 @@
-import { useEffect, useState } from 'react';
-import type { EquipoFormData } from '../hooks/useEquipoForm';
+import { useEffect, useState } from 'react'
+
 import {
   getProcesos,
   getSubprocesos,
   getSistemas,
   getSubprocesosSistema,
+  type Proceso,
+  type Subproceso,
   type SistemaPlanta,
   type SubprocesoSistemaPlanta,
-} from '../../../dashboard/DashboardAreas/Planta/services/plantaApi';
-
-interface ProcesoPlanta {
-  id: number;
-  nombre: string;
-}
-
-interface SubprocesoPlanta {
-  id: number;
-  proceso_id: number;
-  nombre: string;
-}
+} from '../../../dashboard/DashboardAreas/Planta/services/plantaApi'
 
 interface Props {
-  form: EquipoFormData;
-  update: (data: Partial<EquipoFormData>) => void;
+  form: any
+  update: (data: any) => void
 }
 
 export default function EstructuraPadreSelector({
   form,
   update,
 }: Props) {
-  const [procesos, setProcesos] = useState<ProcesoPlanta[]>([]);
-  const [subprocesos, setSubprocesos] = useState<SubprocesoPlanta[]>([]);
+  const [tipo, setTipo] = useState<'proceso' | 'sistema' | ''>(
+    form.tipo_padre || ''
+  )
 
-  const [sistemas, setSistemas] = useState<SistemaPlanta[]>([]);
+  const [procesos, setProcesos] = useState<Proceso[]>([])
+  const [sistemas, setSistemas] = useState<SistemaPlanta[]>([])
+
+  const [subprocesos, setSubprocesos] =
+    useState<Subproceso[]>([])
+
   const [subprocesosSistema, setSubprocesosSistema] =
-    useState<SubprocesoSistemaPlanta[]>([]);
+    useState<SubprocesoSistemaPlanta[]>([])
 
-  const [procesoId, setProcesoId] = useState<number | null>(null);
-  const [sistemaId, setSistemaId] = useState<number | null>(null);
+  const [procesoId, setProcesoId] =
+    useState<number | null>(null)
 
-  const [loading, setLoading] = useState(false);
+  const [sistemaId, setSistemaId] =
+    useState<number | null>(null)
 
   useEffect(() => {
     const cargar = async () => {
-      setLoading(true);
-
       try {
-        const [procesosData, sistemasData] = await Promise.all([
-          getProcesos(),
-          getSistemas(),
-        ]);
+        const [procesosData, sistemasData] =
+          await Promise.all([
+            getProcesos(),
+            getSistemas(),
+          ])
 
-        setProcesos(procesosData);
-        setSistemas(sistemasData);
+        setProcesos(procesosData)
+        setSistemas(sistemasData)
       } catch (error) {
         console.error(
-          'Error cargando estructura para padre:',
+          'Error cargando estructura padre:',
           error
-        );
-      } finally {
-        setLoading(false);
+        )
       }
-    };
-
-    cargar();
-  }, []);
-
-  useEffect(() => {
-    if (form.tipo_padre !== 'proceso' || !procesoId) {
-      setSubprocesos([]);
-      return;
     }
 
-    const cargar = async () => {
-      try {
-        const data = await getSubprocesos(procesoId);
-        setSubprocesos(data);
-      } catch (error) {
-        console.error('Error cargando subprocesos:', error);
-        setSubprocesos([]);
-      }
-    };
+    cargar()
+  }, [])
 
-    cargar();
-  }, [form.tipo_padre, procesoId]);
-
-  useEffect(() => {
-    if (form.tipo_padre !== 'sistema' || !sistemaId) {
-      setSubprocesosSistema([]);
-      return;
-    }
-
-    const cargar = async () => {
-      try {
-        const data = await getSubprocesosSistema(sistemaId);
-        setSubprocesosSistema(data);
-      } catch (error) {
-        console.error(
-          'Error cargando subprocesos de sistema:',
-          error
-        );
-        setSubprocesosSistema([]);
-      }
-    };
-
-    cargar();
-  }, [form.tipo_padre, sistemaId]);
-
-  const cambiarTipoPadre = (
-    tipo: EquipoFormData['tipo_padre']
+  const cambiarTipo = (
+    nuevoTipo: 'proceso' | 'sistema'
   ) => {
+    setTipo(nuevoTipo)
+
+    setProcesoId(null)
+    setSistemaId(null)
+
+    setSubprocesos([])
+    setSubprocesosSistema([])
+
     update({
-      tipo_padre: tipo,
+      tipo_padre: nuevoTipo,
       subproceso_padre_id: null,
-    });
+    })
+  }
 
-    setProcesoId(null);
-    setSistemaId(null);
-    setSubprocesos([]);
-    setSubprocesosSistema([]);
-  };
+  const cambiarProceso = async (
+    id: number | null
+  ) => {
+    setProcesoId(id)
+    setSubprocesos([])
 
-  const cambiarProceso = (id: number | null) => {
-    setProcesoId(id);
     update({
-    subproceso_padre_id: null,
-  });
-  };
+      subproceso_padre_id: null,
+    })
 
-  const cambiarSistema = (id: number | null) => {
-    setSistemaId(id);
+    if (!id) return
+
+    try {
+      const resultado = await getSubprocesos(id)
+      setSubprocesos(resultado)
+    } catch (error) {
+      console.error(
+        'Error cargando subprocesos:',
+        error
+      )
+    }
+  }
+
+  const cambiarSistema = async (
+    id: number | null
+  ) => {
+    setSistemaId(id)
+    setSubprocesosSistema([])
+
     update({
-    subproceso_padre_id: null,
-  });
-  };
+      subproceso_padre_id: null,
+    })
+
+    if (!id) return
+
+    try {
+      const resultado =
+        await getSubprocesosSistema(id)
+
+      setSubprocesosSistema(resultado)
+    } catch (error) {
+      console.error(
+        'Error cargando subprocesos de sistema:',
+        error
+      )
+    }
+  }
 
   return (
-    <div
-      style={{
-        marginTop: 24,
-        paddingTop: 20,
-        borderTop: '1px solid #ddd',
-      }}
-    >
-      <h3 style={{ marginBottom: 6 }}>
-        Estructura del equipo
-      </h3>
+    <div>
+      <h4>Ubicación en estructura</h4>
 
-      <p
-        style={{
-          marginTop: 0,
-          marginBottom: 16,
-          color: '#666',
-        }}
-      >
-        Selecciona el subproceso al que pertenecerá este equipo.
-      </p>
-
-      <div style={{ marginBottom: 16 }}>
-        <label>
-          Tipo de padre
-        </label>
+      <div style={{ marginBottom: 12 }}>
+        <label>Tipo de estructura</label>
 
         <select
-          value={form.tipo_padre}
+          value={tipo}
           onChange={(e) =>
-            cambiarTipoPadre(
-              e.target.value as EquipoFormData['tipo_padre']
+            cambiarTipo(
+              e.target.value as
+                | 'proceso'
+                | 'sistema'
             )
           }
-          disabled={loading}
         >
           <option value="">
-            Sin asignar
+            Seleccionar...
           </option>
 
           <option value="proceso">
@@ -185,12 +157,10 @@ export default function EstructuraPadreSelector({
         </select>
       </div>
 
-      {form.tipo_padre === 'proceso' && (
+      {tipo === 'proceso' && (
         <>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Proceso
-            </label>
+          <div style={{ marginBottom: 12 }}>
+            <label>Proceso</label>
 
             <select
               value={procesoId ?? ''}
@@ -203,7 +173,7 @@ export default function EstructuraPadreSelector({
               }
             >
               <option value="">
-                Seleccionar proceso
+                Seleccionar proceso...
               </option>
 
               {procesos.map((proceso) => (
@@ -217,24 +187,25 @@ export default function EstructuraPadreSelector({
             </select>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Subproceso
-            </label>
+          <div>
+            <label>Subproceso padre</label>
 
             <select
-              value={form.subproceso_padre_id ?? ''}
-              onChange={(e) =>
-                update({
-                  subproceso_padre_id: e.target.value
-                    ? Number(e.target.value)
-                    : null,
-                })
+              value={
+                form.subproceso_padre_id ?? ''
               }
               disabled={!procesoId}
+              onChange={(e) =>
+                update({
+                  subproceso_padre_id:
+                    e.target.value
+                      ? Number(e.target.value)
+                      : null,
+                })
+              }
             >
               <option value="">
-                Seleccionar subproceso
+                Seleccionar subproceso...
               </option>
 
               {subprocesos.map((subproceso) => (
@@ -250,12 +221,10 @@ export default function EstructuraPadreSelector({
         </>
       )}
 
-      {form.tipo_padre === 'sistema' && (
+      {tipo === 'sistema' && (
         <>
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Sistema
-            </label>
+          <div style={{ marginBottom: 12 }}>
+            <label>Sistema</label>
 
             <select
               value={sistemaId ?? ''}
@@ -268,7 +237,7 @@ export default function EstructuraPadreSelector({
               }
             >
               <option value="">
-                Seleccionar sistema
+                Seleccionar sistema...
               </option>
 
               {sistemas.map((sistema) => (
@@ -282,38 +251,41 @@ export default function EstructuraPadreSelector({
             </select>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Subproceso
-            </label>
+          <div>
+            <label>Subproceso padre</label>
 
             <select
-              value={form.subproceso_padre_id ?? ''}
-              onChange={(e) =>
-                update({
-                  subproceso_padre_id: e.target.value
-                    ? Number(e.target.value)
-                    : null,
-                })
+              value={
+                form.subproceso_padre_id ?? ''
               }
               disabled={!sistemaId}
+              onChange={(e) =>
+                update({
+                  subproceso_padre_id:
+                    e.target.value
+                      ? Number(e.target.value)
+                      : null,
+                })
+              }
             >
               <option value="">
-                Seleccionar subproceso
+                Seleccionar subproceso...
               </option>
 
-              {subprocesosSistema.map((subproceso) => (
-                <option
-                  key={subproceso.id}
-                  value={subproceso.id}
-                >
-                  {subproceso.nombre}
-                </option>
-              ))}
+              {subprocesosSistema.map(
+                (subproceso) => (
+                  <option
+                    key={subproceso.id}
+                    value={subproceso.id}
+                  >
+                    {subproceso.nombre}
+                  </option>
+                )
+              )}
             </select>
           </div>
         </>
       )}
     </div>
-  );
+  )
 }

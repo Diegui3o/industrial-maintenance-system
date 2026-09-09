@@ -35,6 +35,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 			e.fecha_instalacion,
 			e.fecha_creacion,
 			e.actualizado_en,
+			e.fase_ubicacion,
+			e.area_funcional,
 			COALESCE(d.ip, '') AS ip
 		FROM equipos e
 		LEFT JOIN dispositivos_red d ON d.equipo_id = e.id
@@ -61,6 +63,7 @@ func (r *EquipoRepository) ObtenerEquipos(
 	}
 
 	direccion := "ASC"
+
 	if order == "desc" {
 		direccion = "DESC"
 	}
@@ -94,11 +97,13 @@ func (r *EquipoRepository) ObtenerEquipos(
 	}
 
 	for key, value := range filtros {
+
 		if value == "" {
 			continue
 		}
 
 		columna, existe := camposPermitidos[key]
+
 		if !existe {
 			continue
 		}
@@ -108,17 +113,21 @@ func (r *EquipoRepository) ObtenerEquipos(
 		switch tipo {
 
 		case "exacto":
+
 			query += " AND " + columna + " = $" + strconv.Itoa(i)
 			args = append(args, value)
 			i++
 
 		case "texto":
+
 			query += " AND LOWER(" + columna + ") LIKE LOWER($" + strconv.Itoa(i) + ")"
 			args = append(args, "%"+value+"%")
 			i++
 
 		case "numero":
+
 			numero, err := strconv.Atoi(value)
+
 			if err != nil {
 				continue
 			}
@@ -128,7 +137,9 @@ func (r *EquipoRepository) ObtenerEquipos(
 			i++
 
 		case "boolean":
+
 			boolean, err := strconv.ParseBool(value)
+
 			if err != nil {
 				continue
 			}
@@ -151,23 +162,28 @@ func (r *EquipoRepository) ObtenerEquipos(
 	args = append(args, offset)
 
 	rows, err := r.DB.Query(query, args...)
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var lista []models.Equipo
 
 	for rows.Next() {
+
 		var e models.Equipo
 
 		var (
-			fase            sql.NullString
-			fabricante      sql.NullString
-			modelo          sql.NullString
-			numeroSerie     sql.NullString
+			fase             sql.NullString
+			fabricante       sql.NullString
+			modelo           sql.NullString
+			numeroSerie      sql.NullString
+			faseUbicacion    sql.NullString
+			areaFuncional    sql.NullString
 			fechaInstalacion sql.NullTime
-			actualizadoEn   sql.NullTime
+			actualizadoEn    sql.NullTime
 		)
 
 		err := rows.Scan(
@@ -185,6 +201,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 			&fechaInstalacion,
 			&e.FechaCreacion,
 			&actualizadoEn,
+			&faseUbicacion,
+			&areaFuncional,
 			&e.IP,
 		)
 
@@ -196,6 +214,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 		e.Fabricante = fabricante.String
 		e.Modelo = modelo.String
 		e.NumeroSerie = numeroSerie.String
+		e.FaseUbicacion = faseUbicacion.String
+		e.AreaFuncional = areaFuncional.String
 
 		if fechaInstalacion.Valid {
 			e.FechaInstalacion = &fechaInstalacion.Time
@@ -244,10 +264,12 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 			numero_serie,
 			critico,
 			estado_equipo,
-			fecha_instalacion
+			fecha_instalacion,
+			fase_ubicacion,
+			area_funcional
 		)
 		VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
 		)
 		RETURNING id, fecha_creacion
 	`,
@@ -262,6 +284,8 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 		e.Critico,
 		e.EstadoEquipo,
 		e.FechaInstalacion,
+		e.FaseUbicacion,
+		e.AreaFuncional,
 	).Scan(
 		&e.ID,
 		&e.FechaCreacion,
@@ -292,6 +316,8 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 			e.fecha_instalacion,
 			e.fecha_creacion,
 			e.actualizado_en,
+			e.fase_ubicacion,
+			e.area_funcional,
 			COALESCE(d.ip, '') AS ip
 		FROM equipos e
 		LEFT JOIN LATERAL (
@@ -311,7 +337,9 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 		fabricante       sql.NullString
 		modelo           sql.NullString
 		numeroSerie      sql.NullString
-		fechaInstalacion  sql.NullTime
+		faseUbicacion    sql.NullString
+		areaFuncional    sql.NullString
+		fechaInstalacion sql.NullTime
 		actualizadoEn    sql.NullTime
 	)
 
@@ -330,6 +358,8 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 		&fechaInstalacion,
 		&e.FechaCreacion,
 		&actualizadoEn,
+		&faseUbicacion,
+		&areaFuncional,
 		&e.IP,
 	)
 
@@ -345,6 +375,8 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 	e.Fabricante = fabricante.String
 	e.Modelo = modelo.String
 	e.NumeroSerie = numeroSerie.String
+	e.FaseUbicacion = faseUbicacion.String
+	e.AreaFuncional = areaFuncional.String
 
 	if fechaInstalacion.Valid {
 		e.FechaInstalacion = &fechaInstalacion.Time
@@ -375,8 +407,10 @@ func (r *EquipoRepository) ActualizarEquipo(
 			critico = $9,
 			estado_equipo = $10,
 			fecha_instalacion = $11,
+			fase_ubicacion = $12,
+			area_funcional = $13,
 			actualizado_en = CURRENT_TIMESTAMP
-		WHERE id = $12
+		WHERE id = $14
 	`,
 		e.Codigo,
 		e.Nombre,
@@ -389,6 +423,8 @@ func (r *EquipoRepository) ActualizarEquipo(
 		e.Critico,
 		e.EstadoEquipo,
 		e.FechaInstalacion,
+		e.FaseUbicacion,
+		e.AreaFuncional,
 		id,
 	)
 

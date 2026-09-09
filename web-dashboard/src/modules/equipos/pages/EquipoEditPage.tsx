@@ -48,9 +48,21 @@ export default function EquipoEditPage({ equipo, onNavigate, onBack }: Props) {
                   {/* Área y Tipo con autocompletado */}
                   <AreaTipoInput
                     areaInicial={form.area}
-                    tipoInicial={form.tipo}
-                    onChangeArea={(area: string) => update({ area })}
-                    onChangeTipo={(tipo: string) => update({ tipo })}
+                    tiposIniciales={form.tipos || []}
+                    onChangeArea={(area: string) =>
+                      update({
+                        area,
+                        tipos: [],
+                        tipo: '',
+                        tipo_ids: [],
+                      })
+                    }
+                    onChangeTipos={(tipos: string[]) =>
+                      update({
+                        tipos,
+                        tipo: tipos.join(', '),
+                      })
+                    }
                   />
                 </div>
               )}

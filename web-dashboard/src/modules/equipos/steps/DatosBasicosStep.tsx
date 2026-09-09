@@ -243,21 +243,57 @@ export default function DatosBasicosStep({
 
         <AreaTipoInput
           areaInicial={form.area}
-          tipoInicial={form.tipo}
-          onChangeArea={(area: string) =>
-            update({ area })
+          tiposIniciales={form.tipos}
+          onChangeArea={(area) =>
+            update({
+              area,
+              tipos: [],
+              tipo: '',
+              tipo_ids: [],
+            })
           }
-          onChangeTipo={(tipo: string) =>
-            update({ tipo })
+          onChangeTipos={(tipos) =>
+            update({
+              tipos,
+              tipo: tipos.join(', '),
+            })
           }
         />
 
-        <Field
-          label="Fase o Nivel"
-          value={form.fase}
-          onChange={set('fase')}
-          placeholder="Fase I"
-        />
+        <label>Fase o Nivel</label>
+
+        <select
+          value={form.fase_ubicacion}
+          onChange={(e) =>
+            update({
+              fase_ubicacion: e.target.value,
+            })
+          }
+        >
+          <option value="">
+            Seleccionar fase...
+          </option>
+
+          <option value="FASE I">
+            FASE I
+          </option>
+
+          <option value="FASE II">
+            FASE II
+          </option>
+
+          <option value="FASE III">
+            FASE III
+          </option>
+
+          <option value="MINA">
+            MINA
+          </option>
+
+          <option value="INFRAESTRUCTURA">
+            INFRAESTRUCTURA
+          </option>
+        </select>
 
         <Field
           label="Fabricante"

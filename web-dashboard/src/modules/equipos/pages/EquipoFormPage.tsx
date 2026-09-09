@@ -13,6 +13,9 @@ import { colors } from '../../../theme/colors'
 import {
   asignarEquipoSubproceso,
   asignarEquipoSubprocesoSistema,
+  getTiposEquipo,
+  crearTipoEquipo,
+  asignarTipoEquipo,
 } from '../../../dashboard/DashboardAreas/Planta/services/plantaApi';
 
 interface Props {
@@ -57,9 +60,73 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
         ubicacion_fisica: form.ubicacion_fisica || '',
         descripcion_larga: form.descripcion_larga || '',
       }))
-
+      if (
+        !form.tipo_padre ||
+        !form.subproceso_padre_id
+      ) {
+        alert(
+          'Debe seleccionar el Proceso o Sistema y su Subproceso padre.'
+        )
+        return
+      }
       const equipo = await createEquipo(payload)
+
       const equipoId = equipo.id
+
+      if (!equipoId || equipoId === 0) {
+        console.error('Error: equipo sin ID')
+        return
+      }
+      /* =========================================================
+        TIPOS DE EQUIPO
+      ========================================================= */
+
+      if (form.tipos && form.tipos.length > 0) {
+        let tiposCatalogo = await getTiposEquipo()
+
+        for (const nombreTipo of form.tipos) {
+          let tipoExistente = tiposCatalogo.find(
+            (tipo) =>
+              tipo.nombre.toUpperCase() ===
+              nombreTipo.toUpperCase()
+          )
+
+          if (!tipoExistente) {
+            const codigo = nombreTipo
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^A-Z0-9]+/gi, '-')
+              .replace(/^-|-$/g, '')
+              .toUpperCase()
+
+            tipoExistente = await crearTipoEquipo({
+              codigo,
+              nombre: nombreTipo,
+            })
+
+            tiposCatalogo = [
+              ...tiposCatalogo,
+              tipoExistente,
+            ]
+          }
+
+          await asignarTipoEquipo(
+            equipoId,
+            tipoExistente.id
+          )
+        }
+      }
+
+      if (
+        form.subproceso_padre_id &&
+        form.tipo_padre === 'proceso'
+      ) {
+        await asignarEquipoSubproceso(
+          equipoId,
+          form.subproceso_padre_id
+        )
+      }
+
       if (
         form.subproceso_padre_id &&
         form.tipo_padre === 'sistema'
@@ -67,21 +134,7 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
         await asignarEquipoSubprocesoSistema(
           form.subproceso_padre_id,
           equipoId
-        );
-      }
-
-      if (
-        form.subproceso_padre_id &&
-        form.tipo_padre === 'sistema'
-      ) {
-        await asignarEquipoSubprocesoSistema(
-          equipoId,
-          form.subproceso_padre_id
-        );
-      }
-      if (!equipoId || equipoId === 0) {
-        console.error('Error: equipo sin ID')
-        return
+        )
       }
 
       if (form.es_dispositivo_red && form.ip) {

@@ -13,6 +13,8 @@ export const CAMPOS_EQUIPO: CampoDefinicion[] = [
   { field: 'area', label: 'Área', type: 'select_area', section: 'generales' },
   { field: 'tipo', label: 'Tipo', section: 'generales' },
   { field: 'fase', label: 'Fase', section: 'generales' },
+  { field: 'fase_ubicacion', label: 'Fase de Ubicación', section: 'generales' },
+  { field: 'area_funcional', label: 'Área Funcional', section: 'generales' },
   { field: 'fabricante', label: 'Fabricante', section: 'generales' },
   { field: 'modelo', label: 'Modelo', section: 'generales' },
   { field: 'numero_serie', label: 'N° Serie', section: 'generales' },

@@ -40,6 +40,7 @@ func SetupRoutes(
 		firestoreClient,
 	)
 	sensorRepo := repository.NewSensorRepository(db)
+	tipoEquipoRepo := repository.NewTipoEquipoRepository(db)
 	piTagRepo := repository.NewPITagRepository(db)
 	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
 	estructuraPlantaRepo := repository.NewEstructuraPlantaRepository(db)
@@ -56,6 +57,9 @@ func SetupRoutes(
 	dispositivoService := &services.DispositivoRedService{Repo: dispositivoRepo}
 	firestoreService := services.NewFirestoreService(
 		firestoreRepo,
+	)
+	tipoEquipoService := services.NewTipoEquipoService(
+		tipoEquipoRepo,
 	)
 	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
 	estructuraPlantaService := services.NewEstructuraPlantaService(estructuraPlantaRepo)
@@ -93,6 +97,9 @@ func SetupRoutes(
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 	firestoreHandler := handlers.NewFirestoreHandler(
 		firestoreService,
+	)
+	tipoEquipoHandler := handlers.NewTipoEquipoHandler(
+		tipoEquipoService,
 	)
 	piTagHandler := handlers.NewPITagHandler(piTagRepo, piTagService, tagDescubiertoRepo)
 	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
@@ -449,6 +456,26 @@ func SetupRoutes(
 	r.HandleFunc(
 		"/api/planta/sistemas/subprocesos/{subproceso_sistema_id}/equipos",
 		estructuraPlantaHandler.AsignarEquipoSubprocesoSistema,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/tipos-equipo",
+		tipoEquipoHandler.Listar,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/tipos-equipo",
+		tipoEquipoHandler.Crear,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/tipos",
+		tipoEquipoHandler.ListarPorEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/tipos",
+		tipoEquipoHandler.Asignar,
 	).Methods("POST")
 
 	return r

@@ -32,14 +32,18 @@ export function FieldRenderer({ campo, valor, onChange, form }: Props) {
     fontSize: 13,
   };
 
-  // === ÁREA + TIPO COMBINADO ===
   if (campo.field === 'area') {
     return (
       <AreaTipoInput
-        areaInicial={form?.area || valor || ''}
-        tipoInicial={form?.tipo || ''}
-        onChangeArea={(area: string) => onChange('area', area)}
-        onChangeTipo={(tipo: string) => onChange('tipo', tipo)}
+        areaInicial={form?.area || ''}
+        tiposIniciales={form?.tipos || []}
+        onChangeArea={(area) =>
+          onChange('area', area)
+        }
+        onChangeTipos={(tipos) => {
+          onChange('tipos', tipos)
+          onChange('tipo', tipos.join(', '))
+        }}
       />
     );
   }

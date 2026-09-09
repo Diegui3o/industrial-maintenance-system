@@ -50,14 +50,6 @@ type Repuesto struct {
 	Descripcion *string `json:"descripcion,omitempty"`
 	Activo      bool    `json:"activo"`
 }
-type EquipoPlantaDetalle struct {
-    Equipo *Equipo `json:"equipo"`
-    Subproceso *SubprocesoPlanta `json:"subproceso,omitempty"`
-    SubprocesoSistema *SubprocesoSistemaPlanta `json:"subproceso_sistema,omitempty"`
-    Clasificaciones []ClasificacionPlanta `json:"clasificaciones"`
-    Sistemas []SistemaPlanta `json:"sistemas"`
-    Componentes []ComponenteEquipo `json:"componentes"`
-}
 type ComponenteRepuestoDetalle struct {
 	RepuestoID int     `json:"repuesto_id"`
 	Codigo     *string `json:"codigo,omitempty"`
@@ -104,4 +96,17 @@ type SistemaPlantaEquipoDetalle struct {
 	Area                string `json:"area"`
 	Tipo                string `json:"tipo"`
 	EstadoEquipo        string `json:"estado_equipo"`
+}
+type EquipoPlantaDetalle struct {
+    Equipo *Equipo `json:"equipo"`
+
+    Proceso *ProcesoPlanta `json:"proceso,omitempty"`
+    Subproceso *SubprocesoPlanta `json:"subproceso,omitempty"`
+
+    Sistema *SistemaPlanta `json:"sistema,omitempty"`
+    SubprocesoSistema *SubprocesoSistemaPlanta `json:"subproceso_sistema,omitempty"`
+
+    Clasificaciones []ClasificacionPlanta `json:"clasificaciones"`
+    Sistemas []SistemaPlanta `json:"sistemas"`
+    Componentes []ComponenteEquipo `json:"componentes"`
 }

@@ -618,10 +618,71 @@ export interface SubprocesoPlanta {
 }
 
 export interface EquipoPlantaDetalle {
-  equipo: Equipo;
-  subproceso?: SubprocesoPlanta;
-  subproceso_sistema?: SubprocesoSistemaPlanta;
-  clasificaciones: ClasificacionPlanta[];
-  sistemas: SistemaPlanta[];
-  componentes: Componente[];
+  equipo: Equipo
+
+  proceso?: Proceso
+  subproceso?: SubprocesoPlanta
+
+  sistema?: SistemaPlanta
+  subproceso_sistema?: SubprocesoSistemaPlanta
+
+  clasificaciones: ClasificacionPlanta[]
+  sistemas: SistemaPlanta[]
+  componentes: Componente[]
+}
+/* =========================================================
+   TIPOS DE EQUIPO
+========================================================= */
+
+export interface TipoEquipo {
+  id: number
+  codigo: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+}
+
+export async function getTiposEquipo(): Promise<TipoEquipo[]> {
+  return request<TipoEquipo[]>(
+    '/planta/tipos-equipo'
+  )
+}
+
+export async function crearTipoEquipo(
+  data: {
+    codigo: string
+    nombre: string
+    descripcion?: string
+  }
+): Promise<TipoEquipo> {
+  return request<TipoEquipo>(
+    '/planta/tipos-equipo',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
+}
+
+export async function asignarTipoEquipo(
+  equipoId: number,
+  tipoEquipoId: number
+): Promise<void> {
+  await request<void>(
+    `/planta/equipos/${equipoId}/tipos`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        tipo_equipo_id: tipoEquipoId,
+      }),
+    }
+  )
+}
+
+export async function getTiposEquipoPorEquipo(
+  equipoId: number
+): Promise<TipoEquipo[]> {
+  return request<TipoEquipo[]>(
+    `/planta/equipos/${equipoId}/tipos`
+  )
 }
