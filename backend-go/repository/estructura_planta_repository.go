@@ -1098,3 +1098,70 @@ func (r *EstructuraPlantaRepository) ActualizarAsignacionRepuesto(
 
 	return err
 }
+func (r *EstructuraPlantaRepository) ListarEquiposSinUbicar() ([]models.Equipo, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			e.id,
+			e.codigo,
+			e.nombre,
+			e.area,
+			e.tipo,
+			e.fase,
+			e.fabricante,
+			e.modelo,
+			e.numero_serie,
+			e.critico,
+			e.estado_equipo,
+			e.fecha_instalacion,
+			e.fecha_creacion,
+			e.actualizado_en,
+			COALESCE(d.ip, '') AS ip
+		FROM equipos e
+		LEFT JOIN dispositivos_red d
+			ON d.equipo_id = e.id
+		LEFT JOIN planta_equipos pe
+			ON pe.equipo_id = e.id
+		WHERE pe.equipo_id IS NULL
+		ORDER BY e.codigo
+	`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var equipos []models.Equipo
+
+	for rows.Next() {
+		var equipo models.Equipo
+
+		if err := rows.Scan(
+			&equipo.ID,
+			&equipo.Codigo,
+			&equipo.Nombre,
+			&equipo.Area,
+			&equipo.Tipo,
+			&equipo.Fase,
+			&equipo.Fabricante,
+			&equipo.Modelo,
+			&equipo.NumeroSerie,
+			&equipo.Critico,
+			&equipo.EstadoEquipo,
+			&equipo.FechaInstalacion,
+			&equipo.FechaCreacion,
+			&equipo.ActualizadoEn,
+			&equipo.IP,
+		); err != nil {
+			return nil, err
+		}
+
+		equipos = append(equipos, equipo)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return equipos, nil
+}

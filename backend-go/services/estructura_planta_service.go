@@ -247,3 +247,6 @@ func (s *EstructuraPlantaService) ActualizarComponenteRepuesto(
 		notas,
 	)
 }
+func (s *EstructuraPlantaService) ListarEquiposSinUbicar() ([]models.Equipo, error) {
+	return s.Repo.ListarEquiposSinUbicar()
+}

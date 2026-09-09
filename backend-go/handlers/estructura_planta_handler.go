@@ -977,3 +977,22 @@ func (h *EstructuraPlantaHandler) PutComponenteRepuesto(
 		"repuesto_id":   repuestoID,
 	})
 }
+func (h *EstructuraPlantaHandler) ListarEquiposSinUbicar(w http.ResponseWriter, r *http.Request) {
+	equipos, err := h.Service.ListarEquiposSinUbicar()
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo equipos sin ubicar",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if equipos == nil {
+		equipos = []models.Equipo{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(equipos)
+}

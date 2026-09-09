@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
+
 import { ProcesoList } from './ProcesoList';
 import { SubprocesoList } from './SubprocesoList';
 import { EquiposSubproceso } from './EquiposSubproceso';
-import { getProcesos } from '../services/plantaApi';
-import type {
-  Proceso,
-  Subproceso,
+import { RepuestosCatalogo } from './RepuestosCatalogo';
+import { CatalogosPlanta } from './CatalogosPlanta';
+import { EstadoEstructura } from './EstadoEstructura';
+
+import {
+  getProcesos,
+  type Proceso,
+  type Subproceso,
 } from '../services/plantaApi';
 
 type Nivel = 'procesos' | 'subprocesos' | 'equipos';
@@ -137,6 +142,18 @@ export function PlantaEstructura() {
         <EquiposSubproceso
           subproceso={subproceso}
         />
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <RepuestosCatalogo />
+      </div>
+      
+      <div style={{ marginTop: 20 }}>
+        <CatalogosPlanta />
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <EstadoEstructura />
       </div>
 
     </div>

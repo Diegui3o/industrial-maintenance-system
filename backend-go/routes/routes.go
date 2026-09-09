@@ -391,5 +391,10 @@ func SetupRoutes(
 		mantenimientoHandler.GetPorEquipo,
 	).Methods("GET")
 
+	r.HandleFunc(
+		"/api/planta/equipos/sin-ubicar",
+		estructuraPlantaHandler.ListarEquiposSinUbicar,
+	).Methods("GET")
+
 	return r
 }
