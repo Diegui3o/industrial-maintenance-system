@@ -1,10 +1,3 @@
--- ============================================
--- MIGRACIÓN 011: TAGS DESCUBIERTOS
--- ============================================
--- Guarda TODA la información de tags sin equipo
--- Para que el usuario pueda decidir a qué equipo pertenecen
--- ============================================
-
 CREATE TABLE IF NOT EXISTS tags_descubiertos (
     id SERIAL PRIMARY KEY,
     tag_name TEXT NOT NULL,

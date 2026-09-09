@@ -1,24 +1,7 @@
--- ============================================
--- MIGRACIÓN 013: MULTI-FUENTE (Porvenir, Atacocha, etc.)
--- ============================================
--- Fecha: 2026-08-22
--- Descripción: 
---   1. Agrega campos de fuente a tags_descubiertos
---   2. Actualiza vista de sugerencias
---   3. Crea índices para búsquedas por fuente
--- ============================================
-
--- ============================================
--- 1. AGREGAR CAMPOS DE FUENTE
--- ============================================
 ALTER TABLE tags_descubiertos 
 ADD COLUMN IF NOT EXISTS pi_server TEXT,
 ADD COLUMN IF NOT EXISTS database_name TEXT,
 ADD COLUMN IF NOT EXISTS root_element TEXT;
-
--- ============================================
--- 2. ACTUALIZAR VISTA DE SUGERENCIAS
--- ============================================
 DROP VIEW IF EXISTS vw_sugerencias_equipos;
 
 CREATE OR REPLACE VIEW vw_sugerencias_equipos AS

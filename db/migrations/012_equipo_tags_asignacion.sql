@@ -1,15 +1,8 @@
--- ============================================
--- MIGRACIÓN 012: ASIGNACIÓN DE TAGS A EQUIPOS
--- ============================================
-
--- 1. Agregar columna equipo_id a tags_descubiertos (si no existe)
 ALTER TABLE tags_descubiertos 
 ADD COLUMN IF NOT EXISTS equipo_id INT REFERENCES equipos(id) ON DELETE SET NULL;
 
--- 2. Crear índice para búsquedas por equipo
 CREATE INDEX IF NOT EXISTS idx_tags_descubiertos_equipo ON tags_descubiertos(equipo_id);
 
--- 3. Vista para agrupar tags por elemento (sugerencias de equipos)
 CREATE OR REPLACE VIEW vw_sugerencias_equipos AS
 SELECT 
     element_name,

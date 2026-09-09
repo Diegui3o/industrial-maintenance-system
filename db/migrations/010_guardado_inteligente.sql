@@ -1,18 +1,3 @@
--- ============================================
--- MIGRACIÓN 010: GUARDADO INTELIGENTE
--- ============================================
--- Fecha: 2026-08-21
--- Descripción: 
---   1. Tablas de prioridades
---   2. Asignación de prioridades a equipos/parámetros
---   3. Eventos especiales
---   4. Historial de eventos
---   5. Datos iniciales
--- ============================================
-
--- ============================================
--- 1. TABLA: config_prioridades
--- ============================================
 CREATE TABLE IF NOT EXISTS config_prioridades (
     id SERIAL PRIMARY KEY,
     nombre TEXT UNIQUE NOT NULL,
@@ -31,9 +16,6 @@ COMMENT ON COLUMN config_prioridades.guardar_siempre IS 'Si es TRUE, guarda todo
 COMMENT ON COLUMN config_prioridades.muestreo_intervalo_minutos IS 'Intervalo mínimo entre guardados';
 COMMENT ON COLUMN config_prioridades.cambio_minimo_porcentaje IS 'Cambio % mínimo para guardar';
 
--- ============================================
--- 2. DATOS INICIALES: prioridades
--- ============================================
 INSERT INTO config_prioridades (nombre, descripcion, guardar_siempre, muestreo_intervalo_minutos, cambio_minimo_porcentaje)
 VALUES 
 ('critico', 'Equipos o parámetros críticos para seguridad/producción', TRUE, 1, 1.0),
@@ -92,10 +74,7 @@ CREATE TABLE IF NOT EXISTS config_eventos_especiales (
 
 COMMENT ON TABLE config_eventos_especiales IS 'Eventos que activan guardado automático (cambio de estado, parada, alarma)';
 
--- ============================================
--- 6. DATOS INICIALES: eventos especiales
--- ============================================
--- Usar subconsultas para obtener el ID de prioridad 'critico'
+
 INSERT INTO config_eventos_especiales (nombre, descripcion, prioridad_id, guardar_antes, guardar_durante, guardar_despues, ventana_segundos_antes, ventana_segundos_despues)
 SELECT 
     'cambio_estado', 
@@ -244,10 +223,6 @@ WHERE ds.parametro IS NOT NULL AND ds.parametro != '';
 
 COMMENT ON VIEW vw_parametros_con_prioridad IS 'Vista que muestra parámetros con su prioridad asignada';
 
--- ============================================
--- 11. ASIGNAR PRIORIDAD A EQUIPOS EXISTENTES
--- ============================================
--- Asignar prioridad 'critico' a equipos que ya están marcados como críticos
 INSERT INTO config_prioridad_equipos (equipo_id, prioridad_id)
 SELECT 
     e.id,
@@ -262,9 +237,6 @@ WHERE e.critico = TRUE
     )
 ON CONFLICT (equipo_id) DO NOTHING;
 
--- ============================================
--- 12. MENSAJE DE CONFIRMACIÓN
--- ============================================
 DO $$
 BEGIN
     RAISE NOTICE '✅ Migración 010 completada exitosamente';

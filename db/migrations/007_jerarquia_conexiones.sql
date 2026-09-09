@@ -1,7 +1,3 @@
--- ============================================
--- 1. EXTENDER tabla equipos (sin borrar nada)
---    Todo es opcional (NULL permitido)
--- ============================================
 ALTER TABLE equipos
 ADD COLUMN IF NOT EXISTS activo_padre_id INT REFERENCES equipos(id),
 ADD COLUMN IF NOT EXISTS nivel_jerarquia INT DEFAULT 0,
@@ -12,10 +8,6 @@ ADD COLUMN IF NOT EXISTS descripcion_larga TEXT;
 -- Índice para búsqueda por padre
 CREATE INDEX IF NOT EXISTS idx_equipos_padre ON equipos(activo_padre_id);
 
--- ============================================
--- 2. CREAR tabla conexiones (NUEVA)
---    Modela conexiones físicas/lógicas entre equipos
--- ============================================
 CREATE TABLE IF NOT EXISTS conexiones (
     id SERIAL PRIMARY KEY,
 

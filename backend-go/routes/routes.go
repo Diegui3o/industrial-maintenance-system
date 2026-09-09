@@ -42,6 +42,7 @@ func SetupRoutes(
 	sensorRepo := repository.NewSensorRepository(db)
 	piTagRepo := repository.NewPITagRepository(db)
 	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
+	estructuraPlantaRepo := repository.NewEstructuraPlantaRepository(db)
 
 	// ============================================
 	// SERVICES
@@ -49,7 +50,6 @@ func SetupRoutes(
 	auditoriaService := services.NewAuditoriaService(auditoriaRepo)
 	alarmaService := &services.AlarmaService{Repo: alarmaRepo, EquipoRepo: equipoRepo}
 	equipoService := &services.EquipoService{Repo: equipoRepo}
-
 	metricaService := &services.MetricaService{Repo: metricaRepo}
 	usuarioService := &services.UsuarioService{Repo: usuarioRepo}
 	dashboardService := &services.DashboardService{Repo: dashboardRepo}
@@ -58,6 +58,7 @@ func SetupRoutes(
 		firestoreRepo,
 	)
 	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
+	estructuraPlantaService := services.NewEstructuraPlantaService(estructuraPlantaRepo)
 
 	// ============================================
 	// HANDLERS
@@ -86,7 +87,9 @@ func SetupRoutes(
 	tiempoRealHandler := handlers.NewTiempoRealHandler(sensorRepo)
 	sensorHandler := handlers.NewSensorHandler(ruleEngine)
 
-	mantenimientoHandler := &handlers.MantenimientoHandler{Repo: mantenimientoRepo}
+	mantenimientoHandler := &handlers.MantenimientoHandler{
+		Repo: mantenimientoRepo,
+	}
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 	firestoreHandler := handlers.NewFirestoreHandler(
 		firestoreService,
@@ -94,6 +97,9 @@ func SetupRoutes(
 	piTagHandler := handlers.NewPITagHandler(piTagRepo, piTagService, tagDescubiertoRepo)
 	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
 	equipoTagHandler := handlers.NewEquipoTagHandler(tagDescubiertoRepo)
+	estructuraPlantaHandler := handlers.NewEstructuraPlantaHandler(
+			estructuraPlantaService,
+	)
 
 	// ============================================
 	// RUTAS
@@ -163,7 +169,6 @@ func SetupRoutes(
 	r.HandleFunc("/equipos/{id}/tiempo-real/{parametro}", tiempoRealHandler.GetUltimoValor).Methods("GET")
 	r.HandleFunc("/equipos/{id}/historico/{parametro}", tiempoRealHandler.GetHistoricoTag).Methods("GET")
 	r.HandleFunc("/equipos/{id}/tags", tiempoRealHandler.GetTagsByEquipo).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/tags", equipoTagHandler.GetTagsByEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/tags/sin-equipo", piTagHandler.GetTagsSinEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/tags/sugerencias", piTagHandler.GetSugerenciasAgrupacion).Methods("GET")
 	r.HandleFunc("/api/pi/tags/asignar", piTagHandler.AsignarTagsEquipo).Methods("POST")
@@ -192,6 +197,7 @@ func SetupRoutes(
 	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
 	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
+	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Actualizar).Methods("PUT")
 	diagHandler := &handlers.DiagnosticoHandler{}
 	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
@@ -202,6 +208,188 @@ func SetupRoutes(
 		firestoreHandler.GetDocument,
 	).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/hijos", equipoHandler.GetHijos).Methods("GET")
+	// ============================================
+	// ESTRUCTURA PLANTA
+	// ============================================
+
+	r.HandleFunc(
+			"/api/planta/procesos",
+			estructuraPlantaHandler.GetProcesos,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/procesos",
+			estructuraPlantaHandler.PostProceso,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/procesos/{proceso_id}/subprocesos",
+			estructuraPlantaHandler.GetSubprocesos,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/subprocesos",
+			estructuraPlantaHandler.PostSubproceso,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/equipos/{equipo_id}/subproceso",
+			estructuraPlantaHandler.PostEquipoSubproceso,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/equipos/{equipo_id}/subproceso",
+			estructuraPlantaHandler.GetEquipoSubproceso,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/clasificaciones",
+			estructuraPlantaHandler.GetClasificaciones,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/clasificaciones",
+			estructuraPlantaHandler.PostClasificacion,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/equipos/{equipo_id}/clasificaciones",
+			estructuraPlantaHandler.PostEquipoClasificacion,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/sistemas",
+			estructuraPlantaHandler.GetSistemas,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/sistemas",
+			estructuraPlantaHandler.PostSistema,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/equipos/{equipo_id}/sistemas",
+			estructuraPlantaHandler.PostEquipoSistema,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/equipos/{equipo_id}/componentes",
+			estructuraPlantaHandler.GetComponentes,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/componentes",
+			estructuraPlantaHandler.PostComponente,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/repuestos",
+			estructuraPlantaHandler.GetRepuestos,
+	).Methods("GET")
+
+	r.HandleFunc(
+			"/api/planta/repuestos",
+			estructuraPlantaHandler.PostRepuesto,
+	).Methods("POST")
+
+	r.HandleFunc(
+			"/api/planta/componentes/{componente_id}/repuestos",
+			estructuraPlantaHandler.PostComponenteRepuesto,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/procesos/{id}",
+		estructuraPlantaHandler.PutProceso,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos/{id}",
+		estructuraPlantaHandler.PutSubproceso,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/clasificaciones/{id}",
+		estructuraPlantaHandler.PutClasificacion,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/sistemas/{id}",
+		estructuraPlantaHandler.PutSistema,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{id}",
+		estructuraPlantaHandler.PutComponente,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/repuestos/{id}",
+		estructuraPlantaHandler.PutRepuesto,
+	).Methods("PUT")
+
+	// ============================================
+	// ACTUALIZAR RELACIONES ESTRUCTURA PLANTA
+	// ============================================
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/subproceso",
+		estructuraPlantaHandler.PutEquipoSubproceso,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/clasificaciones",
+		estructuraPlantaHandler.PutEquipoClasificaciones,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/sistemas",
+		estructuraPlantaHandler.PutEquipoSistemas,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/repuestos",
+		estructuraPlantaHandler.PutComponenteRepuestos,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos/{subproceso_id}/equipos",
+		estructuraPlantaHandler.GetEquiposPorSubproceso,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/clasificaciones",
+		estructuraPlantaHandler.GetClasificacionesPorEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/sistemas",
+		estructuraPlantaHandler.GetSistemasPorEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/repuestos",
+		estructuraPlantaHandler.GetRepuestosPorComponente,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/detalle",
+		estructuraPlantaHandler.GetEquipoPlantaDetalle,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/repuestos-detalle",
+		estructuraPlantaHandler.GetRepuestosDetallePorComponente,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/repuestos/{repuesto_id}",
+		estructuraPlantaHandler.PutComponenteRepuesto,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/equipos/{equipo_id}",
+		mantenimientoHandler.GetPorEquipo,
+	).Methods("GET")
 
 	return r
 }

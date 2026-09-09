@@ -1,15 +1,3 @@
--- ============================================
--- MIGRACIÓN 008: AUTOMATIZACIÓN Y DATOS PI
--- ============================================
--- Fecha: 2026-08-21
--- Descripción: Agrega tablas para automatización
--- y manejo de datos PI System
--- ============================================
-
--- ============================================
--- 1. TABLA: pi_tags (tags de PI System)
--- ============================================
--- Almacena los tags descubiertos automáticamente
 CREATE TABLE IF NOT EXISTS pi_tags (
     id SERIAL PRIMARY KEY,
     tag_name TEXT NOT NULL,
@@ -26,11 +14,6 @@ CREATE TABLE IF NOT EXISTS pi_tags (
 
 CREATE INDEX IF NOT EXISTS idx_pi_tags_equipment ON pi_tags(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_pi_tags_name ON pi_tags(tag_name);
-
--- ============================================
--- 2. TABLA: equipos_automaticos
--- ============================================
--- Registra qué equipos fueron creados automáticamente
 CREATE TABLE IF NOT EXISTS equipos_automaticos (
     id SERIAL PRIMARY KEY,
     equipo_id INT NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
@@ -210,7 +193,3 @@ COMMENT ON FUNCTION crear_equipo_automatico IS 'Crea equipos automáticamente cu
 COMMENT ON FUNCTION registrar_tag_pi IS 'Registra tags de PI System automáticamente';
 COMMENT ON VIEW equipos_con_tags IS 'Vista para el frontend: equipos con sus tags';
 COMMENT ON VIEW tags_recientes_por_equipo IS 'Vista para el frontend: últimos valores de tags';
-
--- ============================================
--- 9. FIN DE MIGRACIÓN
--- ============================================
