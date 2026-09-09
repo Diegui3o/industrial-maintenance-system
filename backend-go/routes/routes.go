@@ -396,5 +396,60 @@ func SetupRoutes(
 		estructuraPlantaHandler.ListarEquiposSinUbicar,
 	).Methods("GET")
 
+	r.HandleFunc(
+		"/api/planta/sistemas/{sistema_id}/subprocesos",
+		estructuraPlantaHandler.ListarSubprocesosSistema,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos-sistema",
+		estructuraPlantaHandler.CrearSubprocesoSistema,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos-sistema/{id}",
+		estructuraPlantaHandler.ActualizarSubprocesoSistema,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/subcomponentes",
+		estructuraPlantaHandler.ListarSubcomponentes,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/subcomponentes",
+		estructuraPlantaHandler.CrearSubcomponente,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/subcomponentes/{id}",
+		estructuraPlantaHandler.ActualizarSubcomponente,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/subcomponentes/{subcomponente_id}/repuestos",
+		estructuraPlantaHandler.ListarRepuestosSubcomponente,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/subcomponentes/{subcomponente_id}/repuestos",
+		estructuraPlantaHandler.AsignarRepuestoSubcomponente,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/planta/sistemas/equipos-disponibles",
+		estructuraPlantaHandler.ListarEquiposDisponiblesSistema,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/sistemas/subprocesos/{subproceso_sistema_id}/equipos",
+		estructuraPlantaHandler.ListarEquiposPorSubprocesoSistema,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/sistemas/subprocesos/{subproceso_sistema_id}/equipos",
+		estructuraPlantaHandler.AsignarEquipoSubprocesoSistema,
+	).Methods("POST")
+
 	return r
 }

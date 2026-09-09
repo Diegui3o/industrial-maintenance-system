@@ -125,6 +125,8 @@ export interface Equipo {
   numero_serie?: string;
   critico?: boolean;
   estado_equipo?: string;
+  fase_ubicacion?: string;
+  area_funcional?: string;
   ip?: string;
 }
 export async function getEquiposSinUbicar(): Promise<Equipo[]> {
@@ -155,7 +157,146 @@ export async function asignarEquipoSubproceso(
     }
   );
 }
+/* SUBPROCESOS DE SISTEMA */
 
+export interface SubprocesoSistemaPlanta {
+  id: number;
+  sistema_id: number;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+}
+
+export async function getSubprocesosSistema(
+  sistemaId: number
+): Promise<SubprocesoSistemaPlanta[]> {
+  return request<SubprocesoSistemaPlanta[]>(
+    `/planta/sistemas/${sistemaId}/subprocesos`
+  );
+}
+
+export async function crearSubprocesoSistema(data: {
+  sistema_id: number;
+  nombre: string;
+  descripcion?: string;
+}): Promise<SubprocesoSistemaPlanta> {
+  return request<SubprocesoSistemaPlanta>(
+    '/planta/subprocesos-sistema',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export async function actualizarSubprocesoSistema(
+  id: number,
+  data: {
+    sistema_id: number;
+    nombre: string;
+    descripcion?: string;
+    activo: boolean;
+  }
+): Promise<SubprocesoSistemaPlanta> {
+  return request<SubprocesoSistemaPlanta>(
+    `/planta/subprocesos-sistema/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+
+/* SUBCOMPONENTES */
+
+export interface Subcomponente {
+  id: number;
+  componente_id: number;
+  codigo?: string;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+}
+
+export async function getSubcomponentes(
+  componenteId: number
+): Promise<Subcomponente[]> {
+  return request<Subcomponente[]>(
+    `/planta/componentes/${componenteId}/subcomponentes`
+  );
+}
+
+export async function crearSubcomponente(data: {
+  componente_id: number;
+  codigo?: string;
+  nombre: string;
+  descripcion?: string;
+}): Promise<Subcomponente> {
+  return request<Subcomponente>(
+    '/planta/subcomponentes',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export async function actualizarSubcomponente(
+  id: number,
+  data: {
+    componente_id: number;
+    codigo?: string;
+    nombre: string;
+    descripcion?: string;
+    activo: boolean;
+  }
+): Promise<Subcomponente> {
+  return request<Subcomponente>(
+    `/planta/subcomponentes/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+/* REPUESTOS DE SUBCOMPONENTE */
+
+export interface SubcomponenteRepuesto {
+  repuesto_id: number;
+  codigo?: string;
+  nombre: string;
+  cantidad: number;
+  posicion?: string;
+  notas?: string;
+}
+
+export async function getRepuestosSubcomponente(
+  subcomponenteId: number
+): Promise<SubcomponenteRepuesto[]> {
+  return request<SubcomponenteRepuesto[]>(
+    `/planta/subcomponentes/${subcomponenteId}/repuestos`
+  );
+}
+
+export async function asignarRepuestoSubcomponente(
+  subcomponenteId: number,
+  data: {
+    repuesto_id: number;
+    cantidad: number;
+    posicion?: string;
+    notas?: string;
+  }
+): Promise<void> {
+  await request<void>(
+    `/planta/subcomponentes/${subcomponenteId}/repuestos`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
 /* =========================================================
    COMPONENTES
 ========================================================= */
@@ -204,7 +345,11 @@ export async function actualizarComponente(
     body: JSON.stringify(data),
   });
 }
-
+export async function getEquiposDisponiblesSistema(): Promise<Equipo[]> {
+  return request<Equipo[]>(
+    '/planta/sistemas/equipos-disponibles'
+  );
+}
 /* =========================================================
    REPUESTOS
 ========================================================= */
@@ -432,4 +577,51 @@ export async function asignarSistemasEquipo(
       }),
     }
   );
+}
+export async function getEquiposPorSubprocesoSistema(
+  subprocesoSistemaId: number
+): Promise<Equipo[]> {
+  return request<Equipo[]>(
+    `/planta/sistemas/subprocesos/${subprocesoSistemaId}/equipos`
+  );
+}
+
+export async function asignarEquipoSubprocesoSistema(
+  subprocesoSistemaId: number,
+  equipoId: number
+): Promise<void> {
+  await request<void>(
+    `/planta/sistemas/subprocesos/${subprocesoSistemaId}/equipos`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        equipo_id: equipoId,
+      }),
+    }
+  );
+}
+
+export async function getEquipoPlantaDetalle(
+  equipoId: number
+): Promise<EquipoPlantaDetalle> {
+  return request<EquipoPlantaDetalle>(
+    `/planta/equipos/${equipoId}/detalle`
+  );
+}
+
+export interface SubprocesoPlanta {
+  id: number;
+  proceso_id: number;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+}
+
+export interface EquipoPlantaDetalle {
+  equipo: Equipo;
+  subproceso?: SubprocesoPlanta;
+  subproceso_sistema?: SubprocesoSistemaPlanta;
+  clasificaciones: ClasificacionPlanta[];
+  sistemas: SistemaPlanta[];
+  componentes: Componente[];
 }

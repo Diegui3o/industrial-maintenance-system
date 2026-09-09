@@ -8,20 +8,24 @@ import { SubprocesoForm } from './SubprocesoForm';
 
 interface Props {
   proceso: Proceso | null;
-  seleccionado: Subproceso | null;
   onSelect: (subproceso: Subproceso) => void;
 }
 
 export function SubprocesoList({
   proceso,
-  seleccionado,
   onSelect,
 }: Props) {
-  const [items, setItems] = useState<Subproceso[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [nuevo, setNuevo] = useState(false);
-  const [editar, setEditar] =
+  const [subprocesos, setSubprocesos] = useState<
+    Subproceso[]
+  >([]);
+
+  const [mostrarForm, setMostrarForm] =
+    useState(false);
+
+  const [editando, setEditando] =
     useState<Subproceso | null>(null);
+
+  const [loading, setLoading] = useState(false);
 
   const cargar = async () => {
     if (!proceso) return;
@@ -29,40 +33,60 @@ export function SubprocesoList({
     setLoading(true);
 
     try {
-      setItems(await getSubprocesos(proceso.id));
+      const resultado = await getSubprocesos(
+        proceso.id
+      );
+
+      setSubprocesos(resultado);
     } catch (error) {
-      console.error('Error cargando subprocesos:', error);
-      setItems([]);
+      console.error(
+        'Error cargando subprocesos:',
+        error
+      );
+
+      setSubprocesos([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setItems([]);
-    setNuevo(false);
-    setEditar(null);
+    setSubprocesos([]);
+    setMostrarForm(false);
+    setEditando(null);
 
     if (proceso) {
       cargar();
     }
-  }, [proceso]);
+  }, [proceso?.id]);
 
-  const cerrarForm = () => {
-    setNuevo(false);
-    setEditar(null);
+  const nuevo = () => {
+    if (!proceso) return;
+
+    setEditando(null);
+    setMostrarForm(true);
   };
 
-  const guardado = async () => {
-    cerrarForm();
-    await cargar();
+  const editar = (
+    subproceso: Subproceso
+  ) => {
+    setEditando(subproceso);
+    setMostrarForm(true);
   };
 
   if (!proceso) {
     return (
-      <section className="planta-card planta-empty-panel">
-        <h3>Subprocesos</h3>
-        <p>Selecciona un proceso.</p>
+      <section className="planta-card">
+        <div className="planta-alert warning">
+          <strong>
+            Seleccione un proceso
+          </strong>
+
+          <span>
+            Primero debe seleccionar un proceso
+            para administrar sus subprocesos.
+          </span>
+        </div>
       </section>
     );
   }
@@ -71,79 +95,97 @@ export function SubprocesoList({
     <section className="planta-card">
       <div className="planta-card-header">
         <div>
-          <h3>{proceso.nombre}</h3>
-          <p>Subprocesos</p>
+          <h3>Subprocesos</h3>
+
+          <p>
+            Proceso: <strong>{proceso.nombre}</strong>
+          </p>
         </div>
 
-        {!nuevo && !editar && (
+        {!mostrarForm && (
           <button
             className="planta-add-btn"
-            onClick={() => setNuevo(true)}
+            onClick={nuevo}
           >
-            + Nuevo
+            + Crear subproceso
           </button>
         )}
       </div>
 
-      {(nuevo || editar) && (
+      {mostrarForm && (
         <SubprocesoForm
-          procesoId={proceso.id}
-          subproceso={editar}
-          onSaved={guardado}
-          onCancel={cerrarForm}
+          proceso={proceso}
+          subproceso={editando}
+          onSaved={async () => {
+            setMostrarForm(false);
+            setEditando(null);
+            await cargar();
+          }}
+          onCancel={() => {
+            setMostrarForm(false);
+            setEditando(null);
+          }}
         />
       )}
 
-      <div className="planta-list">
-        {loading && (
-          <div className="planta-empty">
-            Cargando subprocesos...
+      {loading && (
+        <div className="planta-empty">
+          Cargando subprocesos...
+        </div>
+      )}
+
+      {!loading &&
+        !mostrarForm &&
+        subprocesos.length === 0 && (
+          <div className="planta-alert warning">
+            <strong>
+              Este proceso no tiene subprocesos
+            </strong>
+
+            <span>
+              Cree el primer subproceso para
+              continuar con la estructura.
+            </span>
           </div>
         )}
 
-        {!loading && items.length === 0 && (
-          <div className="planta-empty">
-            No hay subprocesos registrados.
-          </div>
-        )}
-
-        {!loading &&
-          items.map((item) => (
-            <div
-              key={item.id}
-              className={`planta-list-item ${
-                seleccionado?.id === item.id
-                  ? 'selected'
-                  : ''
-              }`}
-            >
-              <button
-                className="planta-list-select"
-                onClick={() => onSelect(item)}
+      {!loading &&
+        subprocesos.length > 0 && (
+          <div className="planta-list">
+            {subprocesos.map((item) => (
+              <div
+                key={item.id}
+                className="planta-list-item"
               >
-                <div>
-                  <strong>{item.nombre}</strong>
+                <button
+                  className="planta-list-main"
+                  onClick={() =>
+                    onSelect(item)
+                  }
+                >
+                  <strong>
+                    {item.nombre}
+                  </strong>
 
                   {item.descripcion && (
-                    <small>{item.descripcion}</small>
+                    <small>
+                      {item.descripcion}
+                    </small>
                   )}
-                </div>
+                </button>
 
-                <span>
-                  {item.activo ? 'Activo' : 'Inactivo'}
-                </span>
-              </button>
-
-              <button
-                className="planta-edit-btn"
-                onClick={() => setEditar(item)}
-                title="Editar subproceso"
-              >
-                ✎
-              </button>
-            </div>
-          ))}
-      </div>
+                <button
+                  className="planta-edit-btn"
+                  onClick={() =>
+                    editar(item)
+                  }
+                >
+                  Editar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
     </section>
   );
 }

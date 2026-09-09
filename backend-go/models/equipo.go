@@ -17,5 +17,7 @@ type Equipo struct {
 	FechaInstalacion *time.Time `json:"fecha_instalacion"`
 	FechaCreacion    time.Time  `json:"fecha_creacion"`
 	ActualizadoEn    *time.Time `json:"actualizado_en"`
+	FaseUbicacion string `json:"fase_ubicacion"`
+	AreaFuncional string `json:"area_funcional"`
 	IP               string     `json:"ip"`
 }

@@ -609,3 +609,44 @@ button.planta-list-item:hover {
   color: #856404;
   white-space: nowrap;
 }
+.planta-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.planta-breadcrumb button {
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  color: #777;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.planta-breadcrumb button.active {
+  background: #f2f2f2;
+  color: #222;
+}
+
+.planta-breadcrumb button:disabled {
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.planta-breadcrumb span {
+  color: #aaa;
+}
+
+.planta-secondary-section {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

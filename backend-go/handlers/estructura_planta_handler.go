@@ -996,3 +996,459 @@ func (h *EstructuraPlantaHandler) ListarEquiposSinUbicar(w http.ResponseWriter, 
 
 	json.NewEncoder(w).Encode(equipos)
 }
+func (h *EstructuraPlantaHandler) ListarEquiposDisponiblesSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	equipos, err := h.Service.ListarEquiposDisponiblesSistema()
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo equipos disponibles para sistemas",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if equipos == nil {
+		equipos = []models.Equipo{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(equipos)
+}
+func (h *EstructuraPlantaHandler) ListarSubprocesosSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	sistemaID, err := strconv.Atoi(
+		mux.Vars(r)["sistema_id"],
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"ID de sistema inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	resultado, err := h.Service.ListarSubprocesosSistema(
+		sistemaID,
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo subprocesos del sistema",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if resultado == nil {
+		resultado = []models.SubprocesoSistemaPlanta{}
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) CrearSubprocesoSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	var item models.SubprocesoSistemaPlanta
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(
+			w,
+			"Datos inválidos",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if item.SistemaID <= 0 || item.Nombre == "" {
+		http.Error(
+			w,
+			"El sistema y nombre son obligatorios",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	resultado, err :=
+		h.Service.CrearSubprocesoSistema(item)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error creando subproceso del sistema",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) ActualizarSubprocesoSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id, err := strconv.Atoi(
+		mux.Vars(r)["id"],
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"ID inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	var item models.SubprocesoSistemaPlanta
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(
+			w,
+			"Datos inválidos",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	item.ID = id
+
+	resultado, err :=
+		h.Service.ActualizarSubprocesoSistema(item)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error actualizando subproceso del sistema",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(resultado)
+}
+func (h *EstructuraPlantaHandler) ListarSubcomponentes(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	componenteID, err := strconv.Atoi(
+		mux.Vars(r)["componente_id"],
+	)
+	if err != nil {
+		http.Error(w, "ID de componente inválido", http.StatusBadRequest)
+		return
+	}
+
+	resultado, err := h.Service.ListarSubcomponentes(componenteID)
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo subcomponentes",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if resultado == nil {
+		resultado = []models.SubcomponenteEquipo{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) CrearSubcomponente(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	var item models.SubcomponenteEquipo
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, "Datos inválidos", http.StatusBadRequest)
+		return
+	}
+
+	if item.ComponenteID <= 0 || item.Nombre == "" {
+		http.Error(
+			w,
+			"El componente y nombre son obligatorios",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	resultado, err := h.Service.CrearSubcomponente(item)
+	if err != nil {
+		http.Error(
+			w,
+			"Error creando subcomponente",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) ActualizarSubcomponente(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "ID inválido", http.StatusBadRequest)
+		return
+	}
+
+	var item models.SubcomponenteEquipo
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, "Datos inválidos", http.StatusBadRequest)
+		return
+	}
+
+	item.ID = id
+
+	resultado, err := h.Service.ActualizarSubcomponente(item)
+	if err != nil {
+		http.Error(
+			w,
+			"Error actualizando subcomponente",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+func (h *EstructuraPlantaHandler) ListarRepuestosSubcomponente(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	subcomponenteID, err := strconv.Atoi(
+		mux.Vars(r)["subcomponente_id"],
+	)
+	if err != nil {
+		http.Error(
+			w,
+			"ID de subcomponente inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	resultado, err := h.Service.ListarRepuestosSubcomponente(
+		subcomponenteID,
+	)
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo repuestos del subcomponente",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if resultado == nil {
+		resultado = []models.SubcomponenteRepuestoDetalle{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) AsignarRepuestoSubcomponente(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	subcomponenteID, err := strconv.Atoi(
+		mux.Vars(r)["subcomponente_id"],
+	)
+	if err != nil {
+		http.Error(
+			w,
+			"ID de subcomponente inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	var datos struct {
+		RepuestoID int      `json:"repuesto_id"`
+		Cantidad   float64  `json:"cantidad"`
+		Posicion   *string  `json:"posicion,omitempty"`
+		Notas      *string  `json:"notas,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&datos); err != nil {
+		http.Error(
+			w,
+			"Datos inválidos",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if datos.RepuestoID <= 0 {
+		http.Error(
+			w,
+			"El repuesto es obligatorio",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if datos.Cantidad <= 0 {
+		http.Error(
+			w,
+			"La cantidad debe ser mayor que cero",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	err = h.Service.AsignarRepuestoSubcomponente(
+		subcomponenteID,
+		datos.RepuestoID,
+		datos.Cantidad,
+		datos.Posicion,
+		datos.Notas,
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error asignando repuesto al subcomponente",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+func (h *EstructuraPlantaHandler) ListarEquiposPorSubprocesoSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	subprocesoSistemaID, err := strconv.Atoi(
+		mux.Vars(r)["subproceso_sistema_id"],
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"ID de subproceso de sistema inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	resultado, err :=
+		h.Service.ListarEquiposPorSubprocesoSistema(
+			subprocesoSistemaID,
+		)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error obteniendo equipos del subproceso de sistema",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if resultado == nil {
+		resultado = []models.Equipo{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+
+func (h *EstructuraPlantaHandler) AsignarEquipoSubprocesoSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	subprocesoSistemaID, err := strconv.Atoi(
+		mux.Vars(r)["subproceso_sistema_id"],
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"ID de subproceso de sistema inválido",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	var datos struct {
+		EquipoID int `json:"equipo_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&datos); err != nil {
+		http.Error(
+			w,
+			"Datos inválidos",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if datos.EquipoID <= 0 {
+		http.Error(
+			w,
+			"El equipo es obligatorio",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	err = h.Service.AsignarEquipoSubprocesoSistema(
+		datos.EquipoID,
+		subprocesoSistemaID,
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			"Error asignando equipo al subproceso de sistema",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

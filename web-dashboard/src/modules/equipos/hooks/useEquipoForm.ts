@@ -9,6 +9,8 @@ export interface EquipoFormData {
   numero_serie: string
   estado_equipo: string
   fecha_instalacion: string
+  tipo_padre: 'proceso' | 'sistema' | ''
+  subproceso_padre_id: number | null
 
   activo_padre_id: number | null
   nivel_jerarquia: number
@@ -63,6 +65,8 @@ export interface EquipoFormData {
 export const emptyForm: EquipoFormData = {
   codigo: '', nombre: '', area: '', tipo: '', fase: '', fabricante: '', modelo: '',
   numero_serie: '', estado_equipo: 'activo', fecha_instalacion: '',
+  tipo_padre: '',
+  subproceso_padre_id: null,
   activo_padre_id: null, nivel_jerarquia: 0, tag: '', ubicacion_fisica: '', descripcion_larga: '',
   es_dispositivo_red: false, tipo_dispositivo: '', ip: '', puerto: 0,
   protocolo: '', usuario_red: '', password_hash: '',

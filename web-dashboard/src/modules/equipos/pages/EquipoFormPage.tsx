@@ -10,6 +10,10 @@ import StepSensors from '../steps/StepSensors';
 import { type EquipoFormData, emptyForm } from '../hooks/useEquipoForm'
 import { createEquipo, createDispositivoRed, createConfigFuente, createMantenimiento } from '../../../shared/services/api'
 import { colors } from '../../../theme/colors'
+import {
+  asignarEquipoSubproceso,
+  asignarEquipoSubprocesoSistema,
+} from '../../../dashboard/DashboardAreas/Planta/services/plantaApi';
 
 interface Props {
   onSuccess: () => void
@@ -56,7 +60,25 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
 
       const equipo = await createEquipo(payload)
       const equipoId = equipo.id
+      if (
+        form.subproceso_padre_id &&
+        form.tipo_padre === 'sistema'
+      ) {
+        await asignarEquipoSubprocesoSistema(
+          form.subproceso_padre_id,
+          equipoId
+        );
+      }
 
+      if (
+        form.subproceso_padre_id &&
+        form.tipo_padre === 'sistema'
+      ) {
+        await asignarEquipoSubprocesoSistema(
+          equipoId,
+          form.subproceso_padre_id
+        );
+      }
       if (!equipoId || equipoId === 0) {
         console.error('Error: equipo sin ID')
         return

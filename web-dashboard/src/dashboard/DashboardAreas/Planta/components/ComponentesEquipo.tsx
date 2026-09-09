@@ -6,7 +6,7 @@ import {
   type Componente,
   type Equipo,
 } from '../services/plantaApi';
-import { RepuestosComponente } from './RepuestosComponente';
+import { SubcomponentesEquipo } from './SubcomponentesEquipo';
 
 interface Props {
   equipo: Equipo;
@@ -247,11 +247,9 @@ export function ComponentesEquipo({ equipo }: Props) {
       </div>
 
       {seleccionado && (
-        <div style={{ marginTop: 16 }}>
-          <RepuestosComponente
-            componente={seleccionado}
-          />
-        </div>
+        <SubcomponentesEquipo
+          componente={seleccionado}
+        />
       )}
 
     </section>

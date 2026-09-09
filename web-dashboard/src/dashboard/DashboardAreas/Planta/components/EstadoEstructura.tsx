@@ -4,7 +4,8 @@ import {
   getSubprocesos,
   getEquiposPorSubproceso,
   getComponentes,
-  getRepuestosComponente,
+  getSubcomponentes,
+  getRepuestosSubcomponente,
 } from '../services/plantaApi';
 
 interface Problema {
@@ -79,17 +80,34 @@ export function EstadoEstructura() {
             }
 
             for (const componente of componentes) {
-              const repuestos =
-                await getRepuestosComponente(
+              const subcomponentes =
+                await getSubcomponentes(
                   componente.id
                 );
 
-              if (repuestos.length === 0) {
+              if (subcomponentes.length === 0) {
                 encontrados.push({
-                  tipo: 'Repuesto',
+                  tipo: 'Subcomponente',
                   descripcion:
-                    `El componente "${componente.nombre}" no tiene repuestos asociados.`,
+                    `El componente "${componente.nombre}" no tiene subcomponentes.`,
                 });
+
+                continue;
+              }
+
+              for (const subcomponente of subcomponentes) {
+                const repuestos =
+                  await getRepuestosSubcomponente(
+                    subcomponente.id
+                  );
+
+                if (repuestos.length === 0) {
+                  encontrados.push({
+                    tipo: 'Repuesto',
+                    descripcion:
+                      `El subcomponente "${subcomponente.nombre}" no tiene repuestos asociados.`,
+                  });
+                }
               }
             }
           }
