@@ -57,7 +57,7 @@ export function ComponentesEstructura({
   useEffect(() => {
     setComponenteSeleccionado(null);
     cargar();
-  }, [equipo?.id]);
+  }, [cargar, equipo.id]);
 
   if (!equipo) {
     return (
@@ -160,11 +160,13 @@ export function ComponentesEstructura({
               )}
             </div>
 
-            <SubcomponentesEstructura
-              componente={
-                componenteSeleccionado
-              }
-            />
+            {componenteSeleccionado && (
+              <SubcomponentesEstructura
+                componente={
+                  componenteSeleccionado
+                }
+              />
+            )}
           </>
         )}
     </section>

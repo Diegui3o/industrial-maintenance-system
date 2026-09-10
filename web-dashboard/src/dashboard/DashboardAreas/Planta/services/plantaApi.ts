@@ -83,6 +83,14 @@ export async function getSubprocesos(
   );
 }
 
+export async function getTodosSubprocesos(): Promise<
+  Subproceso[]
+> {
+  return request<Subproceso[]>(
+    '/planta/subprocesos'
+  );
+}
+
 export async function crearSubproceso(data: {
   proceso_id: number;
   nombre: string;

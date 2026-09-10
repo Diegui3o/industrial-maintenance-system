@@ -6,7 +6,7 @@ import {
   type Componente,
   type Equipo,
 } from '../../services/plantaApi';
-import { SubcomponentesEquipo } from './SubcomponentesEquipo';
+import { SubcomponentesEquipoEstructura } from './SubcomponentesEquipoEstructura';
 
 interface Props {
   equipo: Equipo;
@@ -38,23 +38,60 @@ export function ComponentesEquipo({ equipo }: Props) {
         if (!actual) return null;
 
         return (
-          resultado.find((item) => item.id === actual.id) ||
-          null
+          resultado.find(
+            (item) => item.id === actual.id
+          ) || null
         );
       });
     } catch (error) {
-      console.error('Error cargando componentes:', error);
+      console.error(
+        'Error cargando componentes:',
+        error
+      );
+
       setComponentes([]);
+      setSeleccionado(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setSeleccionado(null);
-    setMostrarForm(false);
-    setEditando(null);
-    cargar();
+    let activo = true;
+
+    const cargarInicial = async () => {
+      setLoading(true);
+
+      try {
+        const resultado =
+          await getComponentes(equipo.id);
+
+        if (!activo) return;
+
+        setComponentes(resultado);
+        setSeleccionado(null);
+      } catch (error) {
+        if (!activo) return;
+
+        console.error(
+          'Error cargando componentes:',
+          error
+        );
+
+        setComponentes([]);
+        setSeleccionado(null);
+      } finally {
+        if (activo) {
+          setLoading(false);
+        }
+      }
+    };
+
+    cargarInicial();
+
+    return () => {
+      activo = false;
+    };
   }, [equipo.id]);
 
   const abrirNuevo = () => {
@@ -247,7 +284,7 @@ export function ComponentesEquipo({ equipo }: Props) {
       </div>
 
       {seleccionado && (
-        <SubcomponentesEquipo
+        <SubcomponentesEquipoEstructura
           componente={seleccionado}
         />
       )}

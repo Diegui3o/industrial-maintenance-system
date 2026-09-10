@@ -60,7 +60,7 @@ export function EquiposProcesoEstructura({
 
     onSelectSubproceso(null);
     cargar();
-  }, [procesoId]);
+  }, [onSelectSubproceso, procesoId]);
 
   return (
     <div>
@@ -125,8 +125,11 @@ export function EquiposProcesoEstructura({
       {!loading &&
         subprocesoSeleccionado && (
           <EquiposSubproceso
-            subproceso={
-              subprocesoSeleccionado
+            subprocesoId={
+              subprocesoSeleccionado.id
+            }
+            subprocesoNombre={
+              subprocesoSeleccionado.nombre
             }
             onSelectEquipo={
               onSelectEquipo

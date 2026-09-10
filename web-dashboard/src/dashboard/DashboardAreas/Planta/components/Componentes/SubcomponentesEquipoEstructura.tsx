@@ -5,7 +5,7 @@ import type {
 import { SubcomponentesEstructura } from './SubcomponentesEstructura';
 
 interface Props {
-  componente: Componente | null;
+  componente: Componente;
 }
 
 export function SubcomponentesEquipoEstructura({

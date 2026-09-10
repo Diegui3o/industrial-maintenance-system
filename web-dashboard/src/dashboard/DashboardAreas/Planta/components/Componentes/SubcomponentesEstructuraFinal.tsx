@@ -11,14 +11,10 @@ import {
 
 interface Props {
   componente: Componente;
-  onSelectSubcomponente?: (
-    subcomponente: Subcomponente | null
-  ) => void;
 }
 
-export function SubcomponentesEquipoEstructura({
+export function SubcomponentesEstructuraFinal({
   componente,
-  onSelectSubcomponente,
 }: Props) {
   const [
     subcomponentes,
@@ -26,14 +22,11 @@ export function SubcomponentesEquipoEstructura({
   ] = useState<Subcomponente[]>([]);
 
   const [
-    seleccionadoId,
-    setSeleccionadoId,
+    subcomponenteId,
+    setSubcomponenteId,
   ] = useState('');
 
   const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
     useState(false);
 
   useEffect(() => {
@@ -41,7 +34,6 @@ export function SubcomponentesEquipoEstructura({
 
     const cargar = async () => {
       setLoading(true);
-      setError(false);
 
       try {
         const resultado =
@@ -61,7 +53,6 @@ export function SubcomponentesEquipoEstructura({
         );
 
         setSubcomponentes([]);
-        setError(true);
       } finally {
         if (activo) {
           setLoading(false);
@@ -76,34 +67,32 @@ export function SubcomponentesEquipoEstructura({
     };
   }, [componente.id]);
 
-  const seleccionar = (
+  const seleccionarSubcomponente = (
     id: string
   ) => {
-    setSeleccionadoId(id);
-
-    const subcomponente =
-      subcomponentes.find(
-        (item) =>
-          item.id.toString() === id
-      ) || null;
-
-    onSelectSubcomponente?.(
-      subcomponente
-    );
+    setSubcomponenteId(id);
   };
+
+  const seleccionado =
+    subcomponentes.find(
+      (item) =>
+        item.id.toString() ===
+        subcomponenteId
+    ) || null;
 
   return (
     <section className="planta-card">
 
       <div className="planta-card-header">
         <div>
-          <h3>
-            Subcomponentes
-          </h3>
+          <h3>Subcomponentes</h3>
 
           <p>
             Componente padre:{' '}
             <strong>
+              {componente.codigo
+                ? `${componente.codigo} — `
+                : ''}
               {componente.nombre}
             </strong>
           </p>
@@ -116,21 +105,7 @@ export function SubcomponentesEquipoEstructura({
         </div>
       )}
 
-      {error && (
-        <div className="planta-alert error">
-          <strong>
-            Error cargando subcomponentes
-          </strong>
-
-          <span>
-            No se pudieron obtener los
-            subcomponentes del componente.
-          </span>
-        </div>
-      )}
-
       {!loading &&
-        !error &&
         subcomponentes.length === 0 && (
           <div className="planta-alert warning">
             <strong>
@@ -138,45 +113,57 @@ export function SubcomponentesEquipoEstructura({
             </strong>
 
             <span>
-              El componente seleccionado
-              todavía no tiene
-              subcomponentes.
+              El componente seleccionado todavía
+              no tiene subcomponentes registrados.
             </span>
           </div>
         )}
 
       {!loading &&
-        !error &&
         subcomponentes.length > 0 && (
-          <div className="planta-form">
-            <label>
-              Subcomponente padre
-            </label>
+          <>
+            <div className="planta-form">
+              <label>
+                Subcomponente padre
+              </label>
 
-            <select
-              value={seleccionadoId}
-              onChange={(e) =>
-                seleccionar(
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Seleccione un subcomponente
-              </option>
+              <select
+                value={subcomponenteId}
+                onChange={(e) =>
+                  seleccionarSubcomponente(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Seleccione un subcomponente
+                </option>
 
-              {subcomponentes.map(
-                (subcomponente) => (
-                  <option
-                    key={subcomponente.id}
-                    value={subcomponente.id}
-                  >
-                    {subcomponente.nombre}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
+                {subcomponentes.map(
+                  (subcomponente) => (
+                    <option
+                      key={subcomponente.id}
+                      value={subcomponente.id}
+                    >
+                      {subcomponente.nombre}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+
+            {seleccionado && (
+              <div className="planta-alert">
+                <strong>
+                  Subcomponente seleccionado:
+                </strong>
+
+                <span>
+                  {seleccionado.nombre}
+                </span>
+              </div>
+            )}
+          </>
         )}
     </section>
   );
