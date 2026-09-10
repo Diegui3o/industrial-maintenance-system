@@ -1,85 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { ProcesoList } from './Procesos/ProcesoList';
-import { SistemaList } from './Sistemas/SistemaList';
-
-import {
-  getProcesos,
-  getSistemas,
-  type Proceso,
-  type SistemaPlanta,
+import type {
+  Equipo,
 } from '../services/plantaApi';
 
+import { ProcesosEstructura } from './Procesos/ProcesosEstructura';
+import { SistemasEstructura } from './Sistemas/SistemasEstructura';
+import { EquiposEstructura } from './Equipos/EquiposEstructura';
+import { ComponentesEstructura } from './Componentes/ComponentesEstructura';
+import { EquipoSeleccionadoEstructura } from './Equipos/EquipoSeleccionadoEstructura';
+
 export function PlantaEstructura() {
-  const [procesos, setProcesos] =
-    useState<Proceso[]>([]);
-
-  const [sistemas, setSistemas] =
-    useState<SistemaPlanta[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const cargar = async () => {
-    setLoading(true);
-
-    try {
-      const [
-        procesosResultado,
-        sistemasResultado,
-      ] = await Promise.all([
-        getProcesos(),
-        getSistemas(),
-      ]);
-
-      setProcesos(procesosResultado);
-      setSistemas(sistemasResultado);
-    } catch (error) {
-      console.error(
-        'Error cargando estructura de planta:',
-        error
-      );
-
-      setProcesos([]);
-      setSistemas([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    cargar();
-  }, []);
+  const [
+    equipoSeleccionado,
+    setEquipoSeleccionado,
+  ] = useState<Equipo | null>(null);
 
   return (
     <div className="planta-estructura">
-      {loading ? (
-        <div className="planta-empty">
-          Cargando estructura...
-        </div>
-      ) : (
-        <>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(2, minmax(0, 1fr))',
-              gap: 20,
-            }}
-          >
-            <ProcesoList
-              procesos={procesos}
-              loading={loading}
-              onReload={cargar}
-            />
 
-            <SistemaList
-              sistemas={sistemas}
-              onReload={cargar}
-            />
-          </div>
-        </>
-      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(2, minmax(0, 1fr))',
+          gap: 20,
+          marginBottom: 20,
+        }}
+      >
+        <ProcesosEstructura />
+
+        <SistemasEstructura />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <EquiposEstructura />
+      </div>
+
+      <EquipoSeleccionadoEstructura
+        equipo={equipoSeleccionado}
+        onChange={setEquipoSeleccionado}
+      />
+
+      <ComponentesEstructura
+        equipo={equipoSeleccionado}
+      />
+
     </div>
   );
 }
