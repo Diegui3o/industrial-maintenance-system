@@ -8,7 +8,7 @@ import {
   getSistemas,
   type ClasificacionPlanta,
   type SistemaPlanta,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 export function CatalogosPlanta() {
   const [clasificaciones, setClasificaciones] =

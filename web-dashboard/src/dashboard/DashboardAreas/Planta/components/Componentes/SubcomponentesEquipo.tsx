@@ -5,11 +5,12 @@ import {
   getSubcomponentes,
   type Subcomponente,
   type Componente,
-} from '../services/plantaApi';
-import { RepuestosSubcomponente } from './RepuestosSubcomponente';
+} from '../../services/plantaApi';
+import { RepuestosSubcomponente } from '../Administracion/RepuestosSubcomponente';
 
 interface Props {
   componente: Componente;
+
 }
 
 export function SubcomponentesEquipo({ componente }: Props) {

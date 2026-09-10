@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react';
+
 import {
   getSubprocesos,
   type Proceso,
   type Subproceso,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
+
 import { SubprocesoForm } from './SubprocesoForm';
 
 interface Props {
-  proceso: Proceso | null;
-  onSelect: (subproceso: Subproceso) => void;
+  procesos: Proceso[];
+  procesoId: string;
+  onSelectSubproceso?: (
+    subproceso: Subproceso
+  ) => void;
 }
 
-export function SubprocesoList({
-  proceso,
-  onSelect,
+export function SubprocesosProcesoEstructura({
+  procesos,
+  procesoId,
+  onSelectSubproceso,
 }: Props) {
-  const [subprocesos, setSubprocesos] = useState<
-    Subproceso[]
-  >([]);
+  const [subprocesos, setSubprocesos] =
+    useState<Subproceso[]>([]);
 
   const [mostrarForm, setMostrarForm] =
     useState(false);
@@ -25,22 +30,26 @@ export function SubprocesoList({
   const [editando, setEditando] =
     useState<Subproceso | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const cargar = async () => {
-    if (!proceso) return;
+    if (!procesoId) {
+      setSubprocesos([]);
+      return;
+    }
 
     setLoading(true);
 
     try {
       const resultado = await getSubprocesos(
-        proceso.id
+        Number(procesoId)
       );
 
       setSubprocesos(resultado);
     } catch (error) {
       console.error(
-        'Error cargando subprocesos:',
+        'Error cargando subprocesos de proceso:',
         error
       );
 
@@ -51,17 +60,19 @@ export function SubprocesoList({
   };
 
   useEffect(() => {
-    setSubprocesos([]);
     setMostrarForm(false);
     setEditando(null);
+    cargar();
+  }, [procesoId]);
 
-    if (proceso) {
-      cargar();
-    }
-  }, [proceso?.id]);
+  const procesoSeleccionado =
+    procesos.find(
+      (proceso) =>
+        proceso.id.toString() === procesoId
+    ) || null;
 
   const nuevo = () => {
-    if (!proceso) return;
+    if (!procesoId) return;
 
     setEditando(null);
     setMostrarForm(true);
@@ -74,57 +85,46 @@ export function SubprocesoList({
     setMostrarForm(true);
   };
 
-  if (!proceso) {
-    return (
-      <section className="planta-card">
-        <div className="planta-alert warning">
-          <strong>
-            Seleccione un proceso
-          </strong>
+  const cancelar = () => {
+    setMostrarForm(false);
+    setEditando(null);
+  };
 
-          <span>
-            Primero debe seleccionar un proceso
-            para administrar sus subprocesos.
-          </span>
-        </div>
-      </section>
-    );
-  }
+  const guardado = async () => {
+    setMostrarForm(false);
+    setEditando(null);
+    await cargar();
+  };
 
   return (
-    <section className="planta-card">
+    <div>
       <div className="planta-card-header">
         <div>
-          <h3>Subprocesos</h3>
+          <h3>Subprocesos de proceso</h3>
 
           <p>
-            Proceso: <strong>{proceso.nombre}</strong>
+            Subprocesos pertenecientes al proceso
+            seleccionado.
           </p>
         </div>
 
-        {!mostrarForm && (
+        {!mostrarForm && !editando && (
           <button
+            type="button"
             className="planta-add-btn"
             onClick={nuevo}
           >
-            + Crear subproceso
+            + Nuevo
           </button>
         )}
       </div>
 
       {mostrarForm && (
         <SubprocesoForm
-          proceso={proceso}
+          proceso={procesoSeleccionado}
           subproceso={editando}
-          onSaved={async () => {
-            setMostrarForm(false);
-            setEditando(null);
-            await cargar();
-          }}
-          onCancel={() => {
-            setMostrarForm(false);
-            setEditando(null);
-          }}
+          onSaved={guardado}
+          onCancel={cancelar}
         />
       )}
 
@@ -139,12 +139,12 @@ export function SubprocesoList({
         subprocesos.length === 0 && (
           <div className="planta-alert warning">
             <strong>
-              Este proceso no tiene subprocesos
+              No existen subprocesos
             </strong>
 
             <span>
-              Cree el primer subproceso para
-              continuar con la estructura.
+              El proceso seleccionado todavía
+              no tiene subprocesos.
             </span>
           </div>
         )}
@@ -152,40 +152,46 @@ export function SubprocesoList({
       {!loading &&
         subprocesos.length > 0 && (
           <div className="planta-list">
-            {subprocesos.map((item) => (
+            {subprocesos.map((subproceso) => (
               <div
-                key={item.id}
+                key={subproceso.id}
                 className="planta-list-item"
               >
                 <button
+                  type="button"
                   className="planta-list-main"
                   onClick={() =>
-                    onSelect(item)
+                    onSelectSubproceso?.(
+                      subproceso
+                    )
                   }
                 >
-                  <strong>
-                    {item.nombre}
-                  </strong>
+                  <div>
+                    <strong>
+                      {subproceso.nombre}
+                    </strong>
 
-                  {item.descripcion && (
-                    <small>
-                      {item.descripcion}
-                    </small>
-                  )}
+                    {subproceso.descripcion && (
+                      <small>
+                        {subproceso.descripcion}
+                      </small>
+                    )}
+                  </div>
                 </button>
 
                 <button
+                  type="button"
                   className="planta-edit-btn"
                   onClick={() =>
-                    editar(item)
+                    editar(subproceso)
                   }
                 >
-                  Editar
+                  ✎
                 </button>
               </div>
             ))}
           </div>
         )}
-    </section>
+    </div>
   );
 }

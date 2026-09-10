@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   getEquiposSinUbicar,
   type Equipo,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 interface Props {
   equiposAsignados: Equipo[];

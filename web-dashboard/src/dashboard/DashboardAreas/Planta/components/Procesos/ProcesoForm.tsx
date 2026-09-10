@@ -3,7 +3,7 @@ import {
   actualizarProceso,
   crearProceso,
   type Proceso,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 interface Props {
   proceso?: Proceso | null;

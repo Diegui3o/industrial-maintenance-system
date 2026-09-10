@@ -4,7 +4,7 @@ import {
   crearRepuesto,
   getRepuestos,
   type Repuesto,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 export function RepuestosCatalogo() {
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);

@@ -5,9 +5,8 @@ import {
   getSubprocesosSistema,
   type SistemaPlanta,
   type SubprocesoSistemaPlanta,
-} from '../services/plantaApi';
-import { EquiposSubprocesoSistema } from './EquiposSubprocesoSistema';
-
+} from '../../services/plantaApi';;
+import { EquiposSubprocesoSistema } from '../Equipos/EquiposSubprocesoSistema';
 interface Props {
   sistema: SistemaPlanta;
 }

@@ -5,7 +5,7 @@ import {
   getComponentes,
   type Componente,
   type Equipo,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 import { SubcomponentesEquipo } from './SubcomponentesEquipo';
 
 interface Props {

@@ -5,12 +5,11 @@ import {
   getEquiposPorSubproceso,
   type Equipo,
   type Subproceso,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 import { EquipoSelector } from './EquipoSelector';
 import { EquipoClasificacionSistema } from './EquipoClasificacionSistema';
-import { ComponentesEquipo } from './ComponentesEquipo';
-
+import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
 interface Props {
   subproceso: Subproceso | null;
 

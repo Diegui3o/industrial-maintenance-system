@@ -6,7 +6,7 @@ import {
   getComponentes,
   getSubcomponentes,
   getRepuestosSubcomponente,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 interface Problema {
   tipo: string;

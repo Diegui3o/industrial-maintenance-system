@@ -9,7 +9,7 @@ import {
   type ClasificacionPlanta,
   type Equipo,
   type SistemaPlanta,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 interface Props {
   equipo: Equipo;

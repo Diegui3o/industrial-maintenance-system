@@ -4,9 +4,9 @@ import {
   getEquiposPorSubprocesoSistema,
   getEquiposDisponiblesSistema,
   type Equipo,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
-import { ComponentesEquipo } from './ComponentesEquipo';
+import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
 
 interface Props {
   subprocesoSistemaId: number;

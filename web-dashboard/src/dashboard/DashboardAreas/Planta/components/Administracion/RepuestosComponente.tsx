@@ -6,7 +6,7 @@ import {
   type Componente,
   type ComponenteRepuesto,
   type Repuesto,
-} from '../services/plantaApi';
+} from '../../services/plantaApi';
 
 interface Props {
   componente: Componente | null;
