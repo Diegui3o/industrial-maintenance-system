@@ -28,36 +28,45 @@ export function ComponentesEstructura({
   const [loading, setLoading] =
     useState(false);
 
-  const cargar = async () => {
+  useEffect(() => {
     if (!equipo) {
-      setComponentes([]);
-      setComponenteSeleccionado(null);
       return;
     }
 
-    setLoading(true);
+    let cancelado = false;
 
-    try {
-      const resultado =
-        await getComponentes(equipo.id);
+    const cargar = async () => {
+      setLoading(true);
 
-      setComponentes(resultado);
-    } catch (error) {
-      console.error(
-        'Error cargando componentes:',
-        error
-      );
+      try {
+        const resultado =
+          await getComponentes(equipo.id);
 
-      setComponentes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!cancelado) {
+          setComponentes(resultado);
+        }
+      } catch (error) {
+        console.error(
+          'Error cargando componentes:',
+          error
+        );
 
-  useEffect(() => {
-    setComponenteSeleccionado(null);
+        if (!cancelado) {
+          setComponentes([]);
+        }
+      } finally {
+        if (!cancelado) {
+          setLoading(false);
+        }
+      }
+    };
+
     cargar();
-  }, [cargar, equipo.id]);
+
+    return () => {
+      cancelado = true;
+    };
+  }, [equipo]);
 
   if (!equipo) {
     return (

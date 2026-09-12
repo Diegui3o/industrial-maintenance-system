@@ -91,6 +91,21 @@ export async function getTodosSubprocesos(): Promise<
   );
 }
 
+export async function relacionarSubprocesosConProceso(
+  procesoId: number,
+  subprocesoIds: number[]
+): Promise<void> {
+  await request<void>(
+    `/planta/procesos/${procesoId}/subprocesos`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        subproceso_ids: subprocesoIds,
+      }),
+    }
+  );
+}
+
 export async function crearSubproceso(data: {
   proceso_id: number;
   nombre: string;
@@ -707,4 +722,94 @@ export async function desasignarTipoEquipo(
       }),
     }
   )
+}
+
+export async function getTodosSubprocesosSistema(): Promise<
+  SubprocesoSistemaPlanta[]
+> {
+  return request<SubprocesoSistemaPlanta[]>(
+    '/planta/subprocesos-sistema'
+  );
+}
+
+export async function relacionarSubprocesosConSistema(
+  sistemaId: number,
+  subprocesoIds: number[]
+): Promise<void> {
+  await request<void>(
+    `/planta/sistemas/${sistemaId}/subprocesos`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        subproceso_ids: subprocesoIds,
+      }),
+    }
+  );
+}
+export async function getEquiposParaRelacionSubproceso(
+  subprocesoId: number
+): Promise<Equipo[]> {
+  return request<Equipo[]>(
+    `/planta/subprocesos/${subprocesoId}/equipos-relacion`
+  );
+}
+
+export async function relacionarEquiposConSubproceso(
+  subprocesoId: number,
+  equipoIds: number[]
+): Promise<void> {
+  await request<void>(
+    `/planta/subprocesos/${subprocesoId}/equipos-relacion`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        equipo_ids: equipoIds,
+      }),
+    }
+  );
+}
+export async function getComponentesParaRelacionEquipo(
+  equipoId: number
+): Promise<Componente[]> {
+  return request<Componente[]>(
+    `/planta/equipos/${equipoId}/componentes-relacion`
+  );
+}
+
+export async function relacionarComponentesConEquipo(
+  equipoId: number,
+  componenteIds: number[]
+): Promise<void> {
+  await request<void>(
+    `/planta/equipos/${equipoId}/componentes-relacion`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        componente_ids: componenteIds,
+      }),
+    }
+  );
+}
+
+export async function getSubcomponentesParaRelacion(
+  componenteId: number
+): Promise<Subcomponente[]> {
+  return request<Subcomponente[]>(
+    `/planta/componentes/${componenteId}/subcomponentes-relacion`
+  );
+}
+
+export async function relacionarSubcomponentes(
+  componenteId: number,
+  subcomponenteIds: number[]
+): Promise<void> {
+  await request<void>(
+    `/planta/componentes/${componenteId}/subcomponentes-relacion`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        subcomponente_ids: subcomponenteIds,
+      }),
+    }
+  );
 }

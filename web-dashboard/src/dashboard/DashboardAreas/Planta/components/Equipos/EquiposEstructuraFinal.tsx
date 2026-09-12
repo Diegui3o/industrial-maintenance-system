@@ -1,253 +1,169 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   getProcesos,
   getSistemas,
-  getSubprocesos,
-  getSubprocesosSistema,
-  type Equipo,
+  getTodosSubprocesos,
+  getTodosSubprocesosSistema,
   type Proceso,
   type SistemaPlanta,
+  type Subproceso,
+  type SubprocesoSistemaPlanta,
 } from '../../services/plantaApi';
 
-import { EquiposSubprocesoFinal } from './EquiposSubprocesoFinal';
+import { EquiposSubproceso } from './EquiposSubproceso';
 
-type TipoPadre =
+type TipoEstructura =
   | 'proceso'
   | 'sistema'
   | '';
 
 interface Props {
-  onSelectEquipo?: (
-    equipo: Equipo | null
-  ) => void;
-}
-
-interface SubprocesoSistema {
-  id: number;
-  sistema_id: number;
-  nombre: string;
-  descripcion?: string | null;
-  activo: boolean;
+  onSelectEquipo?: (equipo: null) => void;
 }
 
 export function EquiposEstructuraFinal({
   onSelectEquipo,
 }: Props) {
+  const [tipo, setTipo] =
+    useState<TipoEstructura>('');
+
   const [procesos, setProcesos] =
     useState<Proceso[]>([]);
 
   const [sistemas, setSistemas] =
     useState<SistemaPlanta[]>([]);
 
-  const [tipoPadre, setTipoPadre] =
-    useState<TipoPadre>('');
-
-  const [procesoId, setProcesoId] =
-    useState('');
-
-  const [sistemaId, setSistemaId] =
-    useState('');
-
-  const [
-    subprocesosProceso,
-    setSubprocesosProceso,
-  ] = useState<
-    {
-      id: number;
-      nombre: string;
-      descripcion?: string | null;
-    }[]
-  >([]);
+  const [subprocesos, setSubprocesos] =
+    useState<Subproceso[]>([]);
 
   const [
     subprocesosSistema,
     setSubprocesosSistema,
-  ] = useState<SubprocesoSistema[]>([]);
+  ] = useState<SubprocesoSistemaPlanta[]>([]);
+
+  const [procesoId, setProcesoId] =
+    useState<number | null>(null);
+
+  const [sistemaId, setSistemaId] =
+    useState<number | null>(null);
 
   const [subprocesoId, setSubprocesoId] =
-    useState('');
+    useState<number | null>(null);
 
-  const [loadingPadres, setLoadingPadres] =
-    useState(true);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [
-    loadingSubprocesos,
-    setLoadingSubprocesos,
-  ] = useState(false);
+  const cargarDatos = useCallback(
+    async () => {
+      setLoading(true);
 
-  useEffect(() => {
-    let activo = true;
-
-    const cargar = async () => {
       try {
         const [
           procesosResultado,
           sistemasResultado,
+          subprocesosResultado,
+          subprocesosSistemaResultado,
         ] = await Promise.all([
           getProcesos(),
           getSistemas(),
+          getTodosSubprocesos(),
+          getTodosSubprocesosSistema(),
         ]);
-
-        if (!activo) return;
 
         setProcesos(procesosResultado);
         setSistemas(sistemasResultado);
+        setSubprocesos(
+          subprocesosResultado
+        );
+        setSubprocesosSistema(
+          subprocesosSistemaResultado
+        );
       } catch (error) {
-        if (!activo) return;
-
         console.error(
-          'Error cargando procesos y sistemas:',
+          'Error cargando estructura de equipos:',
           error
         );
-
-        setProcesos([]);
-        setSistemas([]);
       } finally {
-        if (activo) {
-          setLoadingPadres(false);
-        }
+        setLoading(false);
       }
-    };
-
-    cargar();
-
-    return () => {
-      activo = false;
-    };
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
-    if (
-      tipoPadre === 'proceso' &&
-      procesoId
-    ) {
-      let activo = true;
+    cargarDatos();
+  }, [cargarDatos]);
 
-      const cargar = async () => {
-        setLoadingSubprocesos(true);
-
-        try {
-          const resultado =
-            await getSubprocesos(
-              Number(procesoId)
-            );
-
-          if (!activo) return;
-
-          setSubprocesosProceso(
-            resultado
-          );
-        } catch (error) {
-          if (!activo) return;
-
-          console.error(
-            'Error cargando subprocesos de proceso:',
-            error
-          );
-
-          setSubprocesosProceso([]);
-        } finally {
-          if (activo) {
-            setLoadingSubprocesos(false);
-          }
-        }
-      };
-
-      cargar();
-
-      return () => {
-        activo = false;
-      };
-    }
-
-    if (
-      tipoPadre === 'sistema' &&
-      sistemaId
-    ) {
-      let activo = true;
-
-      const cargar = async () => {
-        setLoadingSubprocesos(true);
-
-        try {
-          const resultado =
-            await getSubprocesosSistema(
-              Number(sistemaId)
-            );
-
-          if (!activo) return;
-
-          setSubprocesosSistema(
-            resultado
-          );
-        } catch (error) {
-          if (!activo) return;
-
-          console.error(
-            'Error cargando subprocesos de sistema:',
-            error
-          );
-
-          setSubprocesosSistema([]);
-        } finally {
-          if (activo) {
-            setLoadingSubprocesos(false);
-          }
-        }
-      };
-
-      cargar();
-
-      return () => {
-        activo = false;
-      };
-    }
-  }, [
-    tipoPadre,
-    procesoId,
-    sistemaId,
-  ]);
-
-  const cambiarTipoPadre = (
-    tipo: TipoPadre
+  const cambiarTipo = (
+    nuevoTipo: TipoEstructura
   ) => {
-    setTipoPadre(tipo);
-    setProcesoId('');
-    setSistemaId('');
-    setSubprocesoId('');
+    setTipo(nuevoTipo);
+    setProcesoId(null);
+    setSistemaId(null);
+    setSubprocesoId(null);
+
     onSelectEquipo?.(null);
   };
 
-  const cambiarProceso = (
-    id: string
-  ) => {
+  const cambiarProceso = (valor: string) => {
+    const id = valor
+      ? Number(valor)
+      : null;
+
     setProcesoId(id);
-    setSubprocesoId('');
+    setSubprocesoId(null);
+
     onSelectEquipo?.(null);
   };
 
-  const cambiarSistema = (
-    id: string
-  ) => {
+  const cambiarSistema = (valor: string) => {
+    const id = valor
+      ? Number(valor)
+      : null;
+
     setSistemaId(id);
-    setSubprocesoId('');
+    setSubprocesoId(null);
+
     onSelectEquipo?.(null);
   };
 
-  if (loadingPadres) {
-    return (
-      <section className="planta-card">
-        <div className="planta-empty">
-          Cargando estructura de equipos...
-        </div>
-      </section>
-    );
-  }
+  const cambiarSubproceso = (
+    valor: string
+  ) => {
+    const id = valor
+      ? Number(valor)
+      : null;
+
+    setSubprocesoId(id);
+
+    onSelectEquipo?.(null);
+  };
+
+  const subprocesosDisponibles =
+    tipo === 'proceso'
+      ? subprocesos.filter(
+          (item) =>
+            item.proceso_id === procesoId
+        )
+      : subprocesosSistema.filter(
+          (item) =>
+            item.sistema_id === sistemaId
+        );
+
+  const subprocesoSeleccionado =
+    tipo === 'proceso'
+      ? subprocesos.find(
+          (item) =>
+            item.id === subprocesoId
+        )
+      : subprocesosSistema.find(
+          (item) =>
+            item.id === subprocesoId
+        );
 
   return (
     <section className="planta-card">
-
       <div className="planta-card-header">
         <div>
           <h3>Equipos</h3>
@@ -265,10 +181,10 @@ export function EquiposEstructuraFinal({
         </label>
 
         <select
-          value={tipoPadre}
+          value={tipo}
           onChange={(e) =>
-            cambiarTipoPadre(
-              e.target.value as TipoPadre
+            cambiarTipo(
+              e.target.value as TipoEstructura
             )
           }
         >
@@ -286,7 +202,7 @@ export function EquiposEstructuraFinal({
         </select>
       </div>
 
-      {tipoPadre === 'proceso' && (
+      {tipo === 'proceso' && (
         <>
           <div className="planta-form">
             <label>
@@ -294,7 +210,7 @@ export function EquiposEstructuraFinal({
             </label>
 
             <select
-              value={procesoId}
+              value={procesoId ?? ''}
               onChange={(e) =>
                 cambiarProceso(
                   e.target.value
@@ -305,169 +221,107 @@ export function EquiposEstructuraFinal({
                 Seleccione un proceso
               </option>
 
-              {procesos.map(
-                (proceso) => (
-                  <option
-                    key={proceso.id}
-                    value={proceso.id}
-                  >
-                    {proceso.nombre}
-                  </option>
-                )
-              )}
+              {procesos.map((proceso) => (
+                <option
+                  key={proceso.id}
+                  value={proceso.id}
+                >
+                  {proceso.nombre}
+                </option>
+              ))}
             </select>
           </div>
-
-          {procesoId && (
-            <div className="planta-form">
-              <label>
-                Subproceso padre
-              </label>
-
-              <select
-                value={subprocesoId}
-                onChange={(e) => {
-                  setSubprocesoId(
-                    e.target.value
-                  );
-                  onSelectEquipo?.(null);
-                }}
-                disabled={
-                  loadingSubprocesos
-                }
-              >
-                <option value="">
-                  {loadingSubprocesos
-                    ? 'Cargando subprocesos...'
-                    : 'Seleccione un subproceso'}
-                </option>
-
-                {subprocesosProceso.map(
-                  (subproceso) => (
-                    <option
-                      key={subproceso.id}
-                      value={subproceso.id}
-                    >
-                      {subproceso.nombre}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          )}
-
-          {subprocesoId && (
-            <EquiposSubprocesoFinal
-              key={`proceso-${subprocesoId}`}
-              subprocesoId={
-                Number(subprocesoId)
-              }
-              subprocesoNombre={
-                subprocesosProceso.find(
-                  (item) =>
-                    item.id.toString() ===
-                    subprocesoId
-                )?.nombre || ''
-              }
-              onSelectEquipo={
-                onSelectEquipo
-              }
-            />
-          )}
         </>
       )}
 
-      {tipoPadre === 'sistema' && (
-        <>
-          <div className="planta-form">
-            <label>
-              Sistema padre
-            </label>
+      {tipo === 'sistema' && (
+        <div className="planta-form">
+          <label>
+            Sistema padre
+          </label>
 
-            <select
-              value={sistemaId}
-              onChange={(e) =>
-                cambiarSistema(
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Seleccione un sistema
+          <select
+            value={sistemaId ?? ''}
+            onChange={(e) =>
+              cambiarSistema(
+                e.target.value
+              )
+            }
+          >
+            <option value="">
+              Seleccione un sistema
+            </option>
+
+            {sistemas.map((sistema) => (
+              <option
+                key={sistema.id}
+                value={sistema.id}
+              >
+                {sistema.nombre}
               </option>
-
-              {sistemas.map(
-                (sistema) => (
-                  <option
-                    key={sistema.id}
-                    value={sistema.id}
-                  >
-                    {sistema.nombre}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-
-          {sistemaId && (
-            <div className="planta-form">
-              <label>
-                Subproceso padre
-              </label>
-
-              <select
-                value={subprocesoId}
-                onChange={(e) => {
-                  setSubprocesoId(
-                    e.target.value
-                  );
-                  onSelectEquipo?.(null);
-                }}
-                disabled={
-                  loadingSubprocesos
-                }
-              >
-                <option value="">
-                  {loadingSubprocesos
-                    ? 'Cargando subprocesos...'
-                    : 'Seleccione un subproceso'}
-                </option>
-
-                {subprocesosSistema.map(
-                  (subproceso) => (
-                    <option
-                      key={subproceso.id}
-                      value={subproceso.id}
-                    >
-                      {subproceso.nombre}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          )}
-
-          {subprocesoId && (
-            <EquiposSubprocesoFinal
-              key={`sistema-${subprocesoId}`}
-              subprocesoId={
-                Number(subprocesoId)
-              }
-              subprocesoNombre={
-                subprocesosSistema.find(
-                  (item) =>
-                    item.id.toString() ===
-                    subprocesoId
-                )?.nombre || ''
-              }
-              onSelectEquipo={
-                onSelectEquipo
-              }
-            />
-          )}
-        </>
+            ))}
+          </select>
+        </div>
       )}
 
+      {(procesoId || sistemaId) && (
+        <div className="planta-form">
+          <label>
+            Subproceso padre
+          </label>
+
+          <select
+            value={subprocesoId ?? ''}
+            onChange={(e) =>
+              cambiarSubproceso(
+                e.target.value
+              )
+            }
+          >
+            <option value="">
+              Seleccione un subproceso
+            </option>
+
+            {subprocesosDisponibles.map(
+              (subproceso) => (
+                <option
+                  key={subproceso.id}
+                  value={subproceso.id}
+                >
+                  {subproceso.nombre}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      )}
+
+      {loading && (
+        <div className="planta-empty">
+          Cargando estructura...
+        </div>
+      )}
+
+      {!loading &&
+        subprocesoSeleccionado && (
+          <EquiposSubproceso
+            subprocesoId={
+              subprocesoSeleccionado.id
+            }
+            subprocesoNombre={
+              subprocesoSeleccionado.nombre
+            }
+          />
+        )}
+
+      {!loading &&
+        (procesoId || sistemaId) &&
+        subprocesosDisponibles.length === 0 && (
+          <div className="planta-empty">
+            No existen subprocesos asociados
+            al elemento seleccionado.
+          </div>
+        )}
     </section>
   );
 }

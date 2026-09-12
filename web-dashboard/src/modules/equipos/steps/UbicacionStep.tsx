@@ -1,140 +1,704 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react';
 import type { EquipoFormData } from '../hooks/useEquipoForm';
-import { getEquipos } from '../../../shared/services/api'
-import { colors } from '../../../theme/colors'
+import {
+  getProcesos,
+  getTodosSubprocesos,
+  getSistemas,
+  getTodosSubprocesosSistema,
+  type Proceso,
+  type Subproceso,
+  type SistemaPlanta,
+  type SubprocesoSistemaPlanta,
+} from '../../../dashboard/DashboardAreas/Planta/services/plantaApi';
+import { colors } from '../../../theme/colors';
 
-interface Props { form: EquipoFormData; update: (d: Partial<EquipoFormData>) => void }
+interface Props {
+  form: EquipoFormData;
+  update: (d: Partial<EquipoFormData>) => void;
+}
 
-export default function UbicacionStep({ form, update }: Props) {
-  const [equipos, setEquipos] = useState<any[]>([])
-  const [busqueda, setBusqueda] = useState('')
-  const [mostrarLista, setMostrarLista] = useState(false)
+export default function UbicacionStep({
+  form,
+  update,
+}: Props) {
+  const [procesos, setProcesos] = useState<Proceso[]>([]);
+  const [subprocesos, setSubprocesos] = useState<
+    Subproceso[]
+  >([]);
+
+  const [sistemas, setSistemas] = useState<SistemaPlanta[]>(
+    []
+  );
+
+  const [subprocesosSistema, setSubprocesosSistema] =
+    useState<SubprocesoSistemaPlanta[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [procesoAbierto, setProcesoAbierto] =
+    useState<number | null>(null);
+
+  const [sistemaAbierto, setSistemaAbierto] =
+    useState<number | null>(null);
 
   useEffect(() => {
-    getEquipos()
-      .then(data => setEquipos(data || []))
-      .catch(() => setEquipos([]))
-  }, [])
+    const cargar = async () => {
+      setLoading(true);
 
-  const equiposFiltrados = (equipos || []).filter(e =>
-    e.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    e.codigo?.toLowerCase().includes(busqueda.toLowerCase())
-  ) ?? []
+      try {
+        const [
+          procesosResultado,
+          subprocesosResultado,
+          sistemasResultado,
+          subprocesosSistemaResultado,
+        ] = await Promise.all([
+          getProcesos(),
+          getTodosSubprocesos(),
+          getSistemas(),
+          getTodosSubprocesosSistema(),
+        ]);
 
-  const equipoSeleccionado = equipos.find(e => e.id === form.activo_padre_id)
+        setProcesos(procesosResultado);
+        setSubprocesos(subprocesosResultado);
+        setSistemas(sistemasResultado);
+        setSubprocesosSistema(
+          subprocesosSistemaResultado
+        );
+      } catch (error) {
+        console.error(
+          'Error cargando estructura:',
+          error
+        );
 
-  const set = (k: keyof EquipoFormData) => (v: string) => update({ [k]: v })
+        setProcesos([]);
+        setSubprocesos([]);
+        setSistemas([]);
+        setSubprocesosSistema([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void cargar();
+  }, []);
+
+  const seleccionarProceso = (subprocesoId: number) => {
+    update({
+      tipo_padre: 'proceso',
+      subproceso_padre_id: subprocesoId,
+      activo_padre_id: null,
+    });
+  };
+
+  const seleccionarSistema = (
+    subprocesoId: number
+  ) => {
+    update({
+      tipo_padre: 'sistema',
+      subproceso_padre_id: subprocesoId,
+      activo_padre_id: null,
+    });
+  };
+
+  const limpiarPadre = () => {
+    update({
+      tipo_padre: '',
+      subproceso_padre_id: null,
+      activo_padre_id: null,
+    });
+  };
+
+  const seleccionadoProceso =
+    form.tipo_padre === 'proceso'
+      ? form.subproceso_padre_id
+      : null;
+
+  const seleccionadoSistema =
+    form.tipo_padre === 'sistema'
+      ? form.subproceso_padre_id
+      : null;
+
+  const subprocesosDeProceso = (procesoId: number) =>
+    subprocesos.filter(
+      (item) => item.proceso_id === procesoId
+    );
+
+  const subprocesosDeSistema = (sistemaId: number) =>
+    subprocesosSistema.filter(
+      (item) => item.sistema_id === sistemaId
+    );
 
   return (
     <div>
-      <h3 style={{ marginBottom: 20 }}>Ubicación y Jerarquía</h3>
-      <p style={{ fontSize: 13, color: colors.text.muted, marginBottom: 20 }}>
-        Estos campos son opcionales. Puedes completarlos después.
+      <h3 style={{ marginBottom: 20 }}>
+        Ubicación y Jerarquía
+      </h3>
+
+      <p
+        style={{
+          fontSize: 13,
+          color: colors.text.muted,
+          marginBottom: 20,
+        }}
+      >
+        Selecciona el proceso o sistema y el subproceso
+        donde pertenecerá este equipo.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        
-        {/* Selector de Activo Padre */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1, color: colors.text.muted }}>
-            Activo Padre
-          </label>
-          
-          {equipoSeleccionado ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 12px', border: `1px solid ${colors.primary}`, borderRadius: 8,
-              background: colors.primaryGhost
-            }}>
-              <div>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{equipoSeleccionado.codigo}</span>
-                <span style={{ color: colors.text.muted, marginLeft: 8, fontSize: 13 }}>{equipoSeleccionado.nombre}</span>
+      <div
+        style={{
+          border: `1px solid ${colors.border}`,
+          borderRadius: 10,
+          padding: 16,
+          marginBottom: 20,
+        }}
+      >
+        <label
+          style={{
+            display: 'block',
+            fontSize: 11,
+            fontWeight: 600,
+            marginBottom: 12,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            color: colors.text.muted,
+          }}
+        >
+          Activo Padre
+        </label>
+
+        {loading ? (
+          <div
+            style={{
+              padding: 14,
+              color: colors.text.muted,
+              fontSize: 13,
+            }}
+          >
+            Cargando estructura...
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(2, minmax(0, 1fr))',
+              gap: 16,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  marginBottom: 8,
+                }}
+              >
+                PROCESOS
               </div>
-              <button onClick={() => { update({ activo_padre_id: null }); setBusqueda('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: colors.text.muted }}>
-                ✕
-              </button>
-            </div>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <input
-                value={busqueda}
-                onChange={e => { setBusqueda(e.target.value); setMostrarLista(true) }}
-                onFocus={() => setMostrarLista(true)}
-                placeholder="Buscar equipo contenedor..."
-                style={{ width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 14 }}
-              />
-              {mostrarLista && busqueda && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0,
-                  maxHeight: 200, overflow: 'auto',
-                  background: colors.surface, border: `1px solid ${colors.border}`,
-                  borderRadius: 8, zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}>
-                  {equiposFiltrados.length === 0 ? (
-                    <p style={{ padding: 10, color: colors.text.muted, fontSize: 13 }}>No se encontraron equipos</p>
-                  ) : (
-                    equiposFiltrados.map(e => (
-                      <div key={e.id}
-                        onClick={() => {
-                          update({ activo_padre_id: e.id })
-                          setBusqueda('')
-                          setMostrarLista(false)
-                        }}
-                        style={{
-                          padding: '10px 12px', cursor: 'pointer',
-                          borderBottom: `1px solid ${colors.borderLight}`,
-                          transition: 'background 0.15s'
-                        }}
-                        onMouseEnter={ev => (ev.currentTarget.style.background = colors.background)}
-                        onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
-                        <span style={{ fontWeight: 600, fontSize: 13 }}>{e.codigo}</span>
-                        <span style={{ color: colors.text.muted, marginLeft: 8, fontSize: 12 }}>{e.nombre}</span>
-                        <span style={{ color: colors.text.muted, marginLeft: 8, fontSize: 11 }}>(ID: {e.id})</span>
+
+              <div
+                style={{
+                  border: `1px solid ${colors.borderLight}`,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                }}
+              >
+                {procesos.length === 0 ? (
+                  <div
+                    style={{
+                      padding: 12,
+                      fontSize: 12,
+                      color: colors.text.muted,
+                    }}
+                  >
+                    No hay procesos registrados.
+                  </div>
+                ) : (
+                  procesos.map((proceso) => {
+                    const hijos =
+                      subprocesosDeProceso(
+                        proceso.id
+                      );
+
+                    const abierto =
+                      procesoAbierto === proceso.id;
+
+                    return (
+                      <div key={proceso.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProcesoAbierto(
+                              abierto
+                                ? null
+                                : proceso.id
+                            )
+                          }
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent:
+                              'space-between',
+                            padding:
+                              '10px 12px',
+                            border: 'none',
+                            borderBottom: `1px solid ${colors.borderLight}`,
+                            background:
+                              'transparent',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>
+                            {abierto ? '▼' : '▶'}{' '}
+                            {proceso.nombre}
+                          </span>
+
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: colors.text.muted,
+                            }}
+                          >
+                            {hijos.length}
+                          </span>
+                        </button>
+
+                        {abierto && (
+                          <div
+                            style={{
+                              padding:
+                                '6px 8px 8px 28px',
+                              background:
+                                colors.background,
+                            }}
+                          >
+                            {hijos.length === 0 ? (
+                              <div
+                                style={{
+                                  padding:
+                                    '6px 4px',
+                                  fontSize: 11,
+                                  color:
+                                    colors.text.muted,
+                                }}
+                              >
+                                Sin subprocesos.
+                              </div>
+                            ) : (
+                              hijos.map((subproceso) => {
+                                const seleccionado =
+                                  seleccionadoProceso ===
+                                  subproceso.id;
+
+                                return (
+                                  <button
+                                    key={
+                                      subproceso.id
+                                    }
+                                    type="button"
+                                    onClick={() =>
+                                      seleccionarProceso(
+                                        subproceso.id
+                                      )
+                                    }
+                                    style={{
+                                      width: '100%',
+                                      display:
+                                        'block',
+                                      padding:
+                                        '8px 10px',
+                                      marginBottom: 4,
+                                      border:
+                                        seleccionado
+                                          ? `1px solid ${colors.primary}`
+                                          : `1px solid ${colors.borderLight}`,
+                                      borderRadius: 7,
+                                      background:
+                                        seleccionado
+                                          ? colors.primaryGhost
+                                          : colors.surface,
+                                      color:
+                                        colors.text
+                                          .primary,
+                                      cursor:
+                                        'pointer',
+                                      textAlign:
+                                        'left',
+                                      fontSize: 12,
+                                      fontWeight:
+                                        seleccionado
+                                          ? 700
+                                          : 500,
+                                    }}
+                                  >
+                                    └─{' '}
+                                    {
+                                      subproceso.nombre
+                                    }
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          )}
-          <p style={{ fontSize: 11, color: colors.text.muted, marginTop: 4 }}>
-            Ej: Si este motor está dentro de una chancadora, selecciona la chancadora
-          </p>
-        </div>
 
-        <Field label="Nivel Jerarquía" value={form.nivel_jerarquia.toString()} onChange={v => update({ nivel_jerarquia: Number(v) || 0 })}
-          hint="1=Planta, 2=Fase, 3=Área, 4=Equipo, 5=Componente" />
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  marginBottom: 8,
+                }}
+              >
+                SISTEMAS
+              </div>
 
-        <Field label="Tag Industrial" value={form.tag} onChange={set('tag')}
-          placeholder="ZS-2020005B" hint="Código del plano P&amp;ID o diagrama de lazo" />
+              <div
+                style={{
+                  border: `1px solid ${colors.borderLight}`,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                }}
+              >
+                {sistemas.length === 0 ? (
+                  <div
+                    style={{
+                      padding: 12,
+                      fontSize: 12,
+                      color: colors.text.muted,
+                    }}
+                  >
+                    No hay sistemas registrados.
+                  </div>
+                ) : (
+                  sistemas.map((sistema) => {
+                    const hijos =
+                      subprocesosDeSistema(
+                        sistema.id
+                      );
 
-        <Field label="Ubicación Física" value={form.ubicacion_fisica} onChange={set('ubicacion_fisica')}
-          placeholder="Tablero RIO-001, Rack 1, Slot 7" hint="Dónde está instalado físicamente" />
+                    const abierto =
+                      sistemaAbierto === sistema.id;
+
+                    return (
+                      <div key={sistema.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSistemaAbierto(
+                              abierto
+                                ? null
+                                : sistema.id
+                            )
+                          }
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent:
+                              'space-between',
+                            padding:
+                              '10px 12px',
+                            border: 'none',
+                            borderBottom: `1px solid ${colors.borderLight}`,
+                            background:
+                              'transparent',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>
+                            {abierto ? '▼' : '▶'}{' '}
+                            {sistema.nombre}
+                          </span>
+
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: colors.text.muted,
+                            }}
+                          >
+                            {hijos.length}
+                          </span>
+                        </button>
+
+                        {abierto && (
+                          <div
+                            style={{
+                              padding:
+                                '6px 8px 8px 28px',
+                              background:
+                                colors.background,
+                            }}
+                          >
+                            {hijos.length === 0 ? (
+                              <div
+                                style={{
+                                  padding:
+                                    '6px 4px',
+                                  fontSize: 11,
+                                  color:
+                                    colors.text.muted,
+                                }}
+                              >
+                                Sin subsistemas.
+                              </div>
+                            ) : (
+                              hijos.map((subproceso) => {
+                                const seleccionado =
+                                  seleccionadoSistema ===
+                                  subproceso.id;
+
+                                return (
+                                  <button
+                                    key={
+                                      subproceso.id
+                                    }
+                                    type="button"
+                                    onClick={() =>
+                                      seleccionarSistema(
+                                        subproceso.id
+                                      )
+                                    }
+                                    style={{
+                                      width: '100%',
+                                      display:
+                                        'block',
+                                      padding:
+                                        '8px 10px',
+                                      marginBottom: 4,
+                                      border:
+                                        seleccionado
+                                          ? `1px solid ${colors.primary}`
+                                          : `1px solid ${colors.borderLight}`,
+                                      borderRadius: 7,
+                                      background:
+                                        seleccionado
+                                          ? colors.primaryGhost
+                                          : colors.surface,
+                                      color:
+                                        colors.text
+                                          .primary,
+                                      cursor:
+                                        'pointer',
+                                      textAlign:
+                                        'left',
+                                      fontSize: 12,
+                                      fontWeight:
+                                        seleccionado
+                                          ? 700
+                                          : 500,
+                                    }}
+                                  >
+                                    └─{' '}
+                                    {
+                                      subproceso.nombre
+                                    }
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {form.subproceso_padre_id && (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: colors.primaryGhost,
+              border: `1px solid ${colors.primary}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: colors.text.muted,
+                  marginBottom: 3,
+                }}
+              >
+                PADRE SELECCIONADO
+              </div>
+
+              <strong style={{ fontSize: 13 }}>
+                {form.tipo_padre === 'proceso'
+                  ? subprocesos.find(
+                      (item) =>
+                        item.id ===
+                        form.subproceso_padre_id
+                    )?.nombre
+                  : subprocesosSistema.find(
+                      (item) =>
+                        item.id ===
+                        form.subproceso_padre_id
+                    )?.nombre}
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={limpiarPadre}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: colors.text.muted,
+                fontSize: 18,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(2, minmax(0, 1fr))',
+          gap: 16,
+        }}
+      >
+
+        <Field
+          label="Tag Industrial"
+          value={form.tag}
+          onChange={(v) => update({ tag: v })}
+          placeholder="ZS-2020005B"
+          hint="Código del plano P&ID o diagrama de lazo"
+        />
+
+        <Field
+          label="Ubicación Física"
+          value={form.ubicacion_fisica}
+          onChange={(v) =>
+            update({ ubicacion_fisica: v })
+          }
+          placeholder="Tablero RIO-001, Rack 1, Slot 7"
+          hint="Dónde está instalado físicamente"
+        />
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1, color: colors.text.muted }}>
+        <label
+          style={{
+            display: 'block',
+            fontSize: 11,
+            fontWeight: 600,
+            marginBottom: 4,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            color: colors.text.muted,
+          }}
+        >
           Descripción Larga
         </label>
-        <textarea value={form.descripcion_larga} onChange={e => update({ descripcion_larga: e.target.value })}
+
+        <textarea
+          value={form.descripcion_larga}
+          onChange={(e) =>
+            update({
+              descripcion_larga: e.target.value,
+            })
+          }
           placeholder="Descripción detallada del equipo, función, características..."
           rows={4}
-          style={{ width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 14, resize: 'vertical', fontFamily: 'inherit' }} />
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            border: `1px solid ${colors.border}`,
+            borderRadius: 8,
+            fontSize: 14,
+            resize: 'vertical',
+            fontFamily: 'inherit',
+          }}
+        />
       </div>
     </div>
-  )
+  );
 }
 
-function Field({ label, value, onChange, placeholder, hint }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; hint?: string
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
 }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1, color: colors.text.muted }}>{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 14 }} />
-      {hint && <p style={{ fontSize: 11, color: colors.text.muted, marginTop: 4 }}>{hint}</p>}
+      <label
+        style={{
+          display: 'block',
+          fontSize: 11,
+          fontWeight: 600,
+          marginBottom: 4,
+          textTransform: 'uppercase',
+          letterSpacing: 1,
+          color: colors.text.muted,
+        }}
+      >
+        {label}
+      </label>
+
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          border: `1px solid ${colors.border}`,
+          borderRadius: 8,
+          fontSize: 14,
+        }}
+      />
+
+      {hint && (
+        <p
+          style={{
+            fontSize: 11,
+            color: colors.text.muted,
+            marginTop: 4,
+          }}
+        >
+          {hint}
+        </p>
+      )}
     </div>
-  )
+  );
 }

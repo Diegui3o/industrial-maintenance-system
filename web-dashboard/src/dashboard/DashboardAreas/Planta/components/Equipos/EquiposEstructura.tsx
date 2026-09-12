@@ -111,158 +111,188 @@ export function EquiposEstructura() {
   }
 
   return (
-    <section className="planta-card">
+    <section className="planta-card planta-equipos-card">
       <div className="planta-card-header">
         <div>
+          <span className="planta-section-label">
+            ESTRUCTURA
+          </span>
+
           <h3>Equipos</h3>
 
           <p>
-            Seleccione primero el tipo de estructura
-            y su subproceso padre.
+            Seleccione el proceso o sistema y luego
+            el subproceso al que desea asociar equipos.
           </p>
         </div>
       </div>
 
-      <div className="planta-form">
-        <label>
-          Tipo de estructura
-        </label>
+      <div className="planta-steps">
 
-        <select
-          value={tipoPadre}
-          onChange={(e) =>
-            cambiarTipoPadre(
-              e.target.value as TipoPadre
-            )
-          }
-        >
-          <option value="">
-            Seleccione una opción
-          </option>
+        {/* PASO 1 */}
 
-          <option value="proceso">
-            Proceso
-          </option>
+        <div className="planta-step">
+          <div className="planta-step-number">
+            1
+          </div>
 
-          <option value="sistema">
-            Sistema
-          </option>
-        </select>
+          <div className="planta-step-content">
+            <span className="planta-step-label">
+              TIPO DE ESTRUCTURA
+            </span>
+
+            <select
+              value={tipoPadre}
+              onChange={(e) =>
+                cambiarTipoPadre(
+                  e.target.value as TipoPadre
+                )
+              }
+            >
+              <option value="">
+                Seleccione una opción
+              </option>
+
+              <option value="proceso">
+                Proceso
+              </option>
+
+              <option value="sistema">
+                Sistema
+              </option>
+            </select>
+          </div>
+        </div>
+
+        {/* PASO 2 — PROCESO */}
+
+        {tipoPadre === 'proceso' && (
+          <div className="planta-step">
+            <div className="planta-step-number">
+              2
+            </div>
+
+            <div className="planta-step-content">
+              <span className="planta-step-label">
+                PROCESO PADRE
+              </span>
+
+              <select
+                value={procesoId}
+                onChange={(e) =>
+                  cambiarProceso(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Seleccione un proceso
+                </option>
+
+                {procesos.map((proceso) => (
+                  <option
+                    key={proceso.id}
+                    value={proceso.id}
+                  >
+                    {proceso.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* PASO 2 — SISTEMA */}
+
+        {tipoPadre === 'sistema' && (
+          <div className="planta-step">
+            <div className="planta-step-number">
+              2
+            </div>
+
+            <div className="planta-step-content">
+              <span className="planta-step-label">
+                SISTEMA PADRE
+              </span>
+
+              <select
+                value={sistemaId}
+                onChange={(e) =>
+                  cambiarSistema(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Seleccione un sistema
+                </option>
+
+                {sistemas.map((sistema) => (
+                  <option
+                    key={sistema.id}
+                    value={sistema.id}
+                  >
+                    {sistema.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* PASO 3 — SUBPROCESO */}
+
+        {tipoPadre === 'proceso' &&
+          procesoId && (
+            <div className="planta-step">
+              <div className="planta-step-number">
+                3
+              </div>
+
+              <div className="planta-step-content">
+                <span className="planta-step-label">
+                  SUBPROCESO PADRE
+                </span>
+
+                <EquiposProcesoEstructura
+                  procesoId={Number(procesoId)}
+                  onSelectSubproceso={
+                    setSubprocesoProceso
+                  }
+                  subprocesoSeleccionado={
+                    subprocesoProceso
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+        {tipoPadre === 'sistema' &&
+          sistemaId && (
+            <div className="planta-step">
+              <div className="planta-step-number">
+                3
+              </div>
+
+              <div className="planta-step-content">
+                <span className="planta-step-label">
+                  SUBPROCESO PADRE
+                </span>
+
+                <EquiposSistemaEstructura
+                  sistemaId={sistemaId}
+                  subprocesoSistemaId={
+                    subprocesoSistemaId
+                  }
+                  onChangeSubproceso={
+                    setSubprocesoSistemaId
+                  }
+                />
+              </div>
+            </div>
+          )}
+
       </div>
-
-      {tipoPadre === 'proceso' && (
-        <>
-          <div className="planta-form">
-            <label>
-              Proceso padre
-            </label>
-
-            <select
-              value={procesoId}
-              onChange={(e) =>
-                cambiarProceso(
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Seleccione un proceso
-              </option>
-
-              {procesos.map((proceso) => (
-                <option
-                  key={proceso.id}
-                  value={proceso.id}
-                >
-                  {proceso.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {!procesoId && (
-            <div className="planta-alert warning">
-              <strong>
-                Seleccione un proceso
-              </strong>
-
-              <span>
-                Primero seleccione el proceso
-                padre.
-              </span>
-            </div>
-          )}
-
-          {procesoId && (
-            <EquiposProcesoEstructura
-              procesoId={procesoId}
-              onSelectSubproceso={
-                setSubprocesoProceso
-              }
-              subprocesoSeleccionado={
-                subprocesoProceso
-              }
-            />
-          )}
-        </>
-      )}
-
-      {tipoPadre === 'sistema' && (
-        <>
-          <div className="planta-form">
-            <label>
-              Sistema padre
-            </label>
-
-            <select
-              value={sistemaId}
-              onChange={(e) =>
-                cambiarSistema(
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Seleccione un sistema
-              </option>
-
-              {sistemas.map((sistema) => (
-                <option
-                  key={sistema.id}
-                  value={sistema.id}
-                >
-                  {sistema.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {!sistemaId && (
-            <div className="planta-alert warning">
-              <strong>
-                Seleccione un sistema
-              </strong>
-
-              <span>
-                Primero seleccione el sistema
-                padre.
-              </span>
-            </div>
-          )}
-
-          {sistemaId && (
-            <EquiposSistemaEstructura
-              sistemaId={sistemaId}
-              subprocesoSistemaId={
-                subprocesoSistemaId
-              }
-              onChangeSubproceso={
-                setSubprocesoSistemaId
-              }
-            />
-          )}
-        </>
-      )}
     </section>
   );
 }

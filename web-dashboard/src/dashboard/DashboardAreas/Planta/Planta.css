@@ -650,3 +650,480 @@ button.planta-list-item:hover {
   flex-direction: column;
   gap: 20px;
 }
+/* Relaciones de estructura */
+
+.planta-relation-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.planta-relation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.planta-section-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #999;
+}
+
+.planta-relation-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.planta-relation-header p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: #777;
+}
+
+.planta-relation-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #777;
+}
+
+.planta-relation-summary strong {
+  font-size: 13px;
+  color: #222;
+}
+
+.planta-relation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.planta-relation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.planta-relation-item:hover {
+  background: #f7f7f7;
+}
+
+.planta-relation-item.selected {
+  border-color: #d89b00;
+  background: #fff9e8;
+}
+
+.planta-relation-item input {
+  margin-top: 3px;
+}
+
+.planta-relation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.planta-relation-content strong {
+  font-size: 13px;
+  color: #222;
+}
+
+.planta-relation-content small {
+  font-size: 11px;
+  color: #777;
+}
+
+.planta-status {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.planta-status.linked {
+  background: #edf8ef;
+  color: #28743b;
+}
+
+.planta-status.available {
+  background: #f1f1f1;
+  color: #777;
+}
+
+.planta-relation-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5;
+}
+
+@media (max-width: 800px) {
+  .planta-relation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planta-relation-header {
+    flex-direction: column;
+  }
+}
+/* Equipos - selección por pasos */
+
+.planta-equipos-card {
+  margin-top: 20px;
+}
+
+.planta-equipos-card
+  .planta-card-header {
+  margin-bottom: 20px;
+}
+
+.planta-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.planta-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.planta-step-number {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #555;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.planta-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.planta-step-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #888;
+}
+
+.planta-step-content select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid #d8d8d8;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 13px;
+  color: #222;
+}
+
+.planta-step-content select:focus {
+  outline: none;
+  border-color: #d89b00;
+  box-shadow: 0 0 0 2px rgba(216, 155, 0, 0.12);
+}
+
+/* El componente interno ya tiene su propio selector */
+.planta-step-content
+  > div
+  > .planta-form {
+  margin: 0;
+}
+
+.planta-step-content
+  > div
+  > .planta-form
+  label {
+  display: none;
+}
+
+.planta-step-content
+  > div
+  > .planta-form
+  select {
+  margin-top: 0;
+}
+
+@media (min-width: 900px) {
+  .planta-equipos-card
+    .planta-steps {
+    max-width: 760px;
+  }
+}
+/* ============================================================
+   RELACIONES - LISTAS Y BUSCADOR
+   ============================================================ */
+
+.planta-relation-panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.planta-relation-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(220px, 1fr)
+  );
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.planta-relation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  padding: 10px 11px;
+
+  border: 1px solid #dedede;
+  border-radius: 8px;
+
+  background: #fff;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-relation-item:hover {
+  border-color: #c8c8c8;
+  background: #fafafa;
+}
+
+.planta-relation-item.selected {
+  border-color: #d89b00;
+  background: #fff8df;
+  box-shadow: 0 0 0 1px rgba(216, 155, 0, 0.12);
+}
+
+/* Checkbox */
+
+.planta-relation-item input[type='checkbox'] {
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+
+  margin: 2px 0 0;
+
+  accent-color: #d89b00;
+
+  cursor: pointer;
+}
+
+/* Contenido */
+
+.planta-relation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  flex: 1;
+  min-width: 0;
+
+  overflow: hidden;
+}
+
+.planta-relation-content strong {
+  display: block;
+
+  min-width: 0;
+
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+
+  color: #252525;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.planta-relation-content small {
+  display: block;
+
+  min-width: 0;
+
+  font-size: 10px;
+  line-height: 1.3;
+
+  color: #777;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Estado */
+
+.planta-status {
+  align-self: flex-start;
+
+  max-width: 100%;
+
+  padding: 2px 6px;
+
+  border-radius: 8px;
+
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 600;
+
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   BUSCADOR
+   ============================================================ */
+
+.planta-relation-search {
+  position: relative;
+
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.planta-relation-search input {
+  width: 100%;
+  height: 38px;
+
+  box-sizing: border-box;
+
+  padding: 8px 12px 8px 34px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+
+  background: #fff;
+
+  font-size: 12px;
+  color: #222;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-relation-search input::placeholder {
+  color: #999;
+}
+
+.planta-relation-search input:focus {
+  border-color: #d89b00;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(216, 155, 0, 0.10);
+}
+
+.planta-relation-search::before {
+  content: '⌕';
+
+  position: absolute;
+
+  left: 12px;
+  top: 50%;
+
+  transform: translateY(-52%);
+
+  font-size: 17px;
+  line-height: 1;
+
+  color: #999;
+
+  pointer-events: none;
+}
+
+.planta-relation-search-info {
+  margin-top: 5px;
+
+  font-size: 10px;
+
+  color: #888;
+}
+
+/* ============================================================
+   MENSAJE SIN RESULTADOS
+   ============================================================ */
+
+.planta-relation-no-results {
+  padding: 18px;
+
+  border: 1px dashed #d8d8d8;
+  border-radius: 8px;
+
+  background: #fff;
+
+  text-align: center;
+
+  font-size: 11px;
+
+  color: #888;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 700px) {
+  .planta-relation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 701px) {
+  .planta-relation-grid {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(210px, 1fr)
+    );
+  }
+}

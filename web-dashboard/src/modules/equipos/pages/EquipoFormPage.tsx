@@ -19,11 +19,10 @@ import {
 } from '../../../dashboard/DashboardAreas/Planta/services/plantaApi';
 
 interface Props {
-  onSuccess: () => void
   onNavigate: (page: string) => void
 }
 
-export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
+export default function EquipoFormPage({ onNavigate }: Props) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<EquipoFormData>(emptyForm)
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null)
@@ -60,29 +59,24 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
         ubicacion_fisica: form.ubicacion_fisica || '',
         descripcion_larga: form.descripcion_larga || '',
       }))
-      if (
-        !form.tipo_padre ||
-        !form.subproceso_padre_id
-      ) {
-        alert(
+      if (!form.tipo_padre || !form.subproceso_padre_id) {
+        throw new Error(
           'Debe seleccionar el Proceso o Sistema y su Subproceso padre.'
         )
-        return
       }
       const equipo = await createEquipo(payload)
 
       const equipoId = equipo.id
 
       if (!equipoId || equipoId === 0) {
-        console.error('Error: equipo sin ID')
-        return
+        throw new Error('El equipo fue creado pero no se recibió su ID.')
       }
       /* =========================================================
         TIPOS DE EQUIPO
       ========================================================= */
 
       if (form.tipos && form.tipos.length > 0) {
-        let tiposCatalogo = await getTiposEquipo()
+        let tiposCatalogo = (await getTiposEquipo()) || []
 
         for (const nombreTipo of form.tipos) {
           let tipoExistente = tiposCatalogo.find(
@@ -195,14 +189,24 @@ export default function EquipoFormPage({ onSuccess, onNavigate }: Props) {
     onSuccess: () => {
       setFeedback('success')
       queryClient.invalidateQueries({ queryKey: ['equipos'] })
-      setTimeout(() => onSuccess(), 1500)
+
+      setTimeout(() => {
+        onNavigate('equipos')
+      }, 1200)
     },
     onError: (err: any) => {
+      console.error('Error guardando equipo:', err)
+
       setFeedback('error')
-      if (err.message?.includes('duplicate') || err.message?.includes('llave duplicada')) {
+
+      if (
+        err.message?.includes('duplicate') ||
+        err.message?.includes('llave duplicada') ||
+        err.message?.includes('ya existe un equipo')
+      ) {
         alert('⚠️ Ya existe un equipo con ese código. Usa uno diferente.')
       }
-    }
+    },
   })
 
 const handleSubmit = () => {

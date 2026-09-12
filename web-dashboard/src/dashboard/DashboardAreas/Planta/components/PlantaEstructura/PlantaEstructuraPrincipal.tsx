@@ -6,7 +6,7 @@ import type {
 
 import { ProcesosEstructura } from '../Procesos/ProcesosEstructura';
 import { SistemasEstructura } from '../Sistemas/SistemasEstructura';
-import { SubprocesosEstructuraFinal } from '../Subprocesos/SubprocesosEstructuraFinal';
+import { SubprocesosEstructuraNueva } from '../Subprocesos/SubprocesosEstructuraNueva';
 import { EquiposEstructuraFinal } from '../Equipos/EquiposEstructuraFinal';
 import { ComponentesEstructuraCompleta } from '../Componentes/ComponentesEstructuraCompleta';
 
@@ -38,7 +38,7 @@ export function PlantaEstructuraPrincipal() {
       {/* SUBPROCESOS */}
 
       <div style={{ marginBottom: 20 }}>
-        <SubprocesosEstructuraFinal />
+        <SubprocesosEstructuraNueva />
       </div>
 
       {/* EQUIPOS */}

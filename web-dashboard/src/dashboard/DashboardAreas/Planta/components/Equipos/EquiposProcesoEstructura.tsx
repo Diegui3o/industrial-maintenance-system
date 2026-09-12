@@ -8,19 +8,17 @@ import {
 import { EquiposSubproceso } from './EquiposSubproceso';
 
 interface Props {
-  procesoId: string;
+  procesoId: number | null;
   subprocesoSeleccionado: Subproceso | null;
   onSelectSubproceso: (
     subproceso: Subproceso | null
   ) => void;
-  onSelectEquipo?: (equipo: any) => void;
 }
 
 export function EquiposProcesoEstructura({
   procesoId,
   subprocesoSeleccionado,
   onSelectSubproceso,
-  onSelectEquipo,
 }: Props) {
   const [
     subprocesos,
@@ -41,9 +39,7 @@ export function EquiposProcesoEstructura({
 
       try {
         const resultado =
-          await getSubprocesos(
-            Number(procesoId)
-          );
+          await getSubprocesos(procesoId);
 
         setSubprocesos(resultado);
       } catch (error) {
@@ -58,9 +54,8 @@ export function EquiposProcesoEstructura({
       }
     };
 
-    onSelectSubproceso(null);
-    cargar();
-  }, [onSelectSubproceso, procesoId]);
+    void cargar();
+  }, [procesoId]);
 
   return (
     <div>
@@ -130,9 +125,6 @@ export function EquiposProcesoEstructura({
             }
             subprocesoNombre={
               subprocesoSeleccionado.nombre
-            }
-            onSelectEquipo={
-              onSelectEquipo
             }
           />
         )}

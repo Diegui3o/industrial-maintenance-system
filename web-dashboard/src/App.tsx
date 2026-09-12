@@ -61,9 +61,12 @@ function EquipoDetailRoute() {
 
 function EquipoFormRoute() {
   const navigate = useNavigate();
-  return <EquipoFormPage onSuccess={() => navigate('/equipos')} onNavigate={(page) => navigate(`/${page}`)} />;
+  return (
+    <EquipoFormPage
+      onNavigate={(page) => navigate(`/${page}`)}
+    />
+  );
 }
-
 function EquipoEditRoute() {
   const { id } = useParams();
   const navigate = useNavigate();

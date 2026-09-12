@@ -235,6 +235,16 @@ func SetupRoutes(
 	).Methods("GET")
 
 	r.HandleFunc(
+		"/api/planta/subprocesos",
+		estructuraPlantaHandler.GetTodosSubprocesos,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/procesos/{proceso_id}/subprocesos",
+		estructuraPlantaHandler.PutRelacionarSubprocesosConProceso,
+	).Methods("PUT")
+
+	r.HandleFunc(
 			"/api/planta/subprocesos",
 			estructuraPlantaHandler.PostSubproceso,
 	).Methods("POST")
@@ -410,6 +420,11 @@ func SetupRoutes(
 
 	r.HandleFunc(
 		"/api/planta/subprocesos-sistema",
+		estructuraPlantaHandler.GetTodosSubprocesosSistema,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos-sistema",
 		estructuraPlantaHandler.CrearSubprocesoSistema,
 	).Methods("POST")
 
@@ -482,6 +497,46 @@ func SetupRoutes(
 		"/api/planta/equipos/{equipo_id}/tipos",
 		tipoEquipoHandler.Desasignar,
 	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos-sistema",
+		estructuraPlantaHandler.GetTodosSubprocesosSistema,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/sistemas/{sistema_id}/subprocesos",
+		estructuraPlantaHandler.PutRelacionarSubprocesosConSistema,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos/{subproceso_id}/equipos-relacion",
+		estructuraPlantaHandler.GetEquiposParaRelacionSubproceso,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/subprocesos/{subproceso_id}/equipos-relacion",
+		estructuraPlantaHandler.PutRelacionarEquiposConSubproceso,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/componentes-relacion",
+		estructuraPlantaHandler.GetComponentesParaRelacionEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/equipos/{equipo_id}/componentes-relacion",
+		estructuraPlantaHandler.PutRelacionarComponentesConEquipo,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/subcomponentes-relacion",
+		estructuraPlantaHandler.GetSubcomponentesParaRelacion,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/planta/componentes/{componente_id}/subcomponentes-relacion",
+		estructuraPlantaHandler.PutRelacionarSubcomponentes,
+	).Methods("PUT")
 
 	return r
 }
