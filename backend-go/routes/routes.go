@@ -35,6 +35,9 @@ func SetupRoutes(
 	configRepo := repository.NewConfigRepository(db)
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	mantenimientoRepo := repository.NewMantenimientoRepository(db)
+	mantenimientoDetalleRepo := repository.NewMantenimientoDetalleRepository(db)
+
+	mantenimientoOperacionRepo := repository.NewMantenimientoOperacionRepository(db)
 	conexionRepo := repository.NewConexionRepository(db)
 	firestoreRepo := repository.NewFirestoreRepository(
 		firestoreClient,
@@ -94,6 +97,12 @@ func SetupRoutes(
 	mantenimientoHandler := &handlers.MantenimientoHandler{
 		Repo: mantenimientoRepo,
 	}
+	mantenimientoDetalleHandler := handlers.NewMantenimientoDetalleHandler(
+		mantenimientoDetalleRepo,
+	)
+	mantenimientoOperacionHandler := handlers.NewMantenimientoOperacionHandler(
+		mantenimientoOperacionRepo,
+	)
 	conexionHandler := &handlers.ConexionHandler{Repo: conexionRepo}
 	firestoreHandler := handlers.NewFirestoreHandler(
 		firestoreService,
@@ -536,6 +545,136 @@ func SetupRoutes(
 	r.HandleFunc(
 		"/api/planta/componentes/{componente_id}/subcomponentes-relacion",
 		estructuraPlantaHandler.PutRelacionarSubcomponentes,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}",
+		mantenimientoHandler.GetPorID,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}",
+		mantenimientoHandler.Update,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/completo",
+		mantenimientoHandler.ObtenerCompleto,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/actividades",
+		mantenimientoDetalleHandler.CrearActividad,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/actividades",
+		mantenimientoDetalleHandler.ListarActividades,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/actividades/{id}",
+		mantenimientoDetalleHandler.ActualizarActividad,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/avances",
+		mantenimientoDetalleHandler.CrearAvance,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/avances",
+		mantenimientoDetalleHandler.ListarAvances,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/avances/{id}",
+		mantenimientoDetalleHandler.ActualizarAvance,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/personal",
+		mantenimientoDetalleHandler.CrearPersonal,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/personal",
+		mantenimientoDetalleHandler.ListarPersonal,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/personal/{id}",
+		mantenimientoDetalleHandler.ActualizarPersonal,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/historial",
+		mantenimientoDetalleHandler.CrearHistorial,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/historial",
+		mantenimientoDetalleHandler.ListarHistorial,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/programacion",
+		mantenimientoOperacionHandler.CrearProgramacion,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/programacion",
+		mantenimientoOperacionHandler.ListarProgramacion,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/programacion/{id}",
+		mantenimientoOperacionHandler.ActualizarProgramacion,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/ejecucion",
+		mantenimientoOperacionHandler.CrearEjecucion,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/ejecucion",
+		mantenimientoOperacionHandler.ListarEjecuciones,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/ejecucion/{id}",
+		mantenimientoOperacionHandler.ActualizarEjecucion,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/materiales",
+		mantenimientoOperacionHandler.CrearMaterial,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/materiales",
+		mantenimientoOperacionHandler.ListarMateriales,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/materiales/{id}",
+		mantenimientoOperacionHandler.ActualizarMaterial,
+	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/paradas",
+		mantenimientoOperacionHandler.CrearParada,
+	).Methods("POST")
+
+	r.HandleFunc(
+		"/api/mantenimiento/{id}/paradas",
+		mantenimientoOperacionHandler.ListarParadas,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento/paradas/{id}",
+		mantenimientoOperacionHandler.ActualizarParada,
 	).Methods("PUT")
 
 	return r

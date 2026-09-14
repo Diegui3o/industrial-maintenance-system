@@ -23,6 +23,22 @@ type Mantenimiento struct {
 	TnDejadasProcesar     *float64   `json:"tn_dejadas_procesar,omitempty"`
 	Enlace                *string    `json:"enlace,omitempty"`
 	EstadoFalla           string     `json:"estado_falla"`
+	ComponenteID        *int       `json:"componente_id,omitempty"`
+	SubcomponenteID     *int       `json:"subcomponente_id,omitempty"`
+	Prioridad           *string    `json:"prioridad,omitempty"`
+	Causa               *string    `json:"causa,omitempty"`
+	AccionRealizada     *string    `json:"accion_realizada,omitempty"`
+	Consecuencia        *string    `json:"consecuencia,omitempty"`
+	DescripcionTecnica  *string    `json:"descripcion_tecnica,omitempty"`
+	FechaInicioReal     *time.Time `json:"fecha_inicio_real,omitempty"`
+	FechaFinReal        *time.Time `json:"fecha_fin_real,omitempty"`
+	PorcentajeAvance    *float64   `json:"porcentaje_avance,omitempty"`
+	TipoProgramacion    *string    `json:"tipo_programacion,omitempty"`
+	FechaProgramada     *time.Time `json:"fecha_programada,omitempty"`
+	HorasPlanificadas   *float64   `json:"horas_planificadas,omitempty"`
+	HHPlanificadas      *float64   `json:"hh_planificadas,omitempty"`
+	HorasEjecutadas     *float64   `json:"horas_ejecutadas,omitempty"`
+	HHEjecutadas        *float64   `json:"hh_ejecutadas,omitempty"`
 	CreadoEn              time.Time  `json:"creado_en"`
 	ActualizadoEn         *time.Time `json:"actualizado_en,omitempty"`
 }
