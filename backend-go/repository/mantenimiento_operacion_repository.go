@@ -15,19 +15,19 @@ func NewMantenimientoOperacionRepository(db *sql.DB) *MantenimientoOperacionRepo
 // ============================================================
 
 type MantenimientoProgramacion struct {
-	ID                 int      `json:"id"`
-	MantenimientoID    int      `json:"mantenimiento_id"`
-	TipoProgramacion   string   `json:"tipo_programacion"`
-	FechaProgramada    string   `json:"fecha_programada"`
-	Semana             *int     `json:"semana"`
-	CodigoPrograma     *string  `json:"codigo_programa"`
-	OT                 *string  `json:"ot"`
-	CodigoSAP          *string  `json:"codigo_sap"`
-	HorasPlanificadas  *float64 `json:"horas_planificadas"`
-	HHPlanificadas     *float64 `json:"hh_planificadas"`
-	Prioridad          *string  `json:"prioridad"`
-	Instrucciones      *string  `json:"instrucciones"`
-	Comentario         *string  `json:"comentario"`
+	ID                int      `json:"id"`
+	MantenimientoID   int      `json:"mantenimiento_id"`
+	TipoProgramacion  string   `json:"tipo_programacion"`
+	FechaProgramada   string   `json:"fecha_programada"`
+	Semana            *int     `json:"semana"`
+	CodigoPrograma    *string  `json:"codigo_programa"`
+	OT                *string  `json:"ot"`
+	CodigoSAP         *string  `json:"codigo_sap"`
+	HorasPlanificadas *float64 `json:"horas_planificadas"`
+	HHPlanificadas    *float64 `json:"hh_planificadas"`
+	Prioridad         *string  `json:"prioridad"`
+	Instrucciones     *string  `json:"instrucciones"`
+	Comentario        *string  `json:"comentario"`
 }
 
 func (r *MantenimientoOperacionRepository) CrearProgramacion(
@@ -589,6 +589,41 @@ func (r *MantenimientoOperacionRepository) ActualizarParada(
 		m.Descripcion,
 		id,
 	)
+
+	return err
+}
+func (r *MantenimientoOperacionRepository) EliminarProgramacion(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_programacion
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
+func (r *MantenimientoOperacionRepository) EliminarEjecucion(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_ejecucion
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
+func (r *MantenimientoOperacionRepository) EliminarMaterial(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_materiales
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
+func (r *MantenimientoOperacionRepository) EliminarParada(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_paradas
+		WHERE id = $1
+	`, id)
 
 	return err
 }

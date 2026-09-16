@@ -243,7 +243,13 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
       <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
         <Button icon="✏️" variant="secondary" onClick={() => onNavigate('editar-equipo', detalle)}>Editar</Button>
         <Button icon="🔗" variant="secondary" onClick={() => onNavigate('conexiones', detalle)}>Conexiones</Button>
-        <Button icon="📋" variant="secondary" onClick={() => onNavigate('mantenimiento', detalle)}>Mantenimiento</Button>
+        <Button
+          icon="📋"
+          variant="secondary"
+          onClick={() => onNavigate('mantenimiento', detalle)}
+        >
+          Mantenimiento
+        </Button>
         <Button 
         icon="🔧" 
         variant="secondary" 

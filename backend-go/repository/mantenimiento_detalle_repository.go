@@ -2,18 +2,19 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type MantenimientoCompleto struct {
-	Mantenimiento interface{}                  `json:"mantenimiento"`
-	Actividades   []MantenimientoActividad     `json:"actividades"`
-	Programacion  []MantenimientoProgramacion  `json:"programacion"`
-	Ejecuciones   []MantenimientoEjecucion     `json:"ejecuciones"`
-	Avances       []MantenimientoAvance        `json:"avances"`
-	Personal      []MantenimientoPersonal      `json:"personal"`
-	Materiales    []MantenimientoMaterial      `json:"materiales"`
-	Paradas       []MantenimientoParada        `json:"paradas"`
-	Historial     []MantenimientoHistorial      `json:"historial"`
+	Mantenimiento interface{}                 `json:"mantenimiento"`
+	Actividades   []MantenimientoActividad    `json:"actividades"`
+	Programacion  []MantenimientoProgramacion `json:"programacion"`
+	Ejecuciones   []MantenimientoEjecucion    `json:"ejecuciones"`
+	Avances       []MantenimientoAvance       `json:"avances"`
+	Personal      []MantenimientoPersonal     `json:"personal"`
+	Materiales    []MantenimientoMaterial     `json:"materiales"`
+	Paradas       []MantenimientoParada       `json:"paradas"`
+	Historial     []MantenimientoHistorial    `json:"historial"`
 }
 
 func (r *MantenimientoDetalleRepository) ObtenerCompleto(
@@ -114,16 +115,16 @@ func NewMantenimientoDetalleRepository(db *sql.DB) *MantenimientoDetalleReposito
 // ============================================================
 
 type MantenimientoActividad struct {
-	ID                 int      `json:"id"`
-	MantenimientoID    int      `json:"mantenimiento_id"`
-	Descripcion        string   `json:"descripcion"`
-	Estado             string   `json:"estado"`
-	Prioridad          *string  `json:"prioridad"`
-	HorasPlanificadas  *float64 `json:"horas_planificadas"`
-	HorasEjecutadas    *float64 `json:"horas_ejecutadas"`
-	Porcentaje         float64  `json:"porcentaje"`
-	FechaInicio        *string  `json:"fecha_inicio"`
-	FechaFin           *string  `json:"fecha_fin"`
+	ID                int      `json:"id"`
+	MantenimientoID   int      `json:"mantenimiento_id"`
+	Descripcion       string   `json:"descripcion"`
+	Estado            string   `json:"estado"`
+	Prioridad         *string  `json:"prioridad"`
+	HorasPlanificadas *float64 `json:"horas_planificadas"`
+	HorasEjecutadas   *float64 `json:"horas_ejecutadas"`
+	Porcentaje        float64  `json:"porcentaje"`
+	FechaInicio       *string  `json:"fecha_inicio"`
+	FechaFin          *string  `json:"fecha_fin"`
 }
 
 func (r *MantenimientoDetalleRepository) CrearActividad(
@@ -217,13 +218,13 @@ func (r *MantenimientoDetalleRepository) ListarActividades(
 // ============================================================
 
 type MantenimientoAvance struct {
-	ID              int      `json:"id"`
-	MantenimientoID int      `json:"mantenimiento_id"`
-	ActividadID     *int     `json:"actividad_id"`
-	Porcentaje      float64  `json:"porcentaje"`
-	Descripcion     *string  `json:"descripcion"`
-	Fecha           string   `json:"fecha"`
-	UsuarioID       *int     `json:"usuario_id"`
+	ID              int     `json:"id"`
+	MantenimientoID int     `json:"mantenimiento_id"`
+	ActividadID     *int    `json:"actividad_id"`
+	Porcentaje      float64 `json:"porcentaje"`
+	Descripcion     *string `json:"descripcion"`
+	Fecha           string  `json:"fecha"`
+	UsuarioID       *int    `json:"usuario_id"`
 }
 
 func (r *MantenimientoDetalleRepository) CrearAvance(
@@ -408,18 +409,18 @@ func (r *MantenimientoDetalleRepository) ListarPersonal(
 // ============================================================
 
 type MantenimientoHistorial struct {
-	ID                  int      `json:"id"`
-	MantenimientoID     int      `json:"mantenimiento_id"`
-	TipoEvento          string   `json:"tipo_evento"`
-	EstadoAnterior      *string  `json:"estado_anterior"`
-	EstadoNuevo         *string  `json:"estado_nuevo"`
-	FechaAnterior       *string  `json:"fecha_anterior"`
-	FechaNueva          *string  `json:"fecha_nueva"`
-	PorcentajeAnterior  *float64 `json:"porcentaje_anterior"`
-	PorcentajeNuevo     *float64 `json:"porcentaje_nuevo"`
-	Descripcion         *string  `json:"descripcion"`
-	UsuarioID           *int     `json:"usuario_id"`
-	CreadoEn            string   `json:"creado_en"`
+	ID                 int      `json:"id"`
+	MantenimientoID    int      `json:"mantenimiento_id"`
+	TipoEvento         string   `json:"tipo_evento"`
+	EstadoAnterior     *string  `json:"estado_anterior"`
+	EstadoNuevo        *string  `json:"estado_nuevo"`
+	FechaAnterior      *string  `json:"fecha_anterior"`
+	FechaNueva         *string  `json:"fecha_nueva"`
+	PorcentajeAnterior *float64 `json:"porcentaje_anterior"`
+	PorcentajeNuevo    *float64 `json:"porcentaje_nuevo"`
+	Descripcion        *string  `json:"descripcion"`
+	UsuarioID          *int     `json:"usuario_id"`
+	CreadoEn           string   `json:"creado_en"`
 }
 
 func (r *MantenimientoDetalleRepository) CrearHistorial(
@@ -517,19 +518,19 @@ func (r *MantenimientoDetalleRepository) ActualizarActividad(
 	id int,
 	m MantenimientoActividad,
 ) error {
-	_, err := r.DB.Exec(`
-		UPDATE mantenimiento_actividades
-		SET
-			descripcion = $1,
-			estado = $2,
-			prioridad = $3,
-			horas_planificadas = $4,
-			horas_ejecutadas = $5,
-			porcentaje = $6,
-			fecha_inicio = $7,
-			fecha_fin = $8
-		WHERE id = $9
-	`,
+	result, err := r.DB.Exec(`
+			UPDATE mantenimiento_actividades
+			SET
+				descripcion = $1,
+				estado = $2,
+				prioridad = $3,
+				horas_planificadas = $4,
+				horas_ejecutadas = $5,
+				porcentaje = $6,
+				fecha_inicio = $7,
+				fecha_fin = $8
+			WHERE id = $9
+		`,
 		m.Descripcion,
 		m.Estado,
 		m.Prioridad,
@@ -541,14 +542,39 @@ func (r *MantenimientoDetalleRepository) ActualizarActividad(
 		id,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	filas, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if filas == 0 {
+		return fmt.Errorf("actividad %d no encontrada", id)
+	}
+
+	return nil
 }
 
 func (r *MantenimientoDetalleRepository) ActualizarAvance(
 	id int,
 	m MantenimientoAvance,
 ) error {
-	_, err := r.DB.Exec(`
+	var mantenimientoID int
+
+	err := r.DB.QueryRow(`
+		SELECT mantenimiento_id
+		FROM mantenimiento_avances
+		WHERE id = $1
+	`, id).Scan(&mantenimientoID)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.DB.Exec(`
 		UPDATE mantenimiento_avances
 		SET
 			actividad_id = $1,
@@ -563,6 +589,18 @@ func (r *MantenimientoDetalleRepository) ActualizarAvance(
 		m.UsuarioID,
 		id,
 	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.DB.Exec(`
+		UPDATE mantenimiento
+		SET
+			porcentaje_avance = $1,
+			actualizado_en = NOW()
+		WHERE id = $2
+	`, m.Porcentaje, mantenimientoID)
 
 	return err
 }
@@ -590,6 +628,32 @@ func (r *MantenimientoDetalleRepository) ActualizarPersonal(
 		m.Fecha,
 		id,
 	)
+
+	return err
+}
+func (r *MantenimientoDetalleRepository) EliminarActividad(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_actividades
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
+func (r *MantenimientoDetalleRepository) EliminarAvance(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_avances
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
+func (r *MantenimientoDetalleRepository) EliminarPersonal(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM mantenimiento_personal
+		WHERE id = $1
+	`, id)
 
 	return err
 }

@@ -45,6 +45,7 @@ export default function EquipoFormPage({ onNavigate }: Props) {
         codigo: form.codigo,
         nombre: form.nombre,
         area: form.area,
+        area_funcional: form.area_funcional || null,
         tipo: form.tipo,
         fase: form.fase,
         fabricante: form.fabricante,

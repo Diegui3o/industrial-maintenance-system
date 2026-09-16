@@ -80,7 +80,7 @@ BEGIN
     v_codigo := COALESCE(p_codigo, 'PI-' || p_id::TEXT);
 
     -- Crear el equipo
-    INSERT INTO equipos (id, codigo, nombre, area, estado, critico)
+    INSERT INTO equipos (id, codigo, nombre, area, estado_equipo, critico)
     VALUES (p_id, v_codigo, p_nombre, 'PI System', 'activo', FALSE);
 
     -- Registrar que fue creado automáticamente
@@ -156,7 +156,7 @@ SELECT
     e.codigo,
     e.nombre,
     e.area,
-    e.estado,
+    e.estado_equipo AS estado,
     e.critico,
     COUNT(DISTINCT ds.parametro) AS total_tags,
     MAX(ds.recibido_en) AS ultimo_dato,
@@ -164,7 +164,7 @@ SELECT
 FROM equipos e
 LEFT JOIN datos_sensores ds ON e.id = ds.equipo_id
 LEFT JOIN config_umbrales umbrales ON e.id = umbrales.equipo_id
-GROUP BY e.id, e.codigo, e.nombre, e.area, e.estado, e.critico
+GROUP BY e.id, e.codigo, e.nombre, e.area, e.estado_equipo, e.critico
 ORDER BY e.id;
 
 -- Vista: tags_recientes_por_equipo

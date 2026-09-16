@@ -114,7 +114,7 @@ func SetupRoutes(
 	tagDescubiertoHandler := handlers.NewTagDescubiertoHandler(tagDescubiertoRepo)
 	equipoTagHandler := handlers.NewEquipoTagHandler(tagDescubiertoRepo)
 	estructuraPlantaHandler := handlers.NewEstructuraPlantaHandler(
-			estructuraPlantaService,
+		estructuraPlantaService,
 	)
 
 	// ============================================
@@ -210,10 +210,6 @@ func SetupRoutes(
 	r.HandleFunc("/api/firestore/{collection}/{id}", firestoreHandler.ActualizarDocumento).Methods("PUT")
 	r.HandleFunc("/api/firestore/{collection}/{id}", firestoreHandler.EliminarDocumento).Methods("DELETE")
 	r.HandleFunc("/api/v1/eventos/sensor", sensorHandler.RecibirBatch).Methods("POST")
-	r.HandleFunc("/api/mantenimiento", mantenimientoHandler.Crear).Methods("POST")
-	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Obtener).Methods("GET")
-	r.HandleFunc("/api/equipos/{id}/mantenimiento", mantenimientoHandler.ListarPorEquipo).Methods("GET")
-	r.HandleFunc("/api/mantenimiento/{id}", mantenimientoHandler.Actualizar).Methods("PUT")
 	diagHandler := &handlers.DiagnosticoHandler{}
 	r.HandleFunc("/api/diagnostico", diagHandler.Diagnostico).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/conexiones", conexionHandler.ListarPorEquipo).Methods("GET")
@@ -229,18 +225,18 @@ func SetupRoutes(
 	// ============================================
 
 	r.HandleFunc(
-			"/api/planta/procesos",
-			estructuraPlantaHandler.GetProcesos,
+		"/api/planta/procesos",
+		estructuraPlantaHandler.GetProcesos,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/procesos",
-			estructuraPlantaHandler.PostProceso,
+		"/api/planta/procesos",
+		estructuraPlantaHandler.PostProceso,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/procesos/{proceso_id}/subprocesos",
-			estructuraPlantaHandler.GetSubprocesos,
+		"/api/planta/procesos/{proceso_id}/subprocesos",
+		estructuraPlantaHandler.GetSubprocesos,
 	).Methods("GET")
 
 	r.HandleFunc(
@@ -254,73 +250,73 @@ func SetupRoutes(
 	).Methods("PUT")
 
 	r.HandleFunc(
-			"/api/planta/subprocesos",
-			estructuraPlantaHandler.PostSubproceso,
+		"/api/planta/subprocesos",
+		estructuraPlantaHandler.PostSubproceso,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/equipos/{equipo_id}/subproceso",
-			estructuraPlantaHandler.PostEquipoSubproceso,
+		"/api/planta/equipos/{equipo_id}/subproceso",
+		estructuraPlantaHandler.PostEquipoSubproceso,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/equipos/{equipo_id}/subproceso",
-			estructuraPlantaHandler.GetEquipoSubproceso,
+		"/api/planta/equipos/{equipo_id}/subproceso",
+		estructuraPlantaHandler.GetEquipoSubproceso,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/clasificaciones",
-			estructuraPlantaHandler.GetClasificaciones,
+		"/api/planta/clasificaciones",
+		estructuraPlantaHandler.GetClasificaciones,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/clasificaciones",
-			estructuraPlantaHandler.PostClasificacion,
+		"/api/planta/clasificaciones",
+		estructuraPlantaHandler.PostClasificacion,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/equipos/{equipo_id}/clasificaciones",
-			estructuraPlantaHandler.PostEquipoClasificacion,
+		"/api/planta/equipos/{equipo_id}/clasificaciones",
+		estructuraPlantaHandler.PostEquipoClasificacion,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/sistemas",
-			estructuraPlantaHandler.GetSistemas,
+		"/api/planta/sistemas",
+		estructuraPlantaHandler.GetSistemas,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/sistemas",
-			estructuraPlantaHandler.PostSistema,
+		"/api/planta/sistemas",
+		estructuraPlantaHandler.PostSistema,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/equipos/{equipo_id}/sistemas",
-			estructuraPlantaHandler.PostEquipoSistema,
+		"/api/planta/equipos/{equipo_id}/sistemas",
+		estructuraPlantaHandler.PostEquipoSistema,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/equipos/{equipo_id}/componentes",
-			estructuraPlantaHandler.GetComponentes,
+		"/api/planta/equipos/{equipo_id}/componentes",
+		estructuraPlantaHandler.GetComponentes,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/componentes",
-			estructuraPlantaHandler.PostComponente,
+		"/api/planta/componentes",
+		estructuraPlantaHandler.PostComponente,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/repuestos",
-			estructuraPlantaHandler.GetRepuestos,
+		"/api/planta/repuestos",
+		estructuraPlantaHandler.GetRepuestos,
 	).Methods("GET")
 
 	r.HandleFunc(
-			"/api/planta/repuestos",
-			estructuraPlantaHandler.PostRepuesto,
+		"/api/planta/repuestos",
+		estructuraPlantaHandler.PostRepuesto,
 	).Methods("POST")
 
 	r.HandleFunc(
-			"/api/planta/componentes/{componente_id}/repuestos",
-			estructuraPlantaHandler.PostComponenteRepuesto,
+		"/api/planta/componentes/{componente_id}/repuestos",
+		estructuraPlantaHandler.PostComponenteRepuesto,
 	).Methods("POST")
 
 	r.HandleFunc(
@@ -411,11 +407,6 @@ func SetupRoutes(
 		"/api/planta/componentes/{componente_id}/repuestos/{repuesto_id}",
 		estructuraPlantaHandler.PutComponenteRepuesto,
 	).Methods("PUT")
-
-	r.HandleFunc(
-		"/api/mantenimiento/equipos/{equipo_id}",
-		mantenimientoHandler.GetPorEquipo,
-	).Methods("GET")
 
 	r.HandleFunc(
 		"/api/planta/equipos/sin-ubicar",
@@ -548,6 +539,11 @@ func SetupRoutes(
 	).Methods("PUT")
 
 	r.HandleFunc(
+		"/api/equipos/{id}/mantenimiento",
+		mantenimientoHandler.GetPorEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
 		"/api/mantenimiento/{id}",
 		mantenimientoHandler.GetPorID,
 	).Methods("GET")
@@ -676,6 +672,41 @@ func SetupRoutes(
 		"/api/mantenimiento/paradas/{id}",
 		mantenimientoOperacionHandler.ActualizarParada,
 	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/mantenimiento/actividades/{id}",
+		mantenimientoDetalleHandler.EliminarActividad,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/avances/{id}",
+		mantenimientoDetalleHandler.EliminarAvance,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/personal/{id}",
+		mantenimientoDetalleHandler.EliminarPersonal,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/programacion/{id}",
+		mantenimientoOperacionHandler.EliminarProgramacion,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/ejecucion/{id}",
+		mantenimientoOperacionHandler.EliminarEjecucion,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/materiales/{id}",
+		mantenimientoOperacionHandler.EliminarMaterial,
+	).Methods("DELETE")
+
+	r.HandleFunc(
+		"/api/mantenimiento/paradas/{id}",
+		mantenimientoOperacionHandler.EliminarParada,
+	).Methods("DELETE")
 
 	return r
 }

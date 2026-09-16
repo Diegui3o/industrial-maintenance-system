@@ -13,6 +13,7 @@ import NotificacionesPage from './modules/notifications/page/NotificacionesPage'
 import { MinaPanel } from './dashboard/DashboardAreas/Mina/MinaPanel';
 import { PlantaPanel } from './dashboard/DashboardAreas/Planta/PlantaPanel';
 import { InfraestructuraPanel } from './dashboard/DashboardAreas/Infraestructura/InfraestructuraPanel';
+import MantenimientoPage from "./modules/mantenimiento/pages/MantenimientoPage";
 
 import { useEffect, useState } from 'react';
 
@@ -52,8 +53,13 @@ function EquipoDetailRoute() {
   return <EquipoDetailPage
     equipo={{ id: Number(id) }}
     onNavigate={(page, params) => {
-      if (page === 'editar-equipo') navigate(`/equipos/${params.id}/editar`);
-      else navigate(`/${page}`);
+      if (page === 'editar-equipo') {
+        navigate(`/equipos/${params.id}/editar`);
+      } else if (page === 'mantenimiento') {
+        navigate(`/mantenimiento?equipoId=${params.id}`);
+      } else {
+        navigate(`/${page}`);
+      }
     }}
     onBack={() => navigate('/equipos')}
   />;
@@ -92,6 +98,7 @@ export default function App() {
           <Route path="/mina" element={<MinaPanel />} />
           <Route path="/planta" element={<PlantaPanel />} />
           <Route path="/infraestructura" element={<InfraestructuraPanel />} />
+          <Route path="/mantenimiento" element={<MantenimientoPage />} />
           <Route path="*" element={<DashboardRoute />} />
         </Routes>
       </BrowserRouter>

@@ -35,7 +35,6 @@ services:
       DATABASE_URL: "postgres://admin:admin@postgres:5432/mantenimiento?sslmode=disable"
       FIREBASE_PROJECT_ID: "registros-actividades-mina"
       GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/firebase-service-account.json"
-
     depends_on:
       postgres:
         condition: service_healthy
