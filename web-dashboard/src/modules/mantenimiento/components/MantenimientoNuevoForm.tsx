@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { crearMantenimiento } from "../../../dashboard/services/mantenimientoApi";
+import "./MantenimientoNuevoForm.css";
 
 type Props = {
   equipoId: number;
@@ -7,27 +8,78 @@ type Props = {
   onCancelar: () => void;
 };
 
-const inicial = {
-  fecha_reporte: new Date().toISOString().slice(0, 10),
-  fase: "",
-  taller: "",
-  tipo_criticidad: "",
-  sistema: "",
-  tipo_intervencion: "",
-  modo_falla: "",
-  descripcion_evento: "",
-  estado_falla: "abierta",
-  prioridad: "",
+type Equipo = {
+  id: number;
+  codigo: string;
+  nombre: string;
+  fase?: string;
+  fase_ubicacion?: string;
+  area?: string;
+  tipo?: string;
+  ubicacion_fisica?: string;
 };
+
+const estados = [
+  "abierta",
+  "en_proceso",
+  "cerrada",
+];
 
 export default function MantenimientoNuevoForm({
   equipoId,
   onCreado,
   onCancelar,
 }: Props) {
-  const [form, setForm] = useState(inicial);
+  const [equipo, setEquipo] = useState<Equipo | null>(null);
+
+  const [form, setForm] = useState({
+    fecha_reporte: new Date().toISOString().slice(0, 10),
+    fase: "",
+    taller: "",
+    tipo_criticidad: "",
+    sistema: "",
+    tipo_intervencion: "",
+    modo_falla: "",
+    descripcion_evento: "",
+    estado_falla: "abierta",
+    prioridad: "",
+  });
+
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    cargarEquipo();
+  }, [equipoId]);
+
+  async function cargarEquipo() {
+    try {
+      const response = await fetch(`/api/equipos/${equipoId}`);
+
+      if (!response.ok) {
+        throw new Error("No se pudo cargar el equipo.");
+      }
+
+      const data: Equipo = await response.json();
+
+      setEquipo(data);
+
+      setForm((prev) => ({
+        ...prev,
+        fase:
+          data.fase?.trim() ||
+          data.fase_ubicacion?.trim() ||
+          "",
+        sistema: data.tipo?.trim() || "",
+      }));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo cargar el equipo."
+      );
+    }
+  }
 
   function cambiar(campo: string, valor: string) {
     setForm((prev) => ({
@@ -37,20 +89,13 @@ export default function MantenimientoNuevoForm({
   }
 
   async function guardar() {
-    if (!form.fase.trim()) {
-      setError("La fase es obligatoria.");
-      return;
-    }
-
     if (!form.taller.trim()) {
-      setError("El taller es obligatorio.");
+      setError("Selecciona el taller.");
       return;
     }
 
     if (!form.tipo_intervencion.trim()) {
-      setError(
-        "El tipo de intervención es obligatorio."
-      );
+      setError("Selecciona el tipo de intervención.");
       return;
     }
 
@@ -63,11 +108,7 @@ export default function MantenimientoNuevoForm({
         ...form,
       });
 
-      const id =
-        creado?.id ||
-        creado?.data?.id;
-
-      onCreado(id);
+      onCreado(creado?.id || creado?.data?.id);
     } catch (err) {
       setError(
         err instanceof Error
@@ -80,122 +121,186 @@ export default function MantenimientoNuevoForm({
   }
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>
-          Nuevo mantenimiento
-        </h2>
+    <div className="mtto-form">
+      <div className="mtto-form__top">
+        <div>
+          <span className="mtto-form__eyebrow">
+            NUEVO MANTENIMIENTO
+          </span>
+
+          <h2>Registrar trabajo</h2>
+
+          {equipo && (
+            <div className="mtto-equipo">
+              <strong>{equipo.codigo}</strong>
+              <span>{equipo.nombre}</span>
+            </div>
+          )}
+        </div>
 
         <button
           type="button"
+          className="mtto-close"
           onClick={onCancelar}
-          style={styles.close}
         >
           ×
         </button>
       </div>
 
       {error && (
-        <div style={styles.error}>
+        <div className="mtto-error">
           {error}
         </div>
       )}
 
-      <div style={styles.grid}>
-        <Field
-          label="Fecha reporte"
-          type="date"
-          value={form.fecha_reporte}
-          onChange={(v) =>
-            cambiar("fecha_reporte", v)
+      <section className="mtto-section">
+        <div className="mtto-section__title">
+          Datos del equipo
+        </div>
+
+        <div className="mtto-grid">
+          <AutoField
+            label="Código"
+            value={equipo?.codigo}
+          />
+
+          <AutoField
+            label="Equipo / ubicación"
+            value={equipo?.nombre}
+          />
+
+          <AutoField
+            label="Fase"
+            value={form.fase || "Sin clasificar"}
+          />
+
+          <AutoField
+            label="Área"
+            value={equipo?.area}
+          />
+
+          <AutoField
+            label="Tipo"
+            value={equipo?.tipo}
+          />
+
+          <AutoField
+            label="Ubicación física"
+            value={equipo?.ubicacion_fisica}
+          />
+        </div>
+      </section>
+
+      <section className="mtto-section">
+        <div className="mtto-section__title">
+          Trabajo
+        </div>
+
+        <div className="mtto-grid">
+          <SelectField
+            label="Taller *"
+            value={form.taller}
+            onChange={(v) => cambiar("taller", v)}
+            options={[]}
+            placeholder="Seleccionar taller"
+          />
+
+          <SelectField
+            label="Tipo de intervención *"
+            value={form.tipo_intervencion}
+            onChange={(v) =>
+              cambiar("tipo_intervencion", v)
+            }
+            options={[
+              "Preventivo",
+              "Correctivo",
+              "Predictivo",
+              "Inspección",
+            ]}
+            placeholder="Seleccionar"
+          />
+
+          <Field
+            label="Fecha"
+            type="date"
+            value={form.fecha_reporte}
+            onChange={(v) =>
+              cambiar("fecha_reporte", v)
+            }
+          />
+
+          <SelectField
+            label="Criticidad"
+            value={form.tipo_criticidad}
+            onChange={(v) =>
+              cambiar("tipo_criticidad", v)
+            }
+            options={[
+              "Baja",
+              "Media",
+              "Alta",
+              "Crítica",
+            ]}
+            placeholder="Seleccionar"
+          />
+
+          <Field
+            label="Modo de falla"
+            value={form.modo_falla}
+            onChange={(v) =>
+              cambiar("modo_falla", v)
+            }
+          />
+
+          <SelectField
+            label="Prioridad"
+            value={form.prioridad}
+            onChange={(v) =>
+              cambiar("prioridad", v)
+            }
+            options={[
+              "Baja",
+              "Media",
+              "Alta",
+              "Urgente",
+            ]}
+            placeholder="Seleccionar"
+          />
+
+          <SelectField
+            label="Estado"
+            value={form.estado_falla}
+            onChange={(v) =>
+              cambiar("estado_falla", v)
+            }
+            options={estados}
+          />
+        </div>
+      </section>
+
+      <section className="mtto-section">
+        <div className="mtto-section__title">
+          Descripción
+        </div>
+
+        <textarea
+          value={form.descripcion_evento}
+          onChange={(e) =>
+            cambiar(
+              "descripcion_evento",
+              e.target.value
+            )
           }
+          placeholder="Describe el trabajo a realizar..."
+          rows={3}
         />
+      </section>
 
-        <Field
-          label="Fase *"
-          value={form.fase}
-          onChange={(v) => cambiar("fase", v)}
-        />
-
-        <Field
-          label="Taller *"
-          value={form.taller}
-          onChange={(v) =>
-            cambiar("taller", v)
-          }
-        />
-
-        <Field
-          label="Tipo intervención *"
-          value={form.tipo_intervencion}
-          onChange={(v) =>
-            cambiar("tipo_intervencion", v)
-          }
-        />
-
-        <Field
-          label="Tipo criticidad"
-          value={form.tipo_criticidad}
-          onChange={(v) =>
-            cambiar("tipo_criticidad", v)
-          }
-        />
-
-        <Field
-          label="Sistema"
-          value={form.sistema}
-          onChange={(v) =>
-            cambiar("sistema", v)
-          }
-        />
-
-        <Field
-          label="Modo de falla"
-          value={form.modo_falla}
-          onChange={(v) =>
-            cambiar("modo_falla", v)
-          }
-        />
-
-        <Field
-          label="Prioridad"
-          value={form.prioridad}
-          onChange={(v) =>
-            cambiar("prioridad", v)
-          }
-        />
-
-        <Field
-          label="Estado"
-          value={form.estado_falla}
-          onChange={(v) =>
-            cambiar("estado_falla", v)
-          }
-        />
-      </div>
-
-      <label style={styles.label}>
-        Descripción del evento
-      </label>
-
-      <textarea
-        value={form.descripcion_evento}
-        onChange={(e) =>
-          cambiar(
-            "descripcion_evento",
-            e.target.value
-          )
-        }
-        rows={4}
-        style={styles.textarea}
-      />
-
-      <div style={styles.actions}>
+      <div className="mtto-actions">
         <button
           type="button"
           onClick={onCancelar}
-          disabled={guardando}
-          style={styles.cancel}
+          className="mtto-btn mtto-btn--secondary"
         >
           Cancelar
         </button>
@@ -204,12 +309,27 @@ export default function MantenimientoNuevoForm({
           type="button"
           onClick={guardar}
           disabled={guardando}
-          style={styles.save}
+          className="mtto-btn mtto-btn--primary"
         >
-          {guardando
-            ? "Creando..."
-            : "Crear mantenimiento"}
+          {guardando ? "Guardando..." : "Registrar"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function AutoField({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string;
+}) {
+  return (
+    <div className="mtto-field">
+      <label>{label}</label>
+      <div className="mtto-auto">
+        {value || "—"}
       </div>
     </div>
   );
@@ -227,10 +347,8 @@ function Field({
   type?: string;
 }) {
   return (
-    <div style={styles.field}>
-      <label style={styles.label}>
-        {label}
-      </label>
+    <div className="mtto-field">
+      <label>{label}</label>
 
       <input
         type={type}
@@ -238,109 +356,46 @@ function Field({
         onChange={(e) =>
           onChange(e.target.value)
         }
-        style={styles.input}
       />
     </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    border: "1px solid #fed7aa",
-    borderRadius: 10,
-    background: "#fff7ed",
-    padding: 18,
-  },
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  return (
+    <div className="mtto-field">
+      <label>{label}</label>
 
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 18,
-  },
+      <select
+        value={value}
+        onChange={(e) =>
+          onChange(e.target.value)
+        }
+      >
+        {placeholder && (
+          <option value="">
+            {placeholder}
+          </option>
+        )}
 
-  title: {
-    margin: 0,
-    fontSize: 19,
-  },
-
-  close: {
-    border: 0,
-    background: "transparent",
-    fontSize: 24,
-    cursor: "pointer",
-    color: "#6b7280",
-  },
-
-  error: {
-    marginBottom: 14,
-    padding: 10,
-    borderRadius: 8,
-    background: "#fee2e2",
-    color: "#991b1b",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
-    marginBottom: 14,
-  },
-
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-  },
-
-  label: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: "#374151",
-  },
-
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    border: "1px solid #d1d5db",
-    borderRadius: 6,
-    padding: "9px 10px",
-    background: "#fff",
-  },
-
-  textarea: {
-    width: "100%",
-    boxSizing: "border-box",
-    marginTop: 6,
-    border: "1px solid #d1d5db",
-    borderRadius: 6,
-    padding: 10,
-    resize: "vertical",
-  },
-
-  actions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 18,
-  },
-
-  cancel: {
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    borderRadius: 6,
-    padding: "9px 15px",
-    cursor: "pointer",
-  },
-
-  save: {
-    border: "none",
-    background: "#ea580c",
-    color: "#fff",
-    borderRadius: 6,
-    padding: "9px 15px",
-    cursor: "pointer",
-    fontWeight: 600,
-  },
-};
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}

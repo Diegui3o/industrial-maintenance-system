@@ -1,0 +1,149 @@
+.mtto-form {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.mtto-form__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.mtto-form__eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ea580c;
+  letter-spacing: .08em;
+}
+
+.mtto-form h2 {
+  margin: 2px 0;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.mtto-equipo {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mtto-close {
+  border: 0;
+  background: transparent;
+  font-size: 23px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.mtto-error {
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 12px;
+}
+
+.mtto-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 9px;
+}
+
+.mtto-section__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ea580c;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.mtto-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mtto-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mtto-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.mtto-field input,
+.mtto-field select,
+.mtto-section textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.mtto-auto {
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.mtto-section textarea {
+  resize: vertical;
+}
+
+.mtto-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.mtto-btn {
+  border-radius: 5px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mtto-btn--secondary {
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.mtto-btn--primary {
+  border: 0;
+  background: #ea580c;
+  color: white;
+}
+
+@media (max-width: 1000px) {
+  .mtto-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .mtto-grid {
+    grid-template-columns: 1fr;
+  }
+}

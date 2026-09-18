@@ -250,13 +250,18 @@ export default function EquipoDetailPage({ equipo, onNavigate, onBack }: Props) 
         >
           Mantenimiento
         </Button>
-        <Button 
-        icon="🔧" 
-        variant="secondary" 
-        onClick={() => onNavigate(`/equipos/${detalle.id}/mantenimiento/nuevo`)}
-      >
-        Registrar Mantenimiento
-      </Button>
+        <Button
+          icon="🔧"
+          variant="secondary"
+          onClick={() => {
+            console.log("DETALLE:", detalle);
+            console.log("ID:", detalle?.id);
+            console.log("URL:", `/mantenimiento?equipoId=${detalle?.id}`);
+            window.location.href = `/mantenimiento?equipoId=${detalle?.id}`;
+          }}
+        >
+          Registrar Mantenimiento
+        </Button>
       </div>
     </Layout>
   )

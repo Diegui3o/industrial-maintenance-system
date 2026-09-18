@@ -50,19 +50,23 @@ function EquiposRoute() {
 function EquipoDetailRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  return <EquipoDetailPage
-    equipo={{ id: Number(id) }}
-    onNavigate={(page, params) => {
-      if (page === 'editar-equipo') {
-        navigate(`/equipos/${params.id}/editar`);
-      } else if (page === 'mantenimiento') {
-        navigate(`/mantenimiento?equipoId=${params.id}`);
-      } else {
-        navigate(`/${page}`);
-      }
-    }}
-    onBack={() => navigate('/equipos')}
-  />;
+
+  return (
+    <EquipoDetailPage
+      equipo={{ id: Number(id) }}
+      onNavigate={(page, params) => {
+        if (page === 'editar-equipo') {
+          navigate(`/equipos/${params.id}/editar`);
+        } else if (page === 'mantenimiento') {
+          console.log("NAVEGANDO MANTENIMIENTO", id);
+          navigate(`/mantenimiento?equipoId=${id}`);
+        } else {
+          navigate(`/${page}`);
+        }
+      }}
+      onBack={() => navigate('/equipos')}
+    />
+  );
 }
 
 function EquipoFormRoute() {
@@ -77,6 +81,17 @@ function EquipoEditRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
   return <EquipoEditPage equipo={{ id: Number(id) }} onNavigate={(page) => navigate(`/${page}`)} onBack={() => navigate(`/equipos/${id}`)} />;
+}
+
+function MantenimientoRoute() {
+  const params = new URLSearchParams(window.location.search);
+  const equipoId = Number(params.get('equipoId'));
+
+  return (
+    <MantenimientoPage
+      equipoId={equipoId || undefined}
+    />
+  );
 }
 
 export default function App() {
@@ -98,7 +113,7 @@ export default function App() {
           <Route path="/mina" element={<MinaPanel />} />
           <Route path="/planta" element={<PlantaPanel />} />
           <Route path="/infraestructura" element={<InfraestructuraPanel />} />
-          <Route path="/mantenimiento" element={<MantenimientoPage />} />
+          <Route path="/mantenimiento" element={<MantenimientoRoute />} />
           <Route path="*" element={<DashboardRoute />} />
         </Routes>
       </BrowserRouter>

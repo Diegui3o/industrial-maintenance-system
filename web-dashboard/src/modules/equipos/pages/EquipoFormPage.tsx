@@ -60,17 +60,19 @@ export default function EquipoFormPage({ onNavigate }: Props) {
         ubicacion_fisica: form.ubicacion_fisica || '',
         descripcion_larga: form.descripcion_larga || '',
       }))
-      if (!form.tipo_padre || !form.subproceso_padre_id) {
-        throw new Error(
-          'Debe seleccionar el Proceso o Sistema y su Subproceso padre.'
-        )
-      }
       const equipo = await createEquipo(payload)
 
       const equipoId = equipo.id
 
       if (!equipoId || equipoId === 0) {
         throw new Error('El equipo fue creado pero no se recibió su ID.')
+      }
+      if (form.subproceso_padre_id && form.tipo_padre === 'proceso') {
+        await asignarEquipoSubproceso(equipoId, form.subproceso_padre_id)
+      }
+
+      if (form.subproceso_padre_id && form.tipo_padre === 'sistema') {
+        await asignarEquipoSubprocesoSistema(form.subproceso_padre_id, equipoId)
       }
       /* =========================================================
         TIPOS DE EQUIPO

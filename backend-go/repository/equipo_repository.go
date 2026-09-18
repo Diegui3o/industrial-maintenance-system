@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type EquipoRepository struct {
@@ -252,6 +253,18 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 		return fmt.Errorf("ya existe un equipo con el codigo %s", e.Codigo)
 	}
 
+	areaFuncional := interface{}(e.AreaFuncional)
+
+	if strings.TrimSpace(e.AreaFuncional) == "" {
+		areaFuncional = nil
+	}
+
+	faseUbicacion := interface{}(e.FaseUbicacion)
+
+	if strings.TrimSpace(e.FaseUbicacion) == "" {
+		faseUbicacion = nil
+	}
+
 	err = r.DB.QueryRow(`
 		INSERT INTO equipos (
 			codigo,
@@ -284,12 +297,9 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 		e.Critico,
 		e.EstadoEquipo,
 		e.FechaInstalacion,
-		e.FaseUbicacion,
-		e.AreaFuncional,
-	).Scan(
-		&e.ID,
-		&e.FechaCreacion,
-	)
+		faseUbicacion,
+		areaFuncional,
+	).Scan(&e.ID, &e.FechaCreacion)
 
 	if err != nil {
 		return fmt.Errorf("error creando equipo: %w", err)
@@ -394,6 +404,18 @@ func (r *EquipoRepository) ActualizarEquipo(
 	e models.Equipo,
 ) error {
 
+	areaFuncional := interface{}(e.AreaFuncional)
+
+	if strings.TrimSpace(e.AreaFuncional) == "" {
+		areaFuncional = nil
+	}
+
+	faseUbicacion := interface{}(e.FaseUbicacion)
+
+	if strings.TrimSpace(e.FaseUbicacion) == "" {
+		faseUbicacion = nil
+	}
+
 	_, err := r.DB.Exec(`
 		UPDATE equipos SET
 			codigo = $1,
@@ -424,7 +446,8 @@ func (r *EquipoRepository) ActualizarEquipo(
 		e.EstadoEquipo,
 		e.FechaInstalacion,
 		e.FaseUbicacion,
-		e.AreaFuncional,
+		faseUbicacion,
+		areaFuncional,
 		id,
 	)
 
