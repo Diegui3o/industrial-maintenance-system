@@ -34,7 +34,7 @@ export default function MantenimientoPage({
     useState<number | undefined>(mantenimientoId);
 
   const [error, setError] = useState("");
-  const [equipos, setEquipos] = useState<any[]>([]);
+  const [, setEquipos] = useState<any[]>([]);
   const [noProgramado, setNoProgramado] = useState(false);
 
   const [searchParams] = useSearchParams();
@@ -163,35 +163,6 @@ export default function MantenimientoPage({
         </div>
 
         <div className="mantenimiento-toolbar-actions">
-
-          {!equipoActualId && (
-            <select
-              value={equipoSeleccionado ?? ""}
-              onChange={(e) => {
-                const id = Number(e.target.value);
-
-                setEquipoSeleccionado(
-                  id || undefined
-                );
-
-                setSeleccionado(undefined);
-                setDetalle(null);
-              }}
-            >
-              <option value="">
-                Seleccionar equipo...
-              </option>
-
-              {equipos.map((equipo) => (
-                <option
-                  key={equipo.id}
-                  value={equipo.id}
-                >
-                  {equipo.codigo} - {equipo.nombre}
-                </option>
-              ))}
-            </select>
-          )}
           <div className="mantenimiento-actions">
             <button
               type="button"

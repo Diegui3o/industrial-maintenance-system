@@ -39,22 +39,20 @@ export function EquiposSubproceso({
 
     try {
       const resultado =
-        await getEquiposParaRelacionSubproceso(
-          subprocesoId
-        );
+        await getEquiposParaRelacionSubproceso(subprocesoId);
 
       setEquipos(resultado);
-      setSeleccionados([]);
-    } catch (error) {
-      console.error(
-        'Error cargando equipos:',
-        error
-      );
 
-      setEquipos([]);
-      setMensaje(
-        'No se pudieron cargar los equipos.'
+      setSeleccionados(
+        resultado
+          .filter((equipo) => equipo.relacionado)
+          .map((equipo) => equipo.id)
       );
+    } catch (error) {
+      console.error('Error cargando equipos:', error);
+      setEquipos([]);
+      setSeleccionados([]);
+      setMensaje('No se pudieron cargar los equipos.');
     } finally {
       setLoading(false);
     }
@@ -90,8 +88,6 @@ export function EquiposSubproceso({
         subprocesoId,
         seleccionados
       );
-
-      await cargarEquipos();
 
       setMensaje(
         'Relación guardada correctamente.'

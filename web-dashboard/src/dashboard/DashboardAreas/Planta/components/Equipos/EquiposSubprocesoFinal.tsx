@@ -8,9 +8,7 @@ import {
 interface Props {
   subprocesoId: number;
   subprocesoNombre: string;
-  onSelectEquipo?: (
-    equipo: Equipo | null
-  ) => void;
+  onSelectEquipo?: (equipo: Equipo | null) => void;
 }
 
 export function EquiposSubprocesoFinal({
@@ -18,14 +16,9 @@ export function EquiposSubprocesoFinal({
   subprocesoNombre,
   onSelectEquipo,
 }: Props) {
-  const [equipos, setEquipos] =
-    useState<Equipo[]>([]);
-
-  const [equipoId, setEquipoId] =
-    useState('');
-
-  const [loading, setLoading] =
-    useState(false);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [equipoId, setEquipoId] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -35,9 +28,7 @@ export function EquiposSubprocesoFinal({
 
       try {
         const resultado =
-          await getEquiposPorSubproceso(
-            subprocesoId
-          );
+          await getEquiposPorSubproceso(subprocesoId);
 
         if (!activo) return;
 
@@ -65,15 +56,12 @@ export function EquiposSubprocesoFinal({
     };
   }, [subprocesoId]);
 
-  const seleccionarEquipo = (
-    id: string
-  ) => {
+  const seleccionarEquipo = (id: string) => {
     setEquipoId(id);
 
     const equipo =
       equipos.find(
-        (item) =>
-          item.id.toString() === id
+        (item) => item.id.toString() === id
       ) || null;
 
     onSelectEquipo?.(equipo);
@@ -84,28 +72,21 @@ export function EquiposSubprocesoFinal({
       <div className="planta-card-header">
         <div>
           <h4>Equipos</h4>
-
           <p>
             Subproceso padre:{' '}
-            <strong>
-              {subprocesoNombre}
-            </strong>
+            <strong>{subprocesoNombre}</strong>
           </p>
         </div>
       </div>
 
       <div className="planta-form">
-        <label>
-          Equipo padre
-        </label>
+        <label>Equipo padre</label>
 
         <select
           value={equipoId}
           disabled={loading}
           onChange={(e) =>
-            seleccionarEquipo(
-              e.target.value
-            )
+            seleccionarEquipo(e.target.value)
           }
         >
           <option value="">
@@ -127,20 +108,15 @@ export function EquiposSubprocesoFinal({
         </select>
       </div>
 
-      {!loading &&
-        equipos.length === 0 && (
-          <div className="planta-alert warning">
-            <strong>
-              No existen equipos
-            </strong>
-
-            <span>
-              El subproceso seleccionado
-              todavía no tiene equipos
-              asociados.
-            </span>
-          </div>
-        )}
+      {!loading && equipos.length === 0 && (
+        <div className="planta-alert warning">
+          <strong>No existen equipos</strong>
+          <span>
+            El subproceso seleccionado todavía no
+            tiene equipos asociados.
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ export interface Equipo {
   critico?: boolean;
   estado_equipo?: string;
   ip?: string;
+  relacionado?: boolean;
 }
 
 export async function getEquipos(): Promise<Equipo[]> {

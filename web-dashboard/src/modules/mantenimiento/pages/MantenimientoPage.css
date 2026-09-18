@@ -396,3 +396,61 @@
 .mantenimiento-empty p {
   margin: 0;
 }
+.mantenimiento-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.mantenimiento-header h1 {
+  margin: 0;
+}
+
+.mantenimiento-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+}
+
+.mantenimiento-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 15px;
+  border: 1px solid #ea580c;
+  border-radius: 7px;
+  background: #ea580c;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.18);
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.mantenimiento-btn:hover {
+  background: #c2410c;
+  box-shadow: 0 5px 12px rgba(234, 88, 12, 0.25);
+  transform: translateY(-1px);
+}
+
+.mantenimiento-btn:active {
+  transform: translateY(0);
+}
+
+.mantenimiento-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 16px;
+  line-height: 1;
+}

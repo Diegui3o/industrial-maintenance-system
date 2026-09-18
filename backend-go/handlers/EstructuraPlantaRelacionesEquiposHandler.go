@@ -93,15 +93,6 @@ func (h *EstructuraPlantaHandler) PutRelacionarEquiposConSubproceso(
 		return
 	}
 
-	if len(req.EquipoIDs) == 0 {
-		http.Error(
-			w,
-			"debe seleccionar al menos un equipo",
-			http.StatusBadRequest,
-		)
-		return
-	}
-
 	if err := h.Service.RelacionarEquiposConSubproceso(
 		subprocesoID,
 		req.EquipoIDs,

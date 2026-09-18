@@ -151,6 +151,7 @@ export interface Equipo {
   fase_ubicacion?: string;
   area_funcional?: string;
   ip?: string;
+  relacionado?: boolean;
 }
 export async function getEquiposSinUbicar(): Promise<Equipo[]> {
   return request<Equipo[]>(

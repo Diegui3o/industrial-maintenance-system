@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getEquipos } from "../../../dashboard/DashboardAreas/Planta/services/equiposApi";
 
-import "./programar.css";
+import "./programacion/programar.css";
 
 type Props = {
   onCerrar: () => void;
@@ -30,17 +30,13 @@ export default function MantenimientoNoProgramado({
 
   const [modoFalla, setModoFalla] = useState("");
   const [causa, setCausa] = useState("");
-  const [consecuencia, setConsecuencia] =
-    useState("");
-
+  const [consecuencia, setConsecuencia] = useState("");
   const [descripcionEvento, setDescripcionEvento] =
     useState("");
-
   const [accionRealizada, setAccionRealizada] =
     useState("");
 
   const [standBy, setStandBy] = useState(false);
-
   const [produccionAfectada, setProduccionAfectada] =
     useState(false);
 
@@ -102,7 +98,7 @@ export default function MantenimientoNoProgramado({
       tn_dejadas_procesar: produccionAfectada
         ? Number(tnDejadasProcesar) || 0
         : 0,
-      personal: Number(personal) || 0,
+      personal: cantidadPersonal,
       horas_reales: horas,
       hh,
       criticidad,
@@ -113,39 +109,38 @@ export default function MantenimientoNoProgramado({
   }
 
   return (
-    <div className="prog-overlay">
-      <div className="prog-modal">
+    <div className="prog-modal">
+
+      <div className="prog-form">
 
         <div className="prog-form-header">
           <div>
-            <span className="prog-eyebrow">
-              MANTENIMIENTO
-            </span>
+            <span>MANTENIMIENTO NO PROGRAMADO</span>
 
-            <h2>
-              Mantenimiento no programado
-            </h2>
-
-            <p>
-              Registrar trabajo o evento ocurrido en planta
-            </p>
+            <h3>
+              Registrar trabajo o evento
+            </h3>
           </div>
 
           <button
             type="button"
-            className="prog-close"
             onClick={onCerrar}
           >
             ×
           </button>
         </div>
 
-        <div className="prog-form">
+        <section className="prog-section">
 
-          <section className="prog-section">
-            <h3>1. Equipo afectado</h3>
+          <div className="prog-section-title">
+            1. Equipo afectado
+          </div>
 
-            <div className="prog-equipo-search">
+          <div className="prog-search">
+
+            <label>
+              Buscar equipo
+
               <input
                 type="text"
                 placeholder="Buscar por código o nombre..."
@@ -155,200 +150,289 @@ export default function MantenimientoNoProgramado({
                   setEquipo(null);
                 }}
               />
+            </label>
 
-              {busqueda &&
-                !equipo &&
-                equiposFiltrados.length > 0 && (
-                  <div className="prog-equipo-results">
-                    {equiposFiltrados
-                      .slice(0, 8)
-                      .map((item) => (
-                        <button
-                          type="button"
-                          key={item.id}
-                          onClick={() => {
-                            setEquipo(item);
-                            setBusqueda(
-                              `${item.codigo} - ${item.nombre}`
-                            );
-                          }}
-                        >
+            {busqueda &&
+              !equipo &&
+              equiposFiltrados.length > 0 && (
+
+                <div className="prog-results">
+
+                  {equiposFiltrados
+                    .slice(0, 8)
+                    .map((item) => (
+
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => {
+                          setEquipo(item);
+                          setBusqueda(
+                            `${item.codigo} - ${item.nombre}`
+                          );
+                        }}
+                      >
+                        <span className="obj-equipo">
+                          EQUIPO
+                        </span>
+
+                        <div>
                           <strong>
                             {item.codigo}
                           </strong>
 
-                          <span>
+                          <small>
                             {item.nombre}
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                )}
-            </div>
+                          </small>
+                        </div>
+                      </button>
 
-            {equipo && (
-              <div className="prog-equipo-selected">
-                <strong>{equipo.codigo}</strong>
-                <span>{equipo.nombre}</span>
+                    ))}
+
+                </div>
+              )}
+
+          </div>
+
+          {equipo && (
+            <div className="prog-selected">
+
+              <span className="obj-equipo">
+                EQUIPO
+              </span>
+
+              <div>
+                <strong>
+                  {equipo.codigo}
+                </strong>
+
+                <small>
+                  {equipo.nombre}
+                </small>
               </div>
-            )}
-          </section>
 
-          <section className="prog-section">
-            <h3>2. ¿Cuándo ocurrió?</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setEquipo(null);
+                  setBusqueda("");
+                }}
+              >
+                Cambiar
+              </button>
 
-            <div className="prog-grid">
-              <label>
-                Fecha *
-                <input
-                  type="date"
-                  value={fecha}
-                  onChange={(e) =>
-                    setFecha(e.target.value)
-                  }
-                />
-              </label>
-
-              <label>
-                Hora inicio
-                <input
-                  type="time"
-                  value={horaInicio}
-                  onChange={(e) =>
-                    setHoraInicio(e.target.value)
-                  }
-                />
-              </label>
-
-              <label>
-                Hora fin
-                <input
-                  type="time"
-                  value={horaFin}
-                  onChange={(e) =>
-                    setHoraFin(e.target.value)
-                  }
-                />
-              </label>
             </div>
-          </section>
+          )}
 
-          <section className="prog-section">
-            <h3>3. ¿Qué pasó?</h3>
+        </section>
 
-            <div className="prog-type-buttons">
-              {[
-                "Correctivo",
-                "Preventivo",
-                "Predictivo",
-                "Inspección",
-              ].map((tipo) => (
-                <button
-                  type="button"
-                  key={tipo}
-                  className={
-                    tipoIntervencion === tipo
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setTipoIntervencion(tipo)
-                  }
-                >
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            2. ¿Cuándo ocurrió?
+          </div>
+
+          <div className="prog-grid">
+
+            <label>
+              Fecha *
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) =>
+                  setFecha(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Hora inicio
+              <input
+                type="time"
+                value={horaInicio}
+                onChange={(e) =>
+                  setHoraInicio(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Hora fin
+              <input
+                type="time"
+                value={horaFin}
+                onChange={(e) =>
+                  setHoraFin(e.target.value)
+                }
+              />
+            </label>
+
+          </div>
+
+        </section>
+
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            3. ¿Qué pasó?
+          </div>
+
+          <div className="prog-choice-grid">
+
+            {[
+              "Correctivo",
+              "Preventivo",
+              "Predictivo",
+              "Inspección",
+            ].map((tipo) => (
+
+              <button
+                type="button"
+                key={tipo}
+                className={`prog-choice ${
+                  tipoIntervencion === tipo
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() =>
+                  setTipoIntervencion(tipo)
+                }
+              >
+                <strong>
                   {tipo}
-                </button>
-              ))}
-            </div>
+                </strong>
 
-            <div className="prog-grid">
-              <label>
-                Modo de falla
-                <input
-                  value={modoFalla}
-                  onChange={(e) =>
-                    setModoFalla(e.target.value)
-                  }
-                />
-              </label>
+                <span>
+                  Seleccionar tipo de intervención
+                </span>
+              </button>
 
-              <label>
-                Causa
-                <input
-                  value={causa}
-                  onChange={(e) =>
-                    setCausa(e.target.value)
-                  }
-                />
-              </label>
+            ))}
 
-              <label>
-                Consecuencia
-                <input
-                  value={consecuencia}
-                  onChange={(e) =>
-                    setConsecuencia(e.target.value)
-                  }
-                />
-              </label>
-            </div>
+          </div>
+
+          <div className="prog-grid">
 
             <label>
-              Descripción del evento
-              <textarea
-                value={descripcionEvento}
+              Modo de falla
+              <input
+                value={modoFalla}
                 onChange={(e) =>
-                  setDescripcionEvento(e.target.value)
+                  setModoFalla(e.target.value)
                 }
               />
             </label>
-          </section>
-
-          <section className="prog-section">
-            <h3>4. ¿Qué se hizo?</h3>
 
             <label>
-              Acción realizada
-              <textarea
-                value={accionRealizada}
+              Causa
+              <input
+                value={causa}
                 onChange={(e) =>
-                  setAccionRealizada(e.target.value)
+                  setCausa(e.target.value)
                 }
               />
             </label>
-          </section>
 
-          <section className="prog-section">
-            <h3>5. Impacto</h3>
+            <label>
+              Consecuencia
+              <input
+                value={consecuencia}
+                onChange={(e) =>
+                  setConsecuencia(e.target.value)
+                }
+              />
+            </label>
 
-            <div className="prog-checks">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={standBy}
-                  onChange={(e) =>
-                    setStandBy(e.target.checked)
-                  }
-                />
+          </div>
+
+          <label>
+            Descripción del evento
+
+            <textarea
+              value={descripcionEvento}
+              onChange={(e) =>
+                setDescripcionEvento(e.target.value)
+              }
+            />
+          </label>
+
+        </section>
+
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            4. ¿Qué se hizo?
+          </div>
+
+          <label>
+            Acción realizada
+
+            <textarea
+              value={accionRealizada}
+              onChange={(e) =>
+                setAccionRealizada(e.target.value)
+              }
+            />
+          </label>
+
+        </section>
+
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            5. Impacto
+          </div>
+
+          <div className="prog-planificacion">
+
+            <div>
+              <span>
+                Impacto del evento
+              </span>
+
+              <small>
+                Indica si hubo afectación operacional
+              </small>
+            </div>
+
+            <div className="prog-plan-buttons">
+
+              <button
+                type="button"
+                className={standBy ? "active" : ""}
+                onClick={() =>
+                  setStandBy(!standBy)
+                }
+              >
                 Stand by
-              </label>
+              </button>
 
-              <label>
-                <input
-                  type="checkbox"
-                  checked={produccionAfectada}
-                  onChange={(e) =>
-                    setProduccionAfectada(
-                      e.target.checked
-                    )
-                  }
-                />
+              <button
+                type="button"
+                className={
+                  produccionAfectada
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setProduccionAfectada(
+                    !produccionAfectada
+                  )
+                }
+              >
                 Producción afectada
-              </label>
+              </button>
+
             </div>
 
-            {produccionAfectada && (
+          </div>
+
+          {produccionAfectada && (
+            <div className="prog-grid">
+
               <label>
                 Toneladas dejadas de procesar
+
                 <input
                   type="number"
                   min="0"
@@ -360,96 +444,120 @@ export default function MantenimientoNoProgramado({
                   }
                 />
               </label>
-            )}
-          </section>
 
-          <section className="prog-section">
-            <h3>6. Recursos reales</h3>
-
-            <div className="prog-grid">
-              <label>
-                N° personal
-                <input
-                  type="number"
-                  min="0"
-                  value={personal}
-                  onChange={(e) =>
-                    setPersonal(e.target.value)
-                  }
-                />
-              </label>
-
-              <label>
-                Horas reales
-                <input
-                  type="number"
-                  min="0"
-                  step="0.25"
-                  value={horasReales}
-                  onChange={(e) =>
-                    setHorasReales(e.target.value)
-                  }
-                />
-              </label>
-
-              <label>
-                H-H
-                <input
-                  type="number"
-                  value={hh}
-                  readOnly
-                />
-              </label>
             </div>
-          </section>
+          )}
 
-          <section className="prog-section">
-            <h3>7. Clasificación</h3>
+        </section>
 
-            <div className="prog-grid">
-              <label>
-                Criticidad
-                <input
-                  value={criticidad}
-                  onChange={(e) =>
-                    setCriticidad(e.target.value)
-                  }
-                />
-              </label>
+        <section className="prog-section">
 
-              <label>
-                Prioridad
-                <input
-                  value={prioridad}
-                  onChange={(e) =>
-                    setPrioridad(e.target.value)
-                  }
-                />
-              </label>
-            </div>
-          </section>
+          <div className="prog-section-title">
+            6. Recursos reales
+          </div>
 
-        </div>
+          <div className="prog-grid">
+
+            <label>
+              N° personal
+
+              <input
+                type="number"
+                min="0"
+                value={personal}
+                onChange={(e) =>
+                  setPersonal(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Horas reales
+
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                value={horasReales}
+                onChange={(e) =>
+                  setHorasReales(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              H-H
+
+              <input
+                className="prog-calculated"
+                type="number"
+                value={hh}
+                readOnly
+              />
+            </label>
+
+          </div>
+
+        </section>
+
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            7. Clasificación
+          </div>
+
+          <div className="prog-grid">
+
+            <label>
+              Criticidad
+
+              <input
+                value={criticidad}
+                onChange={(e) =>
+                  setCriticidad(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Prioridad
+
+              <input
+                value={prioridad}
+                onChange={(e) =>
+                  setPrioridad(e.target.value)
+                }
+              />
+            </label>
+
+          </div>
+
+        </section>
 
         <div className="prog-bottom">
-          <button
-            type="button"
-            className="prog-cancel"
-            onClick={onCerrar}
-          >
-            Cancelar
-          </button>
 
-          <button
-            type="button"
-            className="prog-save"
-            onClick={registrar}
-          >
-            Registrar evento
-          </button>
+          <div>
+            <button
+              type="button"
+              className="prog-cancel"
+              onClick={onCerrar}
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              className="prog-save"
+              onClick={registrar}
+            >
+              Registrar evento
+            </button>
+          </div>
+
         </div>
 
       </div>
+
     </div>
   );
 }
