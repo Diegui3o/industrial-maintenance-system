@@ -5,13 +5,22 @@ type Equipo = {
   id: number;
   codigo: string;
   nombre: string;
+  fase?: string;
+  area?: string;
+  tipo?: string;
+  ubicacion?: string;
 };
 
-type Resultado = {
-  tipo: "equipo";
-  id: number;
-  codigo: string;
-  nombre: string;
+type Material = {
+  codigoSap: string;
+  descripcion: string;
+  cantidad: string;
+  costo: string;
+  stock: string;
+  unidad: string;
+  tipoMaterial: string;
+  mpv: string;
+  mcp: string;
 };
 
 type Props = {
@@ -23,15 +32,34 @@ export default function ProgramarTrabajo({
   onCerrar,
   fechaProgramada,
 }: Props) {
-  const [busqueda, setBusqueda] = useState("");
-  const [seleccion, setSeleccion] = useState<Resultado | null>(null);
-
+  const [equipoBusqueda, setEquipoBusqueda] = useState("");
+  const [equipo, setEquipo] = useState<Equipo | null>(null);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [mostrarMaterial, setMostrarMaterial] = useState(false);
   const [cargando, setCargando] = useState(false);
 
+  const [actividad, setActividad] = useState("");
+  const [ot, setOt] = useState("");
+
   const [numeroPersonal, setNumeroPersonal] = useState("");
-  const [horasMantto, setHorasMantto] = useState("");
+  const [horas, setHoras] = useState("");
+  const [responsable, setResponsable] = useState("");
+  const [turno, setTurno] = useState("");
+
+  const [comentario, setComentario] = useState("");
+
+  const [mostrarMaterial, setMostrarMaterial] = useState(false);
+
+  const [material, setMaterial] = useState<Material>({
+    codigoSap: "",
+    descripcion: "",
+    cantidad: "",
+    costo: "",
+    stock: "",
+    unidad: "",
+    tipoMaterial: "",
+    mpv: "",
+    mcp: "",
+  });
 
   useEffect(() => {
     cargarEquipos();
@@ -58,225 +86,338 @@ export default function ProgramarTrabajo({
     }
   }
 
-  const filtrados: Resultado[] = equipos
-    .filter((equipo) => {
-      const texto = busqueda.toLowerCase().trim();
+  const resultados = equipos.filter((item) => {
+    const texto = equipoBusqueda.toLowerCase().trim();
 
-      if (!texto) return false;
+    if (!texto) {
+      return false;
+    }
 
-      return (
-        equipo.codigo?.toLowerCase().includes(texto) ||
-        equipo.nombre?.toLowerCase().includes(texto)
-      );
-    })
-    .map((equipo) => ({
-      tipo: "equipo",
-      id: equipo.id,
-      codigo: equipo.codigo,
-      nombre: equipo.nombre,
-    }));
+    return (
+      item.codigo?.toLowerCase().includes(texto) ||
+      item.nombre?.toLowerCase().includes(texto)
+    );
+  });
 
-  const horas = Number(horasMantto) || 0;
   const personal = Number(numeroPersonal) || 0;
+  const horasNumero = Number(horas) || 0;
+  const hh = personal * horasNumero;
 
-  const hh = horas * personal;
+  function cambiarMaterial(
+    campo: keyof Material,
+    valor: string
+  ) {
+    setMaterial((prev) => ({
+      ...prev,
+      [campo]: valor,
+    }));
+  }
+
+  function registrar() {
+    const datos = {
+      equipoId: equipo?.id,
+      equipo,
+      fechaProgramada,
+      actividad,
+      ot,
+      numeroPersonal: personal,
+      horas: horasNumero,
+      hh,
+      responsable,
+      turno,
+      materiales: mostrarMaterial ? [material] : [],
+      comentario,
+    };
+
+    console.log("PROGRAMACIÓN SEMANAL:", datos);
+
+    // Siguiente paso:
+    // conectar esta información con el endpoint
+    // de programación semanal.
+  }
+
+  const fechaTexto = fechaProgramada
+    ? new Date(
+        `${fechaProgramada}T00:00:00`
+      ).toLocaleDateString("es-PE", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <div className="prog-modal">
       <div className="prog-form">
-
         {/* CABECERA */}
+
         <div className="prog-form-header">
           <div>
-            <span>PROGRAMACIÓN</span>
-            <h3>Programar trabajo</h3>
+            <span>PROGRAMACIÓN SEMANAL</span>
+
+            <h3>Programar mantenimiento</h3>
           </div>
 
-          <button type="button" onClick={onCerrar}>
+          <button
+            type="button"
+            onClick={onCerrar}
+            aria-label="Cerrar"
+          >
             ×
           </button>
         </div>
 
-        {/* DÍA */}
-         <div className="prog-day-indicator">
-         <div>
-            <span>DÍA SELECCIONADO</span>
+        {/* FECHA */}
 
-            <strong>
-               {fechaProgramada
-               ? new Date(
-                     `${fechaProgramada}T00:00:00`
-                  ).toLocaleDateString("es-PE", {
-                     weekday: "long",
-                     day: "2-digit",
-                     month: "long",
-                     year: "numeric",
-                  })
-               : "No hay día seleccionado"}
-            </strong>
-         </div>
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Día programado
+          </div>
 
-         <div className="prog-day-badge">
-            PROGRAMACIÓN
-         </div>
-         </div>
+          <div className="prog-program-date">
+            <strong>{fechaTexto}</strong>
+          </div>
+        </section>
 
         {/* EQUIPO */}
-        <div className="prog-search">
-          <label>Equipo / ubicación técnica</label>
 
-          <input
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setSeleccion(null);
-            }}
-            placeholder="Buscar por código o nombre..."
-          />
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Equipo
+          </div>
 
-          {busqueda && !seleccion && (
-            <div className="prog-results">
+          {!equipo ? (
+            <div className="prog-equipment-search">
+              <input
+                value={equipoBusqueda}
+                onChange={(e) => {
+                  setEquipoBusqueda(e.target.value);
+                  setEquipo(null);
+                }}
+                placeholder="Buscar equipo por código o nombre..."
+                autoFocus
+              />
 
-              {cargando && (
-                <div className="prog-no-results">
-                  Cargando equipos...
-                </div>
-              )}
-
-              {!cargando &&
-                filtrados.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setSeleccion(item);
-                      setBusqueda(
-                        `${item.codigo} - ${item.nombre}`
-                      );
-                    }}
-                  >
-                    <span className="obj-equipo">
-                      EQUIPO
-                    </span>
-
-                    <div>
-                      <strong>{item.nombre}</strong>
-                      <small>{item.codigo}</small>
+              {equipoBusqueda && (
+                <div className="prog-results">
+                  {cargando && (
+                    <div className="prog-no-results">
+                      Cargando equipos...
                     </div>
-                  </button>
-                ))}
+                  )}
 
-              {!cargando && filtrados.length === 0 && (
-                <div className="prog-no-results">
-                  No se encontraron equipos
+                  {!cargando &&
+                    resultados.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="prog-result"
+                        onClick={() => {
+                          setEquipo(item);
+                          setEquipoBusqueda("");
+                        }}
+                      >
+                        <span className="obj-equipo">
+                          EQUIPO
+                        </span>
+
+                        <div>
+                          <strong>{item.nombre}</strong>
+
+                          <small>{item.codigo}</small>
+                        </div>
+                      </button>
+                    ))}
+
+                  {!cargando &&
+                    resultados.length === 0 && (
+                      <div className="prog-no-results">
+                        No se encontraron equipos
+                      </div>
+                    )}
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="prog-equipment-selected">
+              <div>
+                <strong>{equipo.nombre}</strong>
 
+                <span>{equipo.codigo}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEquipo(null);
+                  setEquipoBusqueda("");
+                }}
+              >
+                Cambiar
+              </button>
             </div>
           )}
-        </div>
 
-        {/* EQUIPO SELECCIONADO */}
-        {seleccion && (
-          <div className="prog-selected">
+          {equipo && (
+            <div className="prog-equipment-meta">
+              <span>
+                Fase:{" "}
+                <strong>
+                  {equipo.fase || "Sin clasificar"}
+                </strong>
+              </span>
 
-            <span className="obj-equipo">
-              EQUIPO
-            </span>
+              <span>
+                Área:{" "}
+                <strong>
+                  {equipo.area || "—"}
+                </strong>
+              </span>
 
-            <div>
-              <strong>{seleccion.nombre}</strong>
-              <small>{seleccion.codigo}</small>
+              <span>
+                Tipo:{" "}
+                <strong>
+                  {equipo.tipo || "—"}
+                </strong>
+              </span>
+
+              <span>
+                Ubicación:{" "}
+                <strong>
+                  {equipo.ubicacion || "—"}
+                </strong>
+              </span>
             </div>
+          )}
+        </section>
 
-            <button
-              type="button"
-              onClick={() => {
-                setSeleccion(null);
-                setBusqueda("");
-              }}
-            >
-              cambiar
-            </button>
+        {/* TRABAJO */}
 
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Trabajo
           </div>
-        )}
 
-        {/* DATOS DEL TRABAJO */}
-        <div className="prog-grid">
+          <div className="prog-grid prog-grid--two">
+            <label>
+              Actividad
+              <input
+                value={actividad}
+                onChange={(e) =>
+                  setActividad(e.target.value)
+                }
+                placeholder="¿Qué trabajo se realizará?"
+              />
+            </label>
+
+            <label>
+              OT
+              <input
+                value={ot}
+                onChange={(e) =>
+                  setOt(e.target.value)
+                }
+                placeholder="Número de OT"
+              />
+            </label>
+          </div>
 
           <label>
-            Actividad a realizar
-            <input
-              placeholder="Ej. Mantenimiento preventivo..."
-            />
-          </label>
-
-          <label>
-            OT
-            <input placeholder="160864256" />
-          </label>
-
-          <label>
-            N° personal
-            <input
-              type="number"
-              min="1"
-              value={numeroPersonal}
+            Comentario / justificación
+            <textarea
+              value={comentario}
               onChange={(e) =>
-                setNumeroPersonal(e.target.value)
+                setComentario(e.target.value)
               }
-              placeholder="Ej. 2"
+              placeholder="Detalle, alcance o justificación del trabajo..."
+              rows={3}
             />
           </label>
+        </section>
 
-          <label>
-            Total horas mantto.
-            <input
-              type="number"
-              min="0"
-              step="0.5"
-              value={horasMantto}
-              onChange={(e) =>
-                setHorasMantto(e.target.value)
-              }
-              placeholder="Ej. 4.5"
-            />
-          </label>
+        {/* RECURSOS */}
 
-          <label>
-            H-H
-            <input
-              type="text"
-              value={hh ? hh.toFixed(2) : ""}
-              readOnly
-              className="prog-calculated"
-              placeholder="Automático"
-            />
-          </label>
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Recursos
+          </div>
 
-          <label>
-            Responsable
-            <input
-              placeholder="Responsable del trabajo"
-            />
-          </label>
+          <div className="prog-grid">
+            <label>
+              N° personal
+              <input
+                type="number"
+                min="1"
+                value={numeroPersonal}
+                onChange={(e) =>
+                  setNumeroPersonal(e.target.value)
+                }
+              />
+            </label>
 
-          <label>
-            Turno
-            <select defaultValue="">
-              <option value="">
-                Seleccionar
-              </option>
-              <option>Día</option>
-              <option>Noche</option>
-            </select>
-          </label>
+            <label>
+              Total horas mantto.
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={horas}
+                onChange={(e) =>
+                  setHoras(e.target.value)
+                }
+              />
+            </label>
 
-        </div>
+            <label>
+              H-H
+              <input
+                value={hh ? hh.toFixed(2) : ""}
+                readOnly
+                className="prog-calculated"
+              />
+            </label>
 
-        {/* MATERIAL OPCIONAL */}
-        <div className="prog-material">
+            <label>
+              Responsable
+              <input
+                value={responsable}
+                onChange={(e) =>
+                  setResponsable(e.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              Turno
+              <select
+                value={turno}
+                onChange={(e) =>
+                  setTurno(e.target.value)
+                }
+              >
+                <option value="">
+                  Seleccionar
+                </option>
+
+                <option value="dia">
+                  Día
+                </option>
+
+                <option value="noche">
+                  Noche
+                </option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        {/* MATERIALES */}
+
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Materiales
+          </div>
 
           <button
             type="button"
@@ -286,92 +427,140 @@ export default function ProgramarTrabajo({
             }
           >
             {mostrarMaterial
-              ? "− Ocultar material"
-              : "+ Añadir material"}
+              ? "− Ocultar materiales"
+              : "+ Añadir materiales"}
           </button>
 
           {mostrarMaterial && (
             <div className="prog-material-grid">
-
               <label>
-                COD. SAP
-                <input />
+                COD SAP
+                <input
+                  value={material.codigoSap}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "codigoSap",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
                 DESCRIPCIÓN
-                <input />
+                <input
+                  value={material.descripcion}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "descripcion",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
-                CANT
-                <input type="number" />
+                CANT.
+                <input
+                  type="number"
+                  min="0"
+                  value={material.cantidad}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "cantidad",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
                 COSTO
                 <input
                   type="number"
+                  min="0"
                   step="0.01"
+                  value={material.costo}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "costo",
+                      e.target.value
+                    )
+                  }
                 />
               </label>
 
               <label>
                 STOCK
-                <input type="number" />
+                <input
+                  value={material.stock}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "stock",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
-                UND
-                <input />
+                UND.
+                <input
+                  value={material.unidad}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "unidad",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
-                TIPO DE MATERIAL
-                <select defaultValue="">
-                  <option value="">
-                    Seleccionar
-                  </option>
-                  <option>IMPUTADO</option>
-                  <option>MRP</option>
-                  <option>MRP ESTRATEG.</option>
-                  <option>CONSIGNACION</option>
-                </select>
+                TIPO MATERIAL
+                <input
+                  value={material.tipoMaterial}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "tipoMaterial",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
                 MPV
-                <input />
+                <input
+                  value={material.mpv}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "mpv",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
 
               <label>
                 MCP
-                <input />
+                <input
+                  value={material.mcp}
+                  onChange={(e) =>
+                    cambiarMaterial(
+                      "mcp",
+                      e.target.value
+                    )
+                  }
+                />
               </label>
-
             </div>
           )}
+        </section>
 
-        </div>
+        {/* ACCIONES */}
 
-        {/* COMENTARIO */}
-        <div className="prog-comment-form">
-
-          <label>
-            Comentario / justificación
-
-            <textarea
-              placeholder="Comentario..."
-              rows={3}
-            />
-
-          </label>
-
-        </div>
-
-        {/* BOTONES */}
         <div className="prog-bottom">
-
           <button
             type="button"
             className="prog-cancel"
@@ -383,12 +572,12 @@ export default function ProgramarTrabajo({
           <button
             type="button"
             className="prog-save"
+            onClick={registrar}
+            disabled={!equipo || !actividad}
           >
-            Programar
+            Programar mantenimiento
           </button>
-
         </div>
-
       </div>
     </div>
   );

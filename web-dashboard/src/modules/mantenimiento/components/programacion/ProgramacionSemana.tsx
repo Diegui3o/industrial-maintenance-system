@@ -20,8 +20,11 @@ type Trabajo = {
 };
 
 export default function ProgramacionSemana() {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = useMemo(() => {
+    const fecha = new Date();
+    fecha.setHours(0, 0, 0, 0);
+    return fecha;
+  }, []);
 
   const inicioSemana = useMemo(() => {
     const fecha = new Date(hoy);
@@ -32,7 +35,7 @@ export default function ProgramacionSemana() {
     );
 
     return fecha;
-  }, []);
+  }, [hoy]);
 
   const [semana, setSemana] = useState(inicioSemana);
 
@@ -40,10 +43,11 @@ export default function ProgramacionSemana() {
     hoy.getDay() === 0 ? 6 : hoy.getDay() - 1
   );
 
-  const [nuevoMantenimiento, setNuevoMantenimiento] =
-    useState(false);
+  const [programar, setProgramar] = useState(false);
 
-  // Luego vendrán desde PostgreSQL.
+  /*
+   * Luego estos trabajos vendrán desde PostgreSQL.
+   */
   const trabajos: Trabajo[] = [];
 
   const trabajosSemana = trabajos.filter((trabajo) => {
@@ -76,6 +80,16 @@ export default function ProgramacionSemana() {
     (trabajo) => !trabajo.programado
   );
 
+  const fechaSeleccionada = useMemo(() => {
+    const fecha = new Date(semana);
+
+    fecha.setDate(
+      fecha.getDate() + diaSeleccionado
+    );
+
+    return fecha.toISOString().split("T")[0];
+  }, [semana, diaSeleccionado]);
+
   function cambiarSemana(valor: number) {
     const nueva = new Date(semana);
 
@@ -107,16 +121,6 @@ export default function ProgramacionSemana() {
     );
   }
 
-  const fechaSeleccionada = (() => {
-    const fecha = new Date(semana);
-
-    fecha.setDate(
-      fecha.getDate() + diaSeleccionado
-    );
-
-    return fecha.toISOString().split("T")[0];
-  })();
-
   return (
     <section className="prog">
       <SemanaHeader
@@ -135,128 +139,130 @@ export default function ProgramacionSemana() {
 
       <div className="prog-columns">
         <div className="prog-column">
-          <div className="prog-column-title">
-            <strong>PROGRAMADO</strong>
-            <span>
-              {programados.length} trabajos
-            </span>
+          <div className="prog-column-header">
+            <div>
+              <h3>PROGRAMADO</h3>
+              <span>
+                {programados.length}{" "}
+                {programados.length === 1
+                  ? "trabajo"
+                  : "trabajos"}
+              </span>
+            </div>
           </div>
 
-          {programados.length === 0 ? (
-            <div className="prog-empty">
-              No hay trabajos programados para este día.
-            </div>
-          ) : (
-            programados.map((trabajo) => (
-              <TrabajoCard
-                key={trabajo.id}
-                trabajo={trabajo}
-              />
-            ))
-          )}
+          <div className="prog-list">
+            {programados.length === 0 ? (
+              <p className="prog-empty">
+                No hay trabajos programados para este día.
+              </p>
+            ) : (
+              programados.map((trabajo) => (
+                <div
+                  key={trabajo.id}
+                  className="prog-card"
+                >
+                  <strong>
+                    {trabajo.equipo}
+                  </strong>
+
+                  <span>
+                    {trabajo.actividad}
+                  </span>
+
+                  {trabajo.ot && (
+                    <span>
+                      OT: {trabajo.ot}
+                    </span>
+                  )}
+
+                  <div className="prog-card-meta">
+                    <span>
+                      {trabajo.horas} h
+                    </span>
+
+                    <span>
+                      {trabajo.hh} HH
+                    </span>
+
+                    <span>
+                      {trabajo.avance}%
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="prog-actions">
+            <button
+              type="button"
+              className="prog-btn prog-btn--main"
+              onClick={() => setProgramar(true)}
+            >
+              + Programar mantenimiento
+            </button>
+          </div>
         </div>
 
         <div className="prog-column">
-          <div className="prog-column-title">
-            <strong>NO PROGRAMADO</strong>
-            <span>
-              {noProgramados.length} trabajos
-            </span>
+          <div className="prog-column-header">
+            <div>
+              <h3>NO PROGRAMADO</h3>
+              <span>
+                {noProgramados.length}{" "}
+                {noProgramados.length === 1
+                  ? "trabajo"
+                  : "trabajos"}
+              </span>
+            </div>
           </div>
 
-          {noProgramados.length === 0 ? (
-            <div className="prog-empty">
-              No hay trabajos no programados.
-            </div>
-          ) : (
-            noProgramados.map((trabajo) => (
-              <TrabajoCard
-                key={trabajo.id}
-                trabajo={trabajo}
-              />
-            ))
-          )}
+          <div className="prog-list">
+            {noProgramados.length === 0 ? (
+              <p className="prog-empty">
+                No hay trabajos no programados.
+              </p>
+            ) : (
+              noProgramados.map((trabajo) => (
+                <div
+                  key={trabajo.id}
+                  className="prog-card"
+                >
+                  <strong>
+                    {trabajo.equipo}
+                  </strong>
+
+                  <span>
+                    {trabajo.actividad}
+                  </span>
+
+                  <div className="prog-card-meta">
+                    <span>
+                      {trabajo.horas} h
+                    </span>
+
+                    <span>
+                      {trabajo.hh} HH
+                    </span>
+
+                    <span>
+                      {trabajo.avance}%
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* UN ÚNICO PUNTO DE CREACIÓN */}
-      <div className="prog-actions">
-        <button
-          type="button"
-          className="prog-btn prog-btn--main"
-          onClick={() =>
-            setNuevoMantenimiento(true)
-          }
-        >
-          + Nuevo mantenimiento
-        </button>
-      </div>
-
-      {nuevoMantenimiento && (
+      {programar && (
         <ProgramarTrabajo
           fechaProgramada={fechaSeleccionada}
-          onCerrar={() =>
-            setNuevoMantenimiento(false)
-          }
+          onCerrar={() => setProgramar(false)}
         />
       )}
     </section>
-  );
-}
-
-function TrabajoCard({
-  trabajo,
-}: {
-  trabajo: Trabajo;
-}) {
-  return (
-    <div className="prog-card">
-      <div className="prog-card-top">
-        <strong>{trabajo.actividad}</strong>
-
-        <span className="prog-status">
-          {trabajo.programado
-            ? "Programado"
-            : "No programado"}
-        </span>
-      </div>
-
-      <div className="prog-card-info">
-        <span>
-          Equipo: {trabajo.equipo}
-        </span>
-
-        {trabajo.ot && (
-          <span>
-            OT: {trabajo.ot}
-          </span>
-        )}
-
-        <span>
-          {trabajo.horas} h · {trabajo.hh} HH
-        </span>
-      </div>
-
-      <div className="prog-progress">
-        <div className="prog-progress-head">
-          <span>Avance</span>
-          <strong>
-            {trabajo.avance}%
-          </strong>
-        </div>
-
-        <div className="prog-progress-bar">
-          <div
-            style={{
-              width: `${trabajo.avance}%`,
-            }}
-          />
-        </div>
-      </div>
-
-      <p className="prog-comment">
-        {trabajo.comentario}
-      </p>
-    </div>
   );
 }
