@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 
 import {
   getEquiposParaRelacionSubproceso,
@@ -17,23 +17,12 @@ export function EquiposSubproceso({
   subprocesoNombre,
   onSelectEquipo,
 }: Props) {
-  const [equipos, setEquipos] =
-    useState<Equipo[]>([]);
-
-  const [seleccionados, setSeleccionados] =
-    useState<number[]>([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [guardando, setGuardando] =
-    useState(false);
-
-  const [mensaje, setMensaje] =
-    useState('');
-
-  const [busqueda, setBusqueda] =
-    useState('');
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [seleccionados, setSeleccionados] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState('');
+  const [busqueda, setBusqueda] = useState('');
 
   const cargarEquipos = useCallback(async () => {
     setLoading(true);
@@ -52,6 +41,7 @@ export function EquiposSubproceso({
       );
     } catch (error) {
       console.error('Error cargando equipos:', error);
+
       setEquipos([]);
       setSeleccionados([]);
       setMensaje('No se pudieron cargar los equipos.');
@@ -67,18 +57,14 @@ export function EquiposSubproceso({
   const cambiarSeleccion = (id: number) => {
     setSeleccionados((actuales) =>
       actuales.includes(id)
-        ? actuales.filter(
-            (item) => item !== id
-          )
+        ? actuales.filter((item) => item !== id)
         : [...actuales, id]
     );
   };
 
   const guardarRelacion = async () => {
     if (seleccionados.length === 0) {
-      setMensaje(
-        'Seleccione al menos un equipo.'
-      );
+      setMensaje('Seleccione al menos un equipo.');
       return;
     }
 
@@ -91,18 +77,14 @@ export function EquiposSubproceso({
         seleccionados
       );
 
-      setMensaje(
-        'Relación guardada correctamente.'
-      );
+      setMensaje('Relación guardada correctamente.');
     } catch (error) {
       console.error(
         'Error guardando relación de equipos:',
         error
       );
 
-      setMensaje(
-        'No se pudo guardar la relación.'
-      );
+      setMensaje('No se pudo guardar la relación.');
     } finally {
       setGuardando(false);
     }
@@ -114,23 +96,21 @@ export function EquiposSubproceso({
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
 
-  const textoBusqueda =
-    normalizar(busqueda.trim());
+  const textoBusqueda = normalizar(busqueda.trim());
 
-  const equiposFiltrados =
-    equipos.filter((equipo) => {
-      const texto = normalizar(
-        [
-          equipo.codigo ?? '',
-          equipo.nombre,
-          equipo.area ?? '',
-          equipo.tipo ?? '',
-          equipo.estado_equipo ?? '',
-        ].join(' ')
-      );
+  const equiposFiltrados = equipos.filter((equipo) => {
+    const texto = normalizar(
+      [
+        equipo.codigo ?? '',
+        equipo.nombre,
+        equipo.area ?? '',
+        equipo.tipo ?? '',
+        equipo.estado_equipo ?? '',
+      ].join(' ')
+    );
 
-      return texto.includes(textoBusqueda);
-    });
+    return texto.includes(textoBusqueda);
+  });
 
   return (
     <div className="planta-relation-panel">
@@ -143,8 +123,8 @@ export function EquiposSubproceso({
           <h3>{subprocesoNombre}</h3>
 
           <p>
-            Seleccione los equipos que
-            pertenecen a este subproceso.
+            Seleccione los equipos que pertenecen a este
+            subproceso.
           </p>
         </div>
       </div>
@@ -188,9 +168,7 @@ export function EquiposSubproceso({
             <div className="planta-relation-grid">
               {equiposFiltrados.map((equipo) => {
                 const seleccionado =
-                  seleccionados.includes(
-                    equipo.id
-                  );
+                  seleccionados.includes(equipo.id);
 
                 return (
                   <div
@@ -198,12 +176,21 @@ export function EquiposSubproceso({
                     className={`planta-relation-item ${
                       seleccionado ? 'selected' : ''
                     }`}
-                    onClick={() => onSelectEquipo?.(equipo)}
+                    onClick={() => {
+                      console.log(
+                        'CLIC EQUIPO:',
+                        equipo
+                      );
+
+                      onSelectEquipo?.(equipo);
+                    }}
                   >
                     <input
                       type="checkbox"
                       checked={seleccionado}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) =>
+                        e.stopPropagation()
+                      }
                       onChange={() =>
                         cambiarSeleccion(equipo.id)
                       }
@@ -217,23 +204,20 @@ export function EquiposSubproceso({
                         {equipo.nombre}
                       </strong>
 
-                      {equipo.area && (
-                        <small>
-                          Área: {equipo.area}
-                        </small>
-                      )}
+                      <small>
+                        Área:{' '}
+                        {equipo.area || 'Sin área'}
+                      </small>
 
-                      {equipo.tipo && (
-                        <small>
-                          Tipo: {equipo.tipo}
-                        </small>
-                      )}
+                      <small>
+                        Tipo:{' '}
+                        {equipo.tipo || 'Sin tipo'}
+                      </small>
 
-                      {equipo.estado_equipo && (
-                        <span className="planta-status available">
-                          {equipo.estado_equipo}
-                        </span>
-                      )}
+                      <small>
+                        {equipo.estado_equipo ||
+                          'Sin estado'}
+                      </small>
                     </div>
                   </div>
                 );

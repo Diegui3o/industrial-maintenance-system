@@ -1,4 +1,4 @@
-const BASE = '/api';
+﻿const BASE = '/api';
 
 async function request<T>(
   url: string,
@@ -384,89 +384,6 @@ export interface Repuesto {
   nombre: string;
   descripcion?: string;
   activo: boolean;
-}
-
-export interface ComponenteRepuesto {
-  repuesto_id: number;
-  codigo?: string;
-  nombre: string;
-  cantidad: number;
-  posicion?: string;
-  notas?: string;
-}
-
-export async function getRepuestos(): Promise<Repuesto[]> {
-  return request<Repuesto[]>('/planta/repuestos');
-}
-
-export async function crearRepuesto(data: {
-  codigo?: string;
-  nombre: string;
-  descripcion?: string;
-}): Promise<Repuesto> {
-  return request<Repuesto>('/planta/repuestos', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function actualizarRepuesto(
-  id: number,
-  data: {
-    codigo?: string;
-    nombre: string;
-    descripcion?: string;
-    activo: boolean;
-  }
-): Promise<Repuesto> {
-  return request<Repuesto>(`/planta/repuestos/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function getRepuestosComponente(
-  componenteId: number
-): Promise<ComponenteRepuesto[]> {
-  return request<ComponenteRepuesto[]>(
-    `/planta/componentes/${componenteId}/repuestos`
-  );
-}
-
-export async function asignarRepuesto(
-  componenteId: number,
-  data: {
-    repuesto_id: number;
-    cantidad: number;
-    posicion?: string;
-    notas?: string;
-  }
-): Promise<void> {
-  await request<void>(
-    `/planta/componentes/${componenteId}/repuestos`,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
-}
-
-export async function actualizarComponenteRepuesto(
-  componenteId: number,
-  repuestoId: number,
-  data: {
-    cantidad: number;
-    posicion?: string;
-    notas?: string;
-  }
-): Promise<void> {
-  await request<void>(
-    `/planta/componentes/${componenteId}/repuestos/${repuestoId}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }
-  );
 }
 
 /* =========================================================

@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useState,
 } from 'react';
@@ -13,7 +13,7 @@ interface Props {
   componente: Componente;
 }
 
-export function SubcomponentesEstructuraFinal({
+export function SubcomponentesComponente({
   componente,
 }: Props) {
   const [
@@ -91,7 +91,7 @@ export function SubcomponentesEstructuraFinal({
             Componente padre:{' '}
             <strong>
               {componente.codigo
-                ? `${componente.codigo} — `
+                ? `${componente.codigo} â€” `
                 : ''}
               {componente.nombre}
             </strong>
@@ -113,7 +113,7 @@ export function SubcomponentesEstructuraFinal({
             </strong>
 
             <span>
-              El componente seleccionado todavía
+              El componente seleccionado todavÃ­a
               no tiene subcomponentes registrados.
             </span>
           </div>
@@ -168,3 +168,4 @@ export function SubcomponentesEstructuraFinal({
     </section>
   );
 }
+

@@ -1,313 +1,258 @@
-import { useEffect, useState } from 'react';
+﻿import { useState } from 'react';
 
-import {
-  actualizarComponente,
-  crearComponente,
-  getComponentes,
-  type Componente,
-  type Equipo,
-} from '../../services/plantaApi';
+import { crearComponente } from '../../services/plantaApi';
 
-import { SubcomponentesEquipoEstructura } from './SubcomponentesEquipoEstructura';
+import { ComponenteForm } from './ComponenteForm';
+import { ComponentesEquipoSelect } from './ComponentesEquipoSelect';
+import { EquipoSelector } from './EquipoSelector';
+import { ComponentesTransfer } from './ComponentesTransfer';
+import { useComponentesEquipo } from './useComponentesEquipo';
+import './Componentes.css';
 
-interface Props {
-  equipo: Equipo;
-}
-
-export function ComponentesEquipo({ equipo }: Props) {
-  const [componentes, setComponentes] = useState<Componente[]>([]);
-  const [seleccionado, setSeleccionado] =
-    useState<Componente | null>(null);
+export function ComponentesEquipo() {
   const [mostrarForm, setMostrarForm] = useState(false);
-  const [editando, setEditando] = useState<Componente | null>(null);
-  const [nombre, setNombre] = useState('');
-  const [codigo, setCodigo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [guardando, setGuardando] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const cargar = async () => {
-    setLoading(true);
+  const {
+    tipoPadre,
+    procesos,
+    sistemas,
+    subprocesosDisponibles,
+    procesoId,
+    sistemaId,
+    subprocesoId,
+    equiposFiltrados,
+    equipoSeleccionado,
+    disponiblesFiltrados,
+    asignadosFiltrados,
+    seleccionado,
+    busquedaEquipo,
+    busquedaDisponible,
+    busquedaAsignado,
+    loadingEquipos,
+    loadingComponentes,
+    guardando,
+    mensaje,
 
-    try {
-      const resultado = await getComponentes(equipo.id);
+    setEquipoSeleccionado,
+    setSeleccionado,
+    setBusquedaEquipo,
+    setBusquedaDisponible,
+    setBusquedaAsignado,
+    setMensaje,
+    setGuardando,
 
-      setComponentes(resultado);
+    seleccionarTipo,
+    seleccionarProceso,
+    seleccionarSistema,
+    seleccionarSubproceso,
 
-      setSeleccionado((actual) => {
-        if (!actual) return null;
-
-        return (
-          resultado.find(
-            (item) => item.id === actual.id
-          ) || null
-        );
-      });
-    } catch (error) {
-      console.error(
-        'Error cargando componentes:',
-        error
-      );
-
-      setComponentes([]);
-      setSeleccionado(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let activo = true;
-
-    const cargarInicial = async () => {
-      setLoading(true);
-
-      try {
-        const resultado =
-          await getComponentes(equipo.id);
-
-        if (!activo) return;
-
-        setComponentes(resultado);
-        setSeleccionado(null);
-      } catch (error) {
-        if (!activo) return;
-
-        console.error(
-          'Error cargando componentes:',
-          error
-        );
-
-        setComponentes([]);
-        setSeleccionado(null);
-      } finally {
-        if (activo) {
-          setLoading(false);
-        }
-      }
-    };
-
-    cargarInicial();
-
-    return () => {
-      activo = false;
-    };
-  }, [equipo.id]);
-
-  const abrirNuevo = () => {
-    setEditando(null);
-    setNombre('');
-    setCodigo('');
-    setDescripcion('');
-    setMostrarForm(true);
-  };
-
-  const abrirEditar = (componente: Componente) => {
-    setEditando(componente);
-    setNombre(componente.nombre);
-    setCodigo(componente.codigo || '');
-    setDescripcion(componente.descripcion || '');
-    setMostrarForm(true);
-  };
-
-  const guardar = async () => {
-    if (!nombre.trim() || guardando) return;
-
-    setGuardando(true);
-
-    try {
-      if (editando) {
-        await actualizarComponente(editando.id, {
-          equipo_id: equipo.id,
-          nombre: nombre.trim(),
-          codigo: codigo.trim() || undefined,
-          descripcion:
-            descripcion.trim() || undefined,
-          activo: editando.activo,
-        });
-      } else {
-        await crearComponente({
-          equipo_id: equipo.id,
-          nombre: nombre.trim(),
-          codigo: codigo.trim() || undefined,
-          descripcion:
-            descripcion.trim() || undefined,
-        });
-      }
-
-      setMostrarForm(false);
-      setEditando(null);
-
-      await cargar();
-    } catch (error) {
-      console.error(
-        'Error guardando componente:',
-        error
-      );
-
-      alert(
-        'No se pudo guardar el componente.'
-      );
-    } finally {
-      setGuardando(false);
-    }
-  };
+    moverAAsignados,
+    moverADisponibles,
+    guardarRelaciones,
+    recargarComponentes,
+  } = useComponentesEquipo();
 
   return (
-    <section className="planta-card">
-      <div className="planta-card-header">
-        <div>
-          <h3>Componentes</h3>
+    <section className="componentes-seccion">
 
+      {/* ENCABEZADO */}
+      <div className="componentes-header">
+        <div>
+          <h2>Componentes</h2>
           <p>
-            {equipo.codigo} — {equipo.nombre}
-            {' · '}
-            {componentes.length} componente(s)
+            Seleccione el equipo padre y administre sus componentes.
           </p>
         </div>
 
         <button
-          className="planta-add-btn"
-          onClick={abrirNuevo}
+          type="button"
+          className="componentes-btn"
+          onClick={() => setMostrarForm(true)}
+          disabled={!equipoSeleccionado}
         >
-          + Agregar componente
+          + Crear componente
         </button>
       </div>
 
-      {mostrarForm && (
-        <div className="planta-form">
-          <h4>
-            {editando
-              ? 'Editar componente'
-              : 'Nuevo componente'}
-          </h4>
+      {/* ESTRUCTURA */}
+      <div className="componentes-card">
+        <h3 className="componentes-card-title">
+          Estructura
+        </h3>
 
-          <input
-            placeholder="Código del componente"
-            value={codigo}
-            onChange={(e) =>
-              setCodigo(e.target.value)
-            }
+        <ComponentesEquipoSelect
+          tipoPadre={tipoPadre}
+          procesos={procesos}
+          sistemas={sistemas}
+          subprocesosDisponibles={subprocesosDisponibles}
+          procesoId={procesoId}
+          sistemaId={sistemaId}
+          subprocesoId={subprocesoId}
+          seleccionarTipo={seleccionarTipo}
+          seleccionarProceso={seleccionarProceso}
+          seleccionarSistema={seleccionarSistema}
+          seleccionarSubproceso={seleccionarSubproceso}
+        />
+      </div>
+
+      {/* EQUIPOS */}
+      {subprocesoId && (
+        <div className="componentes-card">
+          <h3 className="componentes-card-title">
+            Equipo padre
+          </h3>
+
+          <EquipoSelector
+            equipos={equiposFiltrados}
+            equipoSeleccionado={equipoSeleccionado}
+            busquedaEquipo={busquedaEquipo}
+            loadingEquipos={loadingEquipos}
+            setBusquedaEquipo={setBusquedaEquipo}
+            setEquipoSeleccionado={setEquipoSeleccionado}
           />
 
-          <input
-            placeholder="Nombre del componente"
-            value={nombre}
-            onChange={(e) =>
-              setNombre(e.target.value)
-            }
-          />
+          {equipoSeleccionado && (
+            <div className="componentes-equipo">
+              <div className="componentes-equipo-main">
+                <span className="componentes-equipo-label">
+                  EQUIPO SELECCIONADO
+                </span>
 
-          <input
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) =>
-              setDescripcion(e.target.value)
-            }
-          />
+                <strong className="componentes-equipo-nombre">
+                  {equipoSeleccionado.codigo
+                    ? `${equipoSeleccionado.codigo} - `
+                    : ''}
+                  {equipoSeleccionado.nombre}
+                </strong>
+              </div>
 
-          <div className="planta-form-actions">
-            <button
-              className="planta-cancel-btn"
-              onClick={() =>
-                setMostrarForm(false)
+              <div className="componentes-equipo-info">
+                <span>
+                  <b>Área</b>
+                  {equipoSeleccionado.area || '—'}
+                </span>
+
+                <span>
+                  <b>Estado</b>
+                  {equipoSeleccionado.estado_equipo || '—'}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* FORMULARIO */}
+      {equipoSeleccionado && mostrarForm && (
+        <div className="componentes-card">
+          <h3 className="componentes-card-title">
+            Nuevo componente
+          </h3>
+
+          <ComponenteForm
+            componente={null}
+            guardando={guardando}
+            onCancel={() => {
+              if (!guardando) {
+                setMostrarForm(false);
               }
+            }}
+            onSave={async (datos) => {
+              if (!equipoSeleccionado) {
+                return;
+              }
+
+              setGuardando(true);
+              setMensaje('');
+
+              try {
+                await crearComponente({
+                  equipo_id: equipoSeleccionado.id,
+                  nombre: datos.nombre,
+                  codigo: datos.codigo,
+                  descripcion: datos.descripcion,
+                });
+
+                await recargarComponentes();
+
+                setMostrarForm(false);
+
+                setMensaje(
+                  'Componente creado correctamente.'
+                );
+              } catch (error) {
+                console.error(
+                  'Error creando componente:',
+                  error
+                );
+
+                setMensaje(
+                  'No se pudo crear el componente.'
+                );
+              } finally {
+                setGuardando(false);
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* RELACIÓN */}
+      {equipoSeleccionado && (
+        <div className="componentes-card">
+          <div className="componentes-relacion-header">
+            <div>
+              <h3 className="componentes-card-title">
+                Relación de componentes
+              </h3>
+
+              <p>
+                Seleccione los componentes que pertenecen al
+                equipo seleccionado.
+              </p>
+            </div>
+
+            <span className="componentes-relacion-equipo">
+              {equipoSeleccionado.codigo ||
+                equipoSeleccionado.nombre}
+            </span>
+          </div>
+
+          <ComponentesTransfer
+            disponibles={disponiblesFiltrados}
+            asignados={asignadosFiltrados}
+            seleccionado={seleccionado}
+            busquedaDisponible={busquedaDisponible}
+            busquedaAsignado={busquedaAsignado}
+            loading={loadingComponentes}
+            setSeleccionado={setSeleccionado}
+            setBusquedaDisponible={setBusquedaDisponible}
+            setBusquedaAsignado={setBusquedaAsignado}
+            moverAAsignados={moverAAsignados}
+            moverADisponibles={moverADisponibles}
+          />
+
+          <div className="componentes-footer">
+            {mensaje && (
+              <div className="componentes-mensaje">
+                {mensaje}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="componentes-save-btn"
+              onClick={guardarRelaciones}
               disabled={guardando}
-            >
-              Cancelar
-            </button>
-
-            <button
-              className="planta-save-btn"
-              onClick={guardar}
-              disabled={
-                !nombre.trim() || guardando
-              }
             >
               {guardando
                 ? 'Guardando...'
-                : 'Guardar'}
+                : 'Guardar cambios'}
             </button>
           </div>
         </div>
       )}
 
-      <div className="planta-list">
-        {loading && (
-          <div className="planta-empty">
-            Cargando componentes...
-          </div>
-        )}
-
-        {!loading &&
-          componentes.length === 0 && (
-            <div className="planta-alert warning">
-              <strong>
-                Equipo sin componentes
-              </strong>
-
-              <span>
-                Agrega los componentes que forman
-                parte de este equipo.
-              </span>
-            </div>
-          )}
-
-        {!loading &&
-          componentes.map((componente) => (
-            <div
-              key={componente.id}
-              className={`planta-list-item ${
-                seleccionado?.id ===
-                componente.id
-                  ? 'selected'
-                  : ''
-              }`}
-            >
-              <button
-                style={{
-                  flex: 1,
-                  border: 0,
-                  background: 'transparent',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-                onClick={() =>
-                  setSeleccionado(componente)
-                }
-              >
-                <div>
-                  <strong>
-                    {componente.codigo
-                      ? `${componente.codigo} — `
-                      : ''}
-                    {componente.nombre}
-                  </strong>
-
-                  <small>
-                    {componente.descripcion ||
-                      'Sin descripción'}
-                  </small>
-                </div>
-              </button>
-
-              <button
-                className="planta-edit-btn"
-                onClick={() =>
-                  abrirEditar(componente)
-                }
-              >
-                Editar
-              </button>
-            </div>
-          ))}
-      </div>
-
-      {seleccionado && (
-        <SubcomponentesEquipoEstructura
-          componente={seleccionado}
-        />
-      )}
     </section>
   );
 }

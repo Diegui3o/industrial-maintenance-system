@@ -6,8 +6,6 @@ import {
   type Equipo,
 } from '../../services/plantaApi';
 
-import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
-
 interface Props {
   subprocesoSistemaId: number;
 }
@@ -196,11 +194,6 @@ export function EquiposSubprocesoSistema({
             </div>
           ))}
         </div>
-      )}
-      {equipoSeleccionadoDetalle && (
-        <ComponentesEquipo
-          equipo={equipoSeleccionadoDetalle}
-        />
       )}
     </section>
   );

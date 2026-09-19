@@ -1,7 +1,7 @@
 import { SubprocesosProcesoPanel } from './SubprocesosProcesoPanel';
 import { SubprocesosSistemaPanel } from './SubprocesosSistemaPanel';
 
-export function SubprocesosEstructuraNueva() {
+export function SubprocesosPorEstructura() {
   return (
     <section className="planta-card">
       <div className="planta-card-header">

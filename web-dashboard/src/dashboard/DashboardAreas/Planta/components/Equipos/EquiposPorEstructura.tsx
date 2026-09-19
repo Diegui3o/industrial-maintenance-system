@@ -23,7 +23,7 @@ interface Props {
   onSelectEquipo?: (equipo: Equipo | null) => void;
 }
 
-export function EquiposEstructuraFinal({
+export function EquiposPorEstructura({
   onSelectEquipo,
 }: Props) {
   const [tipo, setTipo] =
@@ -93,7 +93,7 @@ export function EquiposEstructuraFinal({
   );
 
   useEffect(() => {
-    cargarDatos();
+    void cargarDatos();
   }, [cargarDatos]);
 
   const cambiarTipo = (
@@ -147,10 +147,12 @@ export function EquiposEstructuraFinal({
           (item) =>
             item.proceso_id === procesoId
         )
-      : subprocesosSistema.filter(
-          (item) =>
-            item.sistema_id === sistemaId
-        );
+      : tipo === 'sistema'
+        ? subprocesosSistema.filter(
+            (item) =>
+              item.sistema_id === sistemaId
+          )
+        : [];
 
   const subprocesoSeleccionado =
     tipo === 'proceso'
@@ -158,10 +160,12 @@ export function EquiposEstructuraFinal({
           (item) =>
             item.id === subprocesoId
         )
-      : subprocesosSistema.find(
-          (item) =>
-            item.id === subprocesoId
-        );
+      : tipo === 'sistema'
+        ? subprocesosSistema.find(
+            (item) =>
+              item.id === subprocesoId
+          )
+        : null;
 
   return (
     <section className="planta-card">
@@ -204,35 +208,33 @@ export function EquiposEstructuraFinal({
       </div>
 
       {tipo === 'proceso' && (
-        <>
-          <div className="planta-form">
-            <label>
-              Proceso padre
-            </label>
+        <div className="planta-form">
+          <label>
+            Proceso padre
+          </label>
 
-            <select
-              value={procesoId ?? ''}
-              onChange={(e) =>
-                cambiarProceso(
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Seleccione un proceso
+          <select
+            value={procesoId ?? ''}
+            onChange={(e) =>
+              cambiarProceso(
+                e.target.value
+              )
+            }
+          >
+            <option value="">
+              Seleccione un proceso
+            </option>
+
+            {procesos.map((proceso) => (
+              <option
+                key={proceso.id}
+                value={proceso.id}
+              >
+                {proceso.nombre}
               </option>
-
-              {procesos.map((proceso) => (
-                <option
-                  key={proceso.id}
-                  value={proceso.id}
-                >
-                  {proceso.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-        </>
+            ))}
+          </select>
+        </div>
       )}
 
       {tipo === 'sistema' && (
@@ -265,7 +267,8 @@ export function EquiposEstructuraFinal({
         </div>
       )}
 
-      {(procesoId || sistemaId) && (
+      {(tipo === 'proceso' && procesoId) ||
+      (tipo === 'sistema' && sistemaId) ? (
         <div className="planta-form">
           <label>
             Subproceso padre
@@ -295,7 +298,7 @@ export function EquiposEstructuraFinal({
             )}
           </select>
         </div>
-      )}
+      ) : null}
 
       {loading && (
         <div className="planta-empty">
@@ -317,7 +320,8 @@ export function EquiposEstructuraFinal({
         )}
 
       {!loading &&
-        (procesoId || sistemaId) &&
+        ((tipo === 'proceso' && procesoId) ||
+          (tipo === 'sistema' && sistemaId)) &&
         subprocesosDisponibles.length === 0 && (
           <div className="planta-empty">
             No existen subprocesos asociados

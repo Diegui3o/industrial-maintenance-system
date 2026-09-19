@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DashboardHeader } from '../../DashboardHeader/DashboardHeader';
 import { colors } from '../../../theme/colors';
-import { PlantaEstructura } from './components/PlantaEstructura';
+import { PlantaEstructuraPrincipal } from './components/PlantaEstructura/PlantaEstructuraPrincipal';
 import './Planta.css';
 
 type PlantaTab = 'estructura';
@@ -25,7 +25,7 @@ export function PlantaPanel() {
           </div>
 
           <div className="area-content">
-            {tab === 'estructura' && <PlantaEstructura />}
+            {tab === 'estructura' && <PlantaEstructuraPrincipal />}
           </div>
         </div>
       </div>
