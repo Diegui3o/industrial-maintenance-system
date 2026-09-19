@@ -9,11 +9,13 @@ import {
 interface Props {
   subprocesoId: number;
   subprocesoNombre: string;
+  onSelectEquipo?: (equipo: Equipo | null) => void;
 }
 
 export function EquiposSubproceso({
   subprocesoId,
   subprocesoNombre,
+  onSelectEquipo,
 }: Props) {
   const [equipos, setEquipos] =
     useState<Equipo[]>([]);
@@ -191,21 +193,19 @@ export function EquiposSubproceso({
                   );
 
                 return (
-                  <label
+                  <div
                     key={equipo.id}
                     className={`planta-relation-item ${
-                      seleccionado
-                        ? 'selected'
-                        : ''
+                      seleccionado ? 'selected' : ''
                     }`}
+                    onClick={() => onSelectEquipo?.(equipo)}
                   >
                     <input
                       type="checkbox"
                       checked={seleccionado}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={() =>
-                        cambiarSeleccion(
-                          equipo.id
-                        )
+                        cambiarSeleccion(equipo.id)
                       }
                     />
 
@@ -235,7 +235,7 @@ export function EquiposSubproceso({
                         </span>
                       )}
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>

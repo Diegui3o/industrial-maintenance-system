@@ -5,6 +5,7 @@ import {
   getSistemas,
   getTodosSubprocesos,
   getTodosSubprocesosSistema,
+  type Equipo,
   type Proceso,
   type SistemaPlanta,
   type Subproceso,
@@ -19,7 +20,7 @@ type TipoEstructura =
   | '';
 
 interface Props {
-  onSelectEquipo?: (equipo: null) => void;
+  onSelectEquipo?: (equipo: Equipo | null) => void;
 }
 
 export function EquiposEstructuraFinal({
@@ -311,6 +312,7 @@ export function EquiposEstructuraFinal({
             subprocesoNombre={
               subprocesoSeleccionado.nombre
             }
+            onSelectEquipo={onSelectEquipo}
           />
         )}
 

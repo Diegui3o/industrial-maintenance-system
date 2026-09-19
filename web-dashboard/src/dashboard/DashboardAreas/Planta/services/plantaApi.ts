@@ -777,6 +777,12 @@ export async function getComponentesParaRelacionEquipo(
   );
 }
 
+export async function getTodosComponentes(): Promise<Componente[]> {
+  return request<Componente[]>(
+    `/planta/componentes`
+  );
+}
+
 export async function relacionarComponentesConEquipo(
   equipoId: number,
   componenteIds: number[]

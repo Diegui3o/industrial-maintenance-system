@@ -1,26 +1,17 @@
 import { useEffect, useState } from 'react';
 
 import {
-  getComponentes,
+  getTodosComponentes,
   type Componente,
-  type Equipo,
 } from '../../services/plantaApi';
 
 import { SubcomponentesEstructuraCompleta } from './SubcomponentesEstructuraCompleta';
 
-interface Props {
-  equipo: Equipo | null;
-}
-
-export function ComponentesEstructuraCompleta({
-  equipo,
-}: Props) {
+export function ComponentesEstructuraCompleta() {
   const [componentes, setComponentes] =
     useState<Componente[]>([]);
-
   const [componenteId, setComponenteId] =
     useState('');
-
   const [loading, setLoading] =
     useState(false);
 
@@ -28,17 +19,11 @@ export function ComponentesEstructuraCompleta({
     let activo = true;
 
     const cargar = async () => {
-      if (!equipo) {
-        return;
-      }
-
       setLoading(true);
 
       try {
         const resultado =
-          await getComponentes(
-            equipo.id
-          );
+          await getTodosComponentes();
 
         if (!activo) {
           return;
@@ -63,68 +48,29 @@ export function ComponentesEstructuraCompleta({
       }
     };
 
-    cargar();
+    void cargar();
 
     return () => {
       activo = false;
     };
-  }, [equipo?.id]);
-
-  if (!equipo) {
-    return (
-      <section className="planta-card">
-
-        <div className="planta-card-header">
-          <div>
-            <h3>Componentes</h3>
-
-            <p>
-              Seleccione primero un equipo.
-            </p>
-          </div>
-        </div>
-
-        <div className="planta-alert warning">
-          <strong>
-            Equipo no seleccionado
-          </strong>
-
-          <span>
-            Los componentes aparecerán
-            cuando seleccione un equipo.
-          </span>
-        </div>
-
-      </section>
-    );
-  }
+  }, []);
 
   const componenteSeleccionado =
     componentes.find(
       (item) =>
-        item.id.toString() ===
-        componenteId
+        item.id.toString() === componenteId
     ) || null;
 
   return (
     <section className="planta-card">
-
       <div className="planta-card-header">
-
         <div>
           <h3>Componentes</h3>
 
           <p>
-            Equipo padre:{' '}
-            <strong>
-              {equipo.codigo
-                ? `${equipo.codigo} — `
-                : ''}
-              {equipo.nombre}
-            </strong>
+            Componentes registrados en la planta.
           </p>
         </div>
-
       </div>
 
       {loading && (
@@ -136,16 +82,14 @@ export function ComponentesEstructuraCompleta({
       {!loading &&
         componentes.length === 0 && (
           <div className="planta-alert warning">
-
             <strong>
               No existen componentes
             </strong>
 
             <span>
-              El equipo seleccionado todavía
-              no tiene componentes registrados.
+              Registre un componente para
+              comenzar la estructura.
             </span>
-
           </div>
         )}
 
@@ -153,9 +97,8 @@ export function ComponentesEstructuraCompleta({
         componentes.length > 0 && (
           <>
             <div className="planta-form">
-
               <label>
-                Componente padre
+                Componente
               </label>
 
               <select
@@ -183,19 +126,28 @@ export function ComponentesEstructuraCompleta({
                   )
                 )}
               </select>
-
             </div>
 
             {componenteSeleccionado && (
-            <SubcomponentesEstructuraCompleta
+              <SubcomponentesEstructuraCompleta
                 componente={
-                componenteSeleccionado
+                  componenteSeleccionado
                 }
-            />
+              />
             )}
           </>
         )}
 
+      {!loading && (
+        <div className="planta-relation-actions">
+          <button
+            type="button"
+            className="planta-save-btn"
+          >
+            + Crear componente
+          </button>
+        </div>
+      )}
     </section>
   );
 }

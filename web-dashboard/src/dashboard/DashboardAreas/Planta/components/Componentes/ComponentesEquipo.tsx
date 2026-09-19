@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import {
   actualizarComponente,
   crearComponente,
@@ -6,6 +7,7 @@ import {
   type Componente,
   type Equipo,
 } from '../../services/plantaApi';
+
 import { SubcomponentesEquipoEstructura } from './SubcomponentesEquipoEstructura';
 
 interface Props {
@@ -16,10 +18,8 @@ export function ComponentesEquipo({ equipo }: Props) {
   const [componentes, setComponentes] = useState<Componente[]>([]);
   const [seleccionado, setSeleccionado] =
     useState<Componente | null>(null);
-
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Componente | null>(null);
-
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -121,7 +121,8 @@ export function ComponentesEquipo({ equipo }: Props) {
           equipo_id: equipo.id,
           nombre: nombre.trim(),
           codigo: codigo.trim() || undefined,
-          descripcion: descripcion.trim() || undefined,
+          descripcion:
+            descripcion.trim() || undefined,
           activo: editando.activo,
         });
       } else {
@@ -129,7 +130,8 @@ export function ComponentesEquipo({ equipo }: Props) {
           equipo_id: equipo.id,
           nombre: nombre.trim(),
           codigo: codigo.trim() || undefined,
-          descripcion: descripcion.trim() || undefined,
+          descripcion:
+            descripcion.trim() || undefined,
         });
       }
 
@@ -138,8 +140,14 @@ export function ComponentesEquipo({ equipo }: Props) {
 
       await cargar();
     } catch (error) {
-      console.error('Error guardando componente:', error);
-      alert('No se pudo guardar el componente.');
+      console.error(
+        'Error guardando componente:',
+        error
+      );
+
+      alert(
+        'No se pudo guardar el componente.'
+      );
     } finally {
       setGuardando(false);
     }
@@ -147,7 +155,6 @@ export function ComponentesEquipo({ equipo }: Props) {
 
   return (
     <section className="planta-card">
-
       <div className="planta-card-header">
         <div>
           <h3>Componentes</h3>
@@ -169,7 +176,6 @@ export function ComponentesEquipo({ equipo }: Props) {
 
       {mostrarForm && (
         <div className="planta-form">
-
           <h4>
             {editando
               ? 'Editar componente'
@@ -179,26 +185,33 @@ export function ComponentesEquipo({ equipo }: Props) {
           <input
             placeholder="Código del componente"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            onChange={(e) =>
+              setCodigo(e.target.value)
+            }
           />
 
           <input
             placeholder="Nombre del componente"
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            onChange={(e) =>
+              setNombre(e.target.value)
+            }
           />
 
           <input
             placeholder="Descripción"
             value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
+            onChange={(e) =>
+              setDescripcion(e.target.value)
+            }
           />
 
           <div className="planta-form-actions">
-
             <button
               className="planta-cancel-btn"
-              onClick={() => setMostrarForm(false)}
+              onClick={() =>
+                setMostrarForm(false)
+              }
               disabled={guardando}
             >
               Cancelar
@@ -207,39 +220,46 @@ export function ComponentesEquipo({ equipo }: Props) {
             <button
               className="planta-save-btn"
               onClick={guardar}
-              disabled={!nombre.trim() || guardando}
+              disabled={
+                !nombre.trim() || guardando
+              }
             >
-              {guardando ? 'Guardando...' : 'Guardar'}
+              {guardando
+                ? 'Guardando...'
+                : 'Guardar'}
             </button>
-
           </div>
         </div>
       )}
 
       <div className="planta-list">
-
         {loading && (
           <div className="planta-empty">
             Cargando componentes...
           </div>
         )}
 
-        {!loading && componentes.length === 0 && (
-          <div className="planta-alert warning">
-            <strong>Equipo sin componentes</strong>
+        {!loading &&
+          componentes.length === 0 && (
+            <div className="planta-alert warning">
+              <strong>
+                Equipo sin componentes
+              </strong>
 
-            <span>
-              Agrega los componentes que forman parte de este equipo.
-            </span>
-          </div>
-        )}
+              <span>
+                Agrega los componentes que forman
+                parte de este equipo.
+              </span>
+            </div>
+          )}
 
         {!loading &&
           componentes.map((componente) => (
             <div
               key={componente.id}
               className={`planta-list-item ${
-                seleccionado?.id === componente.id
+                seleccionado?.id ===
+                componente.id
                   ? 'selected'
                   : ''
               }`}
@@ -288,7 +308,6 @@ export function ComponentesEquipo({ equipo }: Props) {
           componente={seleccionado}
         />
       )}
-
     </section>
   );
 }
