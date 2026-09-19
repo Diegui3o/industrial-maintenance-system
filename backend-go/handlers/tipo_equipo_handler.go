@@ -85,7 +85,7 @@ func (h *TipoEquipoHandler) Crear(
 			Codigo:      req.Codigo,
 			Nombre:      req.Nombre,
 			Descripcion: req.Descripcion,
-			Activo:       true,
+			Activo:      true,
 		},
 	)
 
