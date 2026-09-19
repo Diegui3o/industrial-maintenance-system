@@ -65,7 +65,6 @@ func (h *EstructuraPlantaHandler) PutRelacionarComponentesConEquipo(
 	equipoID, err := strconv.Atoi(
 		mux.Vars(r)["equipo_id"],
 	)
-
 	if err != nil || equipoID <= 0 {
 		http.Error(
 			w,
@@ -81,15 +80,6 @@ func (h *EstructuraPlantaHandler) PutRelacionarComponentesConEquipo(
 		http.Error(
 			w,
 			"JSON inválido",
-			http.StatusBadRequest,
-		)
-		return
-	}
-
-	if len(req.ComponenteIDs) == 0 {
-		http.Error(
-			w,
-			"debe seleccionar al menos un componente",
 			http.StatusBadRequest,
 		)
 		return

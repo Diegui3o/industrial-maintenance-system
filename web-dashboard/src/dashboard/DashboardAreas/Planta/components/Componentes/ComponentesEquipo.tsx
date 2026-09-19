@@ -25,6 +25,7 @@ export function ComponentesEquipo() {
     disponiblesFiltrados,
     asignadosFiltrados,
     seleccionado,
+    origenSeleccionado,
     busquedaEquipo,
     busquedaDisponible,
     busquedaAsignado,
@@ -47,7 +48,6 @@ export function ComponentesEquipo() {
     seleccionarSubproceso,
 
     moverAAsignados,
-    moverADisponibles,
     guardarRelaciones,
     recargarComponentes,
   } = useComponentesEquipo();
@@ -222,6 +222,7 @@ export function ComponentesEquipo() {
             disponibles={disponiblesFiltrados}
             asignados={asignadosFiltrados}
             seleccionado={seleccionado}
+            origenSeleccionado={origenSeleccionado}
             busquedaDisponible={busquedaDisponible}
             busquedaAsignado={busquedaAsignado}
             loading={loadingComponentes}
@@ -229,7 +230,6 @@ export function ComponentesEquipo() {
             setBusquedaDisponible={setBusquedaDisponible}
             setBusquedaAsignado={setBusquedaAsignado}
             moverAAsignados={moverAAsignados}
-            moverADisponibles={moverADisponibles}
           />
 
           <div className="componentes-footer">

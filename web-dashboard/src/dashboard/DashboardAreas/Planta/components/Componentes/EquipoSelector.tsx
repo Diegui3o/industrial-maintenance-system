@@ -6,9 +6,7 @@ interface Props {
   busquedaEquipo: string;
   loadingEquipos: boolean;
   setBusquedaEquipo: (valor: string) => void;
-  setEquipoSeleccionado: (
-    equipo: Equipo
-  ) => void;
+  setEquipoSeleccionado: (equipo: Equipo) => void;
 }
 
 export function EquipoSelector({
@@ -28,9 +26,7 @@ export function EquipoSelector({
           type="search"
           value={busquedaEquipo}
           onChange={(e) =>
-            setBusquedaEquipo(
-              e.target.value
-            )
+            setBusquedaEquipo(e.target.value)
           }
           placeholder="Buscar equipo..."
         />
@@ -45,8 +41,7 @@ export function EquipoSelector({
       {!loadingEquipos &&
         equipos.length === 0 && (
           <div className="planta-empty">
-            No existen equipos para este
-            subproceso.
+            No se encontraron equipos.
           </div>
         )}
 
@@ -58,15 +53,12 @@ export function EquipoSelector({
                 type="button"
                 key={equipo.id}
                 className={
-                  equipoSeleccionado?.id ===
-                  equipo.id
+                  equipoSeleccionado?.id === equipo.id
                     ? 'planta-parent-item selected'
                     : 'planta-parent-item'
                 }
                 onClick={() =>
-                  setEquipoSeleccionado(
-                    equipo
-                  )
+                  setEquipoSeleccionado(equipo)
                 }
               >
                 <strong>
@@ -78,8 +70,7 @@ export function EquipoSelector({
 
                 <small>
                   Área:{' '}
-                  {equipo.area ||
-                    'Sin área'}
+                  {equipo.area || 'Sin área'}
                 </small>
 
                 <small>

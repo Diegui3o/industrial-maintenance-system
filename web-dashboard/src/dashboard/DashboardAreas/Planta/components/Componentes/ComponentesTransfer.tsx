@@ -4,35 +4,38 @@ interface Props {
   disponibles: Componente[];
   asignados: Componente[];
   seleccionado: Componente | null;
+  origenSeleccionado: 'disponible' | 'asignado' | null;
   busquedaDisponible: string;
   busquedaAsignado: string;
   loading: boolean;
   setSeleccionado: (
-    componente: Componente
+    componente: Componente,
+    origen: 'disponible' | 'asignado'
   ) => void;
-  setBusquedaDisponible: (
-    valor: string
-  ) => void;
-  setBusquedaAsignado: (
-    valor: string
-  ) => void;
+  setBusquedaDisponible: (valor: string) => void;
+  setBusquedaAsignado: (valor: string) => void;
   moverAAsignados: () => void;
-  moverADisponibles: () => void;
 }
 
 function ComponenteItem({
   componente,
   seleccionado,
+  origen,
+  origenSeleccionado,
   setSeleccionado,
 }: {
   componente: Componente;
   seleccionado: Componente | null;
+  origen: 'disponible' | 'asignado';
+  origenSeleccionado: 'disponible' | 'asignado' | null;
   setSeleccionado: (
-    componente: Componente
+    componente: Componente,
+    origen: 'disponible' | 'asignado'
   ) => void;
 }) {
   const activo =
-    seleccionado?.id === componente.id;
+    seleccionado?.id === componente.id &&
+    origenSeleccionado === origen;
 
   return (
     <button
@@ -42,9 +45,7 @@ function ComponenteItem({
           ? 'componentes-transfer-item selected'
           : 'componentes-transfer-item'
       }
-      onClick={() =>
-        setSeleccionado(componente)
-      }
+      onClick={() => setSeleccionado(componente, origen)}
     >
       <span className="componentes-transfer-item-main">
         <strong>
@@ -55,8 +56,7 @@ function ComponenteItem({
         </strong>
 
         <small>
-          {componente.descripcion ||
-            'Sin descripción'}
+          {componente.descripcion || 'Sin descripción'}
         </small>
       </span>
 
@@ -71,6 +71,7 @@ export function ComponentesTransfer({
   disponibles,
   asignados,
   seleccionado,
+  origenSeleccionado,
   busquedaDisponible,
   busquedaAsignado,
   loading,
@@ -78,7 +79,6 @@ export function ComponentesTransfer({
   setBusquedaDisponible,
   setBusquedaAsignado,
   moverAAsignados,
-  moverADisponibles,
 }: Props) {
   return (
     <div className="componentes-transfer">
@@ -92,7 +92,7 @@ export function ComponentesTransfer({
             </span>
 
             <strong>
-              Componentes disponibles
+              Componentes de otros equipos
             </strong>
           </div>
 
@@ -108,9 +108,7 @@ export function ComponentesTransfer({
             type="search"
             value={busquedaDisponible}
             onChange={(e) =>
-              setBusquedaDisponible(
-                e.target.value
-              )
+              setBusquedaDisponible(e.target.value)
             }
             placeholder="Buscar componente..."
           />
@@ -125,54 +123,49 @@ export function ComponentesTransfer({
           ) : disponibles.length === 0 ? (
             <div className="componentes-transfer-empty">
               <span>✓</span>
+
               <p>
                 No hay componentes disponibles
               </p>
+
               <small>
-                Todos los componentes están asignados.
+                Todos los componentes ya pertenecen a este equipo.
               </small>
             </div>
           ) : (
             disponibles.map((componente) => (
               <ComponenteItem
-                key={componente.id}
+                key={`disponible-${componente.id}`}
                 componente={componente}
+                origen="disponible"
                 seleccionado={seleccionado}
-                setSeleccionado={
-                  setSeleccionado
-                }
+                origenSeleccionado={origenSeleccionado}
+                setSeleccionado={setSeleccionado}
               />
             ))
           )}
         </div>
       </div>
 
-      {/* BOTONES CENTRALES */}
+      {/* ACCIÓN */}
       <div className="componentes-transfer-actions">
         <button
           type="button"
           className="componentes-transfer-action"
           onClick={moverAAsignados}
-          disabled={!seleccionado}
-          title="Asignar componente"
+          disabled={
+            !seleccionado ||
+            origenSeleccionado !== 'disponible'
+          }
+          title="Asignar componente al equipo"
         >
           <span>→</span>
-        </button>
-
-        <button
-          type="button"
-          className="componentes-transfer-action"
-          onClick={moverADisponibles}
-          disabled={!seleccionado}
-          title="Quitar componente"
-        >
-          <span>←</span>
         </button>
 
         <span className="componentes-transfer-hint">
           Seleccione un componente
           <br />
-          para moverlo
+          para asignarlo al equipo
         </span>
       </div>
 
@@ -201,9 +194,7 @@ export function ComponentesTransfer({
             type="search"
             value={busquedaAsignado}
             onChange={(e) =>
-              setBusquedaAsignado(
-                e.target.value
-              )
+              setBusquedaAsignado(e.target.value)
             }
             placeholder="Buscar asignado..."
           />
@@ -218,9 +209,11 @@ export function ComponentesTransfer({
           ) : asignados.length === 0 ? (
             <div className="componentes-transfer-empty">
               <span>+</span>
+
               <p>
                 No hay componentes asignados
               </p>
+
               <small>
                 Seleccione uno de la lista izquierda.
               </small>
@@ -228,12 +221,12 @@ export function ComponentesTransfer({
           ) : (
             asignados.map((componente) => (
               <ComponenteItem
-                key={componente.id}
+                key={`asignado-${componente.id}`}
                 componente={componente}
+                origen="asignado"
                 seleccionado={seleccionado}
-                setSeleccionado={
-                  setSeleccionado
-                }
+                origenSeleccionado={origenSeleccionado}
+                setSeleccionado={setSeleccionado}
               />
             ))
           )}

@@ -21,6 +21,11 @@ export type TipoPadre =
   | 'sistema'
   | '';
 
+type OrigenSeleccionado =
+  | 'disponible'
+  | 'asignado'
+  | null;
+
 export function useComponentesEquipo() {
   const [tipoPadre, setTipoPadre] =
     useState<TipoPadre>('');
@@ -60,6 +65,9 @@ export function useComponentesEquipo() {
 
   const [seleccionado, setSeleccionado] =
     useState<Componente | null>(null);
+
+  const [origenSeleccionado, setOrigenSeleccionado] =
+    useState<OrigenSeleccionado>(null);
 
   const [busquedaEquipo, setBusquedaEquipo] =
     useState('');
@@ -159,6 +167,7 @@ export function useComponentesEquipo() {
 
         setEquipos(resultado);
         setEquipoSeleccionado(null);
+        setBusquedaEquipo('');
       } catch (error) {
         console.error(
           'Error cargando equipos:',
@@ -208,6 +217,7 @@ export function useComponentesEquipo() {
       setComponentesAsignados(asignados);
       setComponentesDisponibles(disponibles);
       setSeleccionado(null);
+      setOrigenSeleccionado(null);
 
       return resultado;
     } finally {
@@ -222,6 +232,9 @@ export function useComponentesEquipo() {
       setComponentesDisponibles([]);
       setComponentesAsignados([]);
       setSeleccionado(null);
+      setOrigenSeleccionado(null);
+      setBusquedaDisponible('');
+      setBusquedaAsignado('');
       return;
     }
 
@@ -254,6 +267,9 @@ export function useComponentesEquipo() {
         setComponentesAsignados(asignados);
         setComponentesDisponibles(disponibles);
         setSeleccionado(null);
+        setOrigenSeleccionado(null);
+        setBusquedaDisponible('');
+        setBusquedaAsignado('');
       } catch (error) {
         console.error(
           'Error cargando componentes:',
@@ -264,6 +280,7 @@ export function useComponentesEquipo() {
           setComponentesDisponibles([]);
           setComponentesAsignados([]);
           setSeleccionado(null);
+          setOrigenSeleccionado(null);
         }
       } finally {
         if (activo) {
@@ -285,7 +302,7 @@ export function useComponentesEquipo() {
       .toLowerCase();
 
     if (!texto) {
-      return equipos;
+      return [];
     }
 
     return equipos.filter((equipo) =>
@@ -361,6 +378,7 @@ export function useComponentesEquipo() {
     setSubprocesoId(null);
     setEquipos([]);
     setEquipoSeleccionado(null);
+    setBusquedaEquipo('');
   };
 
   const seleccionarProceso = (
@@ -372,6 +390,7 @@ export function useComponentesEquipo() {
     setSubprocesoId(null);
     setEquipos([]);
     setEquipoSeleccionado(null);
+    setBusquedaEquipo('');
   };
 
   const seleccionarSistema = (
@@ -383,6 +402,7 @@ export function useComponentesEquipo() {
     setSubprocesoId(null);
     setEquipos([]);
     setEquipoSeleccionado(null);
+    setBusquedaEquipo('');
   };
 
   const seleccionarSubproceso = (
@@ -392,10 +412,22 @@ export function useComponentesEquipo() {
       valor ? Number(valor) : null
     );
     setEquipoSeleccionado(null);
+    setBusquedaEquipo('');
+  };
+
+  const seleccionarComponente = (
+    componente: Componente,
+    origen: 'disponible' | 'asignado'
+  ) => {
+    setSeleccionado(componente);
+    setOrigenSeleccionado(origen);
   };
 
   const moverAAsignados = () => {
-    if (!seleccionado) {
+    if (
+      !seleccionado ||
+      origenSeleccionado !== 'disponible'
+    ) {
       return;
     }
 
@@ -405,31 +437,20 @@ export function useComponentesEquipo() {
       )
     );
 
-    setComponentesAsignados((actuales) => [
-      ...actuales,
-      seleccionado,
-    ]);
+    setComponentesAsignados((actuales) => {
+      const existe = actuales.some(
+        (item) => item.id === seleccionado.id
+      );
+
+      if (existe) {
+        return actuales;
+      }
+
+      return [...actuales, seleccionado];
+    });
 
     setSeleccionado(null);
-  };
-
-  const moverADisponibles = () => {
-    if (!seleccionado) {
-      return;
-    }
-
-    setComponentesAsignados((actuales) =>
-      actuales.filter(
-        (item) => item.id !== seleccionado.id
-      )
-    );
-
-    setComponentesDisponibles((actuales) => [
-      ...actuales,
-      seleccionado,
-    ]);
-
-    setSeleccionado(null);
+    setOrigenSeleccionado(null);
   };
 
   const guardarRelaciones = async () => {
@@ -441,11 +462,17 @@ export function useComponentesEquipo() {
     setMensaje('');
 
     try {
+      const ids = Array.from(
+        new Set(
+          componentesAsignados.map(
+            (item) => item.id
+          )
+        )
+      );
+
       await relacionarComponentesConEquipo(
         equipoSeleccionado.id,
-        componentesAsignados.map(
-          (item) => item.id
-        )
+        ids
       );
 
       await cargarComponentes(
@@ -502,38 +529,31 @@ export function useComponentesEquipo() {
     subprocesoId,
     equiposFiltrados,
     equipoSeleccionado,
-
     componentesDisponibles,
     componentesAsignados,
-
     disponiblesFiltrados,
     asignadosFiltrados,
-
     seleccionado,
+    origenSeleccionado,
     busquedaEquipo,
     busquedaDisponible,
     busquedaAsignado,
-
     loadingEquipos,
     loadingComponentes,
     guardando,
     mensaje,
-
     setEquipoSeleccionado,
-    setSeleccionado,
+    setSeleccionado: seleccionarComponente,
     setBusquedaEquipo,
     setBusquedaDisponible,
     setBusquedaAsignado,
     setMensaje,
     setGuardando,
-
     seleccionarTipo,
     seleccionarProceso,
     seleccionarSistema,
     seleccionarSubproceso,
-
     moverAAsignados,
-    moverADisponibles,
     guardarRelaciones,
     recargarComponentes,
   };

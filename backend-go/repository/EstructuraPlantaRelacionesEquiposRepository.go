@@ -15,23 +15,23 @@ func (r *EstructuraPlantaRepository) ListarEquiposParaRelacionSubproceso(
 	}
 
 	rows, err := r.DB.Query(`
-		SELECT
-			e.id,
-			e.codigo,
-			e.nombre,
-			e.area,
-			e.tipo,
-			e.estado_equipo,
-			CASE
-				WHEN pe.equipo_id IS NOT NULL THEN TRUE
-				ELSE FALSE
-			END AS relacionado
-		FROM equipos e
-		LEFT JOIN planta_equipos pe
-			ON pe.equipo_id = e.id
-			AND pe.subproceso_id = $1
-		ORDER BY e.nombre
-	`, subprocesoID)
+                SELECT
+                        e.id,
+                        e.codigo,
+                        e.nombre,
+                        COALESCE(e.area, ''),
+                        COALESCE(e.tipo, ''),
+                        e.estado_equipo,
+                        CASE
+                                WHEN pe.equipo_id IS NOT NULL THEN TRUE
+                                ELSE FALSE
+                        END AS relacionado
+                FROM equipos e
+                LEFT JOIN planta_equipos pe
+                        ON pe.equipo_id = e.id
+                        AND pe.subproceso_id = $1
+                ORDER BY e.nombre
+        `, subprocesoID)
 
 	if err != nil {
 		return nil, err
