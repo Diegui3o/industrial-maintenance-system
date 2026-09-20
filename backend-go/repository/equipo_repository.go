@@ -177,6 +177,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 		var e models.Equipo
 
 		var (
+			area             sql.NullString
+			tipo             sql.NullString
 			fase             sql.NullString
 			fabricante       sql.NullString
 			modelo           sql.NullString
@@ -191,8 +193,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 			&e.ID,
 			&e.Codigo,
 			&e.Nombre,
-			&e.Area,
-			&e.Tipo,
+			&area,
+			&tipo,
 			&fase,
 			&fabricante,
 			&modelo,
@@ -211,6 +213,8 @@ func (r *EquipoRepository) ObtenerEquipos(
 			return nil, err
 		}
 
+		e.Area = area.String
+		e.Tipo = tipo.String
 		e.Fase = fase.String
 		e.Fabricante = fabricante.String
 		e.Modelo = modelo.String
