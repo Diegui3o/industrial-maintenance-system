@@ -48,6 +48,7 @@ export function ComponentesEquipo() {
     seleccionarSubproceso,
 
     moverAAsignados,
+    moverADisponibles,
     guardarRelaciones,
     recargarComponentes,
   } = useComponentesEquipo();
@@ -230,6 +231,7 @@ export function ComponentesEquipo() {
             setBusquedaDisponible={setBusquedaDisponible}
             setBusquedaAsignado={setBusquedaAsignado}
             moverAAsignados={moverAAsignados}
+            moverADisponibles={moverADisponibles}
           />
 
           <div className="componentes-footer">

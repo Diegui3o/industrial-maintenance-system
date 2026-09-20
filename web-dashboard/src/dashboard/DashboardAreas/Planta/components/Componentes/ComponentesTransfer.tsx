@@ -15,6 +15,7 @@ interface Props {
   setBusquedaDisponible: (valor: string) => void;
   setBusquedaAsignado: (valor: string) => void;
   moverAAsignados: () => void;
+  moverADisponibles: () => void;
 }
 
 function ComponenteItem({
@@ -79,6 +80,7 @@ export function ComponentesTransfer({
   setBusquedaDisponible,
   setBusquedaAsignado,
   moverAAsignados,
+  moverADisponibles,
 }: Props) {
   return (
     <div className="componentes-transfer">
@@ -159,14 +161,21 @@ export function ComponentesTransfer({
           }
           title="Asignar componente al equipo"
         >
-          <span>→</span>
+          →
         </button>
 
-        <span className="componentes-transfer-hint">
-          Seleccione un componente
-          <br />
-          para asignarlo al equipo
-        </span>
+        <button
+          type="button"
+          className="componentes-transfer-action"
+          onClick={moverADisponibles}
+          disabled={
+            !seleccionado ||
+            origenSeleccionado !== 'asignado'
+          }
+          title="Devolver a disponibles"
+        >
+          ←
+        </button>
       </div>
 
       {/* ASIGNADOS */}

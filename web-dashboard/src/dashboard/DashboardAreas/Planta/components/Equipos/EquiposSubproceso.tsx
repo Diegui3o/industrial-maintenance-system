@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   getEquiposParaRelacionSubproceso,
@@ -18,11 +18,39 @@ export function EquiposSubproceso({
   onSelectEquipo,
 }: Props) {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [seleccionados, setSeleccionados] = useState<number[]>([]);
+  const [asignados, setAsignados] = useState<Equipo[]>([]);
+  const [disponibles, setDisponibles] = useState<Equipo[]>([]);
+
+  const [seleccionado, setSeleccionado] =
+    useState<Equipo | null>(null);
+
+  const [origenSeleccionado, setOrigenSeleccionado] =
+    useState<'disponible' | 'asignado' | null>(null);
+
+  const [busquedaDisponible, setBusquedaDisponible] =
+    useState('');
+
+  const [busquedaAsignado, setBusquedaAsignado] =
+    useState('');
+
   const [loading, setLoading] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [busqueda, setBusqueda] = useState('');
+
+  const normalizar = (texto: string) =>
+    texto
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const ordenarEquipos = (lista: Equipo[]) =>
+    [...lista].sort((a, b) =>
+      `${a.codigo ?? ''} ${a.nombre}`.localeCompare(
+        `${b.codigo ?? ''} ${b.nombre}`,
+        'es',
+        { sensitivity: 'base' }
+      )
+    );
 
   const cargarEquipos = useCallback(async () => {
     setLoading(true);
@@ -32,18 +60,25 @@ export function EquiposSubproceso({
       const resultado =
         await getEquiposParaRelacionSubproceso(subprocesoId);
 
-      setEquipos(resultado);
-
-      setSeleccionados(
-        resultado
-          .filter((equipo) => equipo.relacionado)
-          .map((equipo) => equipo.id)
+      const asignadosIniciales = resultado.filter(
+        (equipo) => equipo.relacionado
       );
+
+      const disponiblesIniciales = resultado.filter(
+        (equipo) => !equipo.relacionado
+      );
+
+      setEquipos(resultado);
+      setAsignados(ordenarEquipos(asignadosIniciales));
+      setDisponibles(ordenarEquipos(disponiblesIniciales));
+      setSeleccionado(null);
+      setOrigenSeleccionado(null);
     } catch (error) {
       console.error('Error cargando equipos:', error);
 
       setEquipos([]);
-      setSeleccionados([]);
+      setAsignados([]);
+      setDisponibles([]);
       setMensaje('No se pudieron cargar los equipos.');
     } finally {
       setLoading(false);
@@ -54,16 +89,98 @@ export function EquiposSubproceso({
     void cargarEquipos();
   }, [cargarEquipos]);
 
-  const cambiarSeleccion = (id: number) => {
-    setSeleccionados((actuales) =>
-      actuales.includes(id)
-        ? actuales.filter((item) => item !== id)
-        : [...actuales, id]
+  const equiposDisponiblesFiltrados = useMemo(() => {
+    const texto = normalizar(
+      busquedaDisponible.trim()
     );
+
+    return disponibles.filter((equipo) => {
+      const contenido = normalizar(
+        [
+          equipo.codigo ?? '',
+          equipo.nombre,
+          equipo.area ?? '',
+          equipo.tipo ?? '',
+          equipo.estado_equipo ?? '',
+        ].join(' ')
+      );
+
+      return contenido.includes(texto);
+    });
+  }, [disponibles, busquedaDisponible]);
+
+  const equiposAsignadosFiltrados = useMemo(() => {
+    const texto = normalizar(
+      busquedaAsignado.trim()
+    );
+
+    return asignados.filter((equipo) => {
+      const contenido = normalizar(
+        [
+          equipo.codigo ?? '',
+          equipo.nombre,
+          equipo.area ?? '',
+          equipo.tipo ?? '',
+          equipo.estado_equipo ?? '',
+        ].join(' ')
+      );
+
+      return contenido.includes(texto);
+    });
+  }, [asignados, busquedaAsignado]);
+
+  const seleccionarEquipo = (
+    equipo: Equipo,
+    origen: 'disponible' | 'asignado'
+  ) => {
+    setSeleccionado(equipo);
+    setOrigenSeleccionado(origen);
+
+    onSelectEquipo?.(equipo);
+  };
+
+  const moverAAsignados = () => {
+    if (!seleccionado || origenSeleccionado !== 'disponible') {
+      return;
+    }
+
+    setDisponibles((actuales) =>
+      actuales.filter(
+        (equipo) => equipo.id !== seleccionado.id
+      )
+    );
+
+    setAsignados((actuales) =>
+      ordenarEquipos([...actuales, seleccionado])
+    );
+
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
+  };
+
+  const moverADisponibles = () => {
+    if (!seleccionado || origenSeleccionado !== 'asignado') {
+      return;
+    }
+
+    setAsignados((actuales) =>
+      actuales.filter(
+        (equipo) => equipo.id !== seleccionado.id
+      )
+    );
+
+    setDisponibles((actuales) =>
+      ordenarEquipos([...actuales, seleccionado])
+    );
+
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
+
+    onSelectEquipo?.(null);
   };
 
   const guardarRelacion = async () => {
-    if (seleccionados.length === 0) {
+    if (asignados.length === 0) {
       setMensaje('Seleccione al menos un equipo.');
       return;
     }
@@ -74,10 +191,12 @@ export function EquiposSubproceso({
     try {
       await relacionarEquiposConSubproceso(
         subprocesoId,
-        seleccionados
+        asignados.map((equipo) => equipo.id)
       );
 
-      setMensaje('Relación guardada correctamente.');
+      setMensaje(
+        'Relación de equipos guardada correctamente.'
+      );
     } catch (error) {
       console.error(
         'Error guardando relación de equipos:',
@@ -90,27 +209,46 @@ export function EquiposSubproceso({
     }
   };
 
-  const normalizar = (texto: string) =>
-    texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+  const renderEquipo = (
+    equipo: Equipo,
+    origen: 'disponible' | 'asignado'
+  ) => {
+    const activo =
+      seleccionado?.id === equipo.id &&
+      origenSeleccionado === origen;
 
-  const textoBusqueda = normalizar(busqueda.trim());
+    return (
+      <button
+        key={equipo.id}
+        type="button"
+        className={`planta-relation-transfer-item ${
+          activo ? 'selected' : ''
+        }`}
+        onClick={() =>
+          seleccionarEquipo(equipo, origen)
+        }
+      >
+        <span>
+          <strong>
+            {equipo.codigo
+              ? `${equipo.codigo} - `
+              : ''}
+            {equipo.nombre}
+          </strong>
 
-  const equiposFiltrados = equipos.filter((equipo) => {
-    const texto = normalizar(
-      [
-        equipo.codigo ?? '',
-        equipo.nombre,
-        equipo.area ?? '',
-        equipo.tipo ?? '',
-        equipo.estado_equipo ?? '',
-      ].join(' ')
+          <small>
+            Área: {equipo.area || 'Sin área'}
+          </small>
+
+          <small>
+            Tipo: {equipo.tipo || 'Sin tipo'}
+          </small>
+        </span>
+
+        <span>›</span>
+      </button>
     );
-
-    return texto.includes(textoBusqueda);
-  });
+  };
 
   return (
     <div className="planta-relation-panel">
@@ -129,16 +267,6 @@ export function EquiposSubproceso({
         </div>
       </div>
 
-      <div className="planta-relation-summary">
-        <span>Equipos</span>
-
-        <strong>
-          {seleccionados.length}
-        </strong>
-
-        <span>seleccionados</span>
-      </div>
-
       {loading && (
         <div className="planta-empty">
           Cargando equipos...
@@ -147,97 +275,155 @@ export function EquiposSubproceso({
 
       {!loading && (
         <>
-          <div className="planta-relation-search">
-            <input
-              type="search"
-              value={busqueda}
-              onChange={(e) =>
-                setBusqueda(e.target.value)
-              }
-              placeholder="Buscar equipo, código, área o tipo..."
-            />
-          </div>
+          <div className="planta-relation-transfer">
+            <div className="planta-relation-transfer-panel">
+              <div className="planta-relation-transfer-header">
+                <div>
+                  <span className="planta-section-label">
+                    DISPONIBLES
+                  </span>
 
-          <div className="planta-relation-search-info">
-            {busqueda.trim()
-              ? `${equiposFiltrados.length} de ${equipos.length} equipos`
-              : `${equipos.length} equipos disponibles`}
-          </div>
+                  <strong>
+                    Equipos de otros subprocesos
+                  </strong>
+                </div>
 
-          {equiposFiltrados.length > 0 && (
-            <div className="planta-relation-grid">
-              {equiposFiltrados.map((equipo) => {
-                const seleccionado =
-                  seleccionados.includes(equipo.id);
-
-                return (
-                  <div
-                    key={equipo.id}
-                    className={`planta-relation-item ${
-                      seleccionado ? 'selected' : ''
-                    }`}
-                    onClick={() => {
-                      console.log(
-                        'CLIC EQUIPO:',
-                        equipo
-                      );
-
-                      onSelectEquipo?.(equipo);
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={seleccionado}
-                      onClick={(e) =>
-                        e.stopPropagation()
-                      }
-                      onChange={() =>
-                        cambiarSeleccion(equipo.id)
-                      }
-                    />
-
-                    <div className="planta-relation-content">
-                      <strong>
-                        {equipo.codigo
-                          ? `${equipo.codigo} - `
-                          : ''}
-                        {equipo.nombre}
-                      </strong>
-
-                      <small>
-                        Área:{' '}
-                        {equipo.area || 'Sin área'}
-                      </small>
-
-                      <small>
-                        Tipo:{' '}
-                        {equipo.tipo || 'Sin tipo'}
-                      </small>
-
-                      <small>
-                        {equipo.estado_equipo ||
-                          'Sin estado'}
-                      </small>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {equipos.length > 0 &&
-            equiposFiltrados.length === 0 && (
-              <div className="planta-relation-no-results">
-                No se encontraron equipos con esa
-                búsqueda.
+                <span className="planta-relation-count">
+                  {disponibles.length}
+                </span>
               </div>
-            )}
 
-          {equipos.length === 0 && (
-            <div className="planta-empty">
-              No existen equipos registrados.
+              <label className="planta-relation-search">
+                <span>⌕</span>
+
+                <input
+                  type="search"
+                  value={busquedaDisponible}
+                  onChange={(e) =>
+                    setBusquedaDisponible(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Buscar equipo..."
+                />
+              </label>
+
+              <div className="planta-relation-transfer-list">
+                {equiposDisponiblesFiltrados.length > 0 ? (
+                  equiposDisponiblesFiltrados.map(
+                    (equipo) =>
+                      renderEquipo(
+                        equipo,
+                        'disponible'
+                      )
+                  )
+                ) : (
+                  <div className="planta-relation-empty">
+                    <span>⌕</span>
+
+                    <p>
+                      {disponibles.length === 0
+                        ? 'No hay equipos disponibles.'
+                        : 'No se encontraron equipos.'}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+
+            <div className="planta-relation-transfer-actions">
+              <button
+                type="button"
+                className="planta-relation-transfer-action"
+                onClick={moverAAsignados}
+                disabled={
+                  !seleccionado ||
+                  origenSeleccionado !==
+                    'disponible'
+                }
+                title="Asignar equipo"
+              >
+                →
+              </button>
+
+              <button
+                type="button"
+                className="planta-relation-transfer-action"
+                onClick={moverADisponibles}
+                disabled={
+                  !seleccionado ||
+                  origenSeleccionado !==
+                    'asignado'
+                }
+                title="Quitar equipo"
+              >
+                ←
+              </button>
+            </div>
+
+            <div className="planta-relation-transfer-panel">
+              <div className="planta-relation-transfer-header">
+                <div>
+                  <span className="planta-section-label">
+                    ASIGNADOS
+                  </span>
+
+                  <strong>
+                    Equipos del subproceso
+                  </strong>
+                </div>
+
+                <span className="planta-relation-count assigned">
+                  {asignados.length}
+                </span>
+              </div>
+
+              <label className="planta-relation-search">
+                <span>⌕</span>
+
+                <input
+                  type="search"
+                  value={busquedaAsignado}
+                  onChange={(e) =>
+                    setBusquedaAsignado(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Buscar equipo..."
+                />
+              </label>
+
+              <div className="planta-relation-transfer-list">
+                {equiposAsignadosFiltrados.length > 0 ? (
+                  equiposAsignadosFiltrados.map(
+                    (equipo) =>
+                      renderEquipo(
+                        equipo,
+                        'asignado'
+                      )
+                  )
+                ) : (
+                  <div className="planta-relation-empty">
+                    <span>⌕</span>
+
+                    <p>
+                      {asignados.length === 0
+                        ? 'No hay equipos asignados.'
+                        : 'No se encontraron equipos.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="planta-relation-summary">
+            <span>Equipos asignados</span>
+
+            <strong>
+              {asignados.length}
+            </strong>
+          </div>
 
           {equipos.length > 0 && (
             <div className="planta-relation-actions">

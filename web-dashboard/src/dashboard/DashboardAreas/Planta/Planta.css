@@ -1127,3 +1127,309 @@ button.planta-list-item:hover {
     );
   }
 }
+/* =========================
+   TRANSFERENCIA DE RELACIONES
+   ========================= */
+
+.planta-relation-transfer {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    82px
+    minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+}
+
+/* =========================
+   PANELES
+   ========================= */
+
+.planta-relation-transfer-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e1e1e1;
+  border-radius: 11px;
+  background: #fafafa;
+}
+
+/* =========================
+   CABECERA
+   ========================= */
+
+.planta-relation-transfer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 66px;
+  padding: 13px 15px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.planta-relation-transfer-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.planta-relation-transfer-header strong {
+  color: #333333;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.planta-relation-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: 50%;
+  background: #eeeeee;
+  color: #666666;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.planta-relation-count.assigned {
+  background: #fff0e2;
+  color: #d4660b;
+}
+
+/* =========================
+   BUSCADOR
+   ========================= */
+
+.planta-relation-transfer-panel .planta-relation-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px;
+  padding: 0 11px;
+  height: 38px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search:focus-within {
+  border-color: #e87511;
+  box-shadow:
+    0 0 0 2px rgba(232, 117, 17, 0.08);
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search > span {
+  color: #9a9a9a;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #333333;
+  font-size: 13px;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search input::placeholder {
+  color: #a3a3a3;
+}
+
+/* =========================
+   LISTA
+   ========================= */
+
+.planta-relation-transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 260px;
+  max-height: 340px;
+  padding: 4px 12px 12px;
+  overflow-y: auto;
+}
+
+/* =========================
+   ITEM
+   ========================= */
+
+.planta-relation-transfer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #333333;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.planta-relation-transfer-item:hover {
+  border-color: #f0b17b;
+  background: #fffaf6;
+  transform: translateY(-1px);
+}
+
+.planta-relation-transfer-item.selected {
+  border-color: #e87511;
+  background: #fff5eb;
+  box-shadow:
+    0 0 0 2px rgba(232, 117, 17, 0.1);
+}
+
+.planta-relation-transfer-item > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.planta-relation-transfer-item strong {
+  overflow: hidden;
+  color: #292929;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planta-relation-transfer-item small {
+  overflow: hidden;
+  color: #8a8a8a;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planta-relation-transfer-item > span:last-child {
+  flex-shrink: 0;
+  color: #b1b1b1;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.planta-relation-transfer-item.selected
+  > span:last-child {
+  color: #e87511;
+  font-weight: 700;
+}
+
+/* =========================
+   BOTONES CENTRALES
+   ========================= */
+
+.planta-relation-transfer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.planta-relation-transfer-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #777777;
+  font-size: 23px;
+  cursor: pointer;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.04);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.planta-relation-transfer-action:hover:not(:disabled) {
+  border-color: #e87511;
+  background: #fff5eb;
+  color: #e87511;
+  transform: scale(1.04);
+}
+
+.planta-relation-transfer-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 900px) {
+  .planta-relation-transfer {
+    grid-template-columns: 1fr;
+  }
+
+  .planta-relation-transfer-actions {
+    flex-direction: row;
+    order: 2;
+  }
+
+  .planta-relation-transfer-panel:first-child {
+    order: 1;
+  }
+
+  .planta-relation-transfer-panel:last-child {
+    order: 3;
+  }
+}
+.planta-relation-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  flex: 1;
+  min-height: 220px;
+  padding: 25px;
+  text-align: center;
+  color: #999999;
+}
+
+.planta-relation-empty > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #eeeeee;
+  color: #999999;
+  font-size: 17px;
+}
+
+.planta-relation-empty p {
+  margin: 0;
+  color: #777777;
+  font-size: 13px;
+  font-weight: 600;
+}

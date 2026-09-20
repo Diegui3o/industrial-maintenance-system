@@ -453,6 +453,36 @@ export function useComponentesEquipo() {
     setOrigenSeleccionado(null);
   };
 
+  const moverADisponibles = () => {
+    if (
+      !seleccionado ||
+      origenSeleccionado !== 'asignado'
+    ) {
+      return;
+    }
+
+    setComponentesAsignados((actuales) =>
+      actuales.filter(
+        (item) => item.id !== seleccionado.id
+      )
+    );
+
+    setComponentesDisponibles((actuales) => {
+      const existe = actuales.some(
+        (item) => item.id === seleccionado.id
+      );
+
+      if (existe) {
+        return actuales;
+      }
+
+      return [...actuales, seleccionado];
+    });
+
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
+  };
+
   const guardarRelaciones = async () => {
     if (!equipoSeleccionado) {
       return;
@@ -554,6 +584,7 @@ export function useComponentesEquipo() {
     seleccionarSistema,
     seleccionarSubproceso,
     moverAAsignados,
+    moverADisponibles,
     guardarRelaciones,
     recargarComponentes,
   };

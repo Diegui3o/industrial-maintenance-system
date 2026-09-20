@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   getProcesos,
@@ -12,22 +12,45 @@ import { SubprocesoFormProceso } from './SubprocesoFormProceso';
 
 export function SubprocesosProcesoPanel() {
   const [procesos, setProcesos] = useState<Proceso[]>([]);
-  const [subprocesos, setSubprocesos] =
-    useState<Subproceso[]>([]);
-  const [procesoId, setProcesoId] =
-    useState<number | null>(null);
-  const [seleccionados, setSeleccionados] =
-    useState<number[]>([]);
+  const [subprocesos, setSubprocesos] = useState<Subproceso[]>([]);
+  const [procesoId, setProcesoId] = useState<number | null>(null);
+
+  const [asignados, setAsignados] = useState<Subproceso[]>([]);
+  const [disponibles, setDisponibles] = useState<Subproceso[]>([]);
+
+  const [seleccionado, setSeleccionado] =
+    useState<Subproceso | null>(null);
+
+  const [origenSeleccionado, setOrigenSeleccionado] =
+    useState<'disponible' | 'asignado' | null>(null);
+
+  const [busquedaDisponible, setBusquedaDisponible] =
+    useState('');
+
+  const [busquedaAsignado, setBusquedaAsignado] =
+    useState('');
+
   const [loading, setLoading] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [mostrarForm, setMostrarForm] =
-    useState(false);
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [busqueda, setBusqueda] =
-  useState('');
+
+  const normalizar = (texto: string) =>
+    texto
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const ordenar = (items: Subproceso[]) =>
+    [...items].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, 'es', {
+        sensitivity: 'base',
+      })
+    );
 
   const cargarDatos = useCallback(async () => {
     setLoading(true);
+    setMensaje('');
 
     try {
       const [
@@ -42,19 +65,35 @@ export function SubprocesosProcesoPanel() {
       setSubprocesos(subprocesosResultado);
 
       if (procesoId) {
-        setSeleccionados(
-          subprocesosResultado
-            .filter(
-              (item) =>
-                item.proceso_id === procesoId
-            )
-            .map((item) => item.id)
+        const relacionados = subprocesosResultado.filter(
+          (item) => item.proceso_id === procesoId
         );
+
+        const noRelacionados = subprocesosResultado.filter(
+          (item) => item.proceso_id !== procesoId
+        );
+
+        setAsignados(ordenar(relacionados));
+        setDisponibles(ordenar(noRelacionados));
+      } else {
+        setAsignados([]);
+        setDisponibles(ordenar(subprocesosResultado));
       }
+
+      setSeleccionado(null);
+      setOrigenSeleccionado(null);
     } catch (error) {
       console.error(
         'Error cargando procesos y subprocesos:',
         error
+      );
+
+      setProcesos([]);
+      setSubprocesos([]);
+      setAsignados([]);
+      setDisponibles([]);
+      setMensaje(
+        'No se pudieron cargar los procesos y subprocesos.'
       );
     } finally {
       setLoading(false);
@@ -71,27 +110,79 @@ export function SubprocesosProcesoPanel() {
     setProcesoId(nuevoId);
     setMostrarForm(false);
     setMensaje('');
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
+    setBusquedaDisponible('');
+    setBusquedaAsignado('');
 
     if (!nuevoId) {
-      setSeleccionados([]);
+      setAsignados([]);
+      setDisponibles(ordenar(subprocesos));
       return;
     }
 
-    setSeleccionados(
-      subprocesos
-        .filter(
-          (item) => item.proceso_id === nuevoId
-        )
-        .map((item) => item.id)
+    const relacionados = subprocesos.filter(
+      (item) => item.proceso_id === nuevoId
     );
+
+    const noRelacionados = subprocesos.filter(
+      (item) => item.proceso_id !== nuevoId
+    );
+
+    setAsignados(ordenar(relacionados));
+    setDisponibles(ordenar(noRelacionados));
   };
 
-  const cambiarSeleccion = (id: number) => {
-    setSeleccionados((actuales) =>
-      actuales.includes(id)
-        ? actuales.filter((item) => item !== id)
-        : [...actuales, id]
+  const seleccionarSubproceso = (
+    subproceso: Subproceso,
+    origen: 'disponible' | 'asignado'
+  ) => {
+    setSeleccionado(subproceso);
+    setOrigenSeleccionado(origen);
+  };
+
+  const moverAAsignados = () => {
+    if (
+      !seleccionado ||
+      origenSeleccionado !== 'disponible'
+    ) {
+      return;
+    }
+
+    setDisponibles((actuales) =>
+      actuales.filter(
+        (item) => item.id !== seleccionado.id
+      )
     );
+
+    setAsignados((actuales) =>
+      ordenar([...actuales, seleccionado])
+    );
+
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
+  };
+
+  const moverADisponibles = () => {
+    if (
+      !seleccionado ||
+      origenSeleccionado !== 'asignado'
+    ) {
+      return;
+    }
+
+    setAsignados((actuales) =>
+      actuales.filter(
+        (item) => item.id !== seleccionado.id
+      )
+    );
+
+    setDisponibles((actuales) =>
+      ordenar([...actuales, seleccionado])
+    );
+
+    setSeleccionado(null);
+    setOrigenSeleccionado(null);
   };
 
   const guardarRelacion = async () => {
@@ -100,7 +191,7 @@ export function SubprocesosProcesoPanel() {
       return;
     }
 
-    if (seleccionados.length === 0) {
+    if (asignados.length === 0) {
       setMensaje(
         'Seleccione al menos un subproceso.'
       );
@@ -111,9 +202,13 @@ export function SubprocesosProcesoPanel() {
     setMensaje('');
 
     try {
+      const ids = Array.from(
+        new Set(asignados.map((item) => item.id))
+      );
+
       await relacionarSubprocesosConProceso(
         procesoId,
-        seleccionados
+        ids
       );
 
       await cargarDatos();
@@ -139,26 +234,47 @@ export function SubprocesosProcesoPanel() {
     (item) => item.id === procesoId
   );
 
-  const normalizar = (texto: string) =>
-    texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+  const disponiblesFiltrados = useMemo(() => {
+    const texto = normalizar(
+      busquedaDisponible.trim()
+    );
 
-  const textoBusqueda =
-    normalizar(busqueda);
+    if (!texto) {
+      return disponibles;
+    }
 
-  const subprocesosFiltrados =
-    subprocesos.filter((subproceso) => {
-      const texto = normalizar(
+    return disponibles.filter((subproceso) => {
+      const contenido = normalizar(
         [
           subproceso.nombre,
           subproceso.descripcion ?? '',
         ].join(' ')
       );
 
-      return texto.includes(textoBusqueda);
+      return contenido.includes(texto);
     });
+  }, [disponibles, busquedaDisponible]);
+
+  const asignadosFiltrados = useMemo(() => {
+    const texto = normalizar(
+      busquedaAsignado.trim()
+    );
+
+    if (!texto) {
+      return asignados;
+    }
+
+    return asignados.filter((subproceso) => {
+      const contenido = normalizar(
+        [
+          subproceso.nombre,
+          subproceso.descripcion ?? '',
+        ].join(' ')
+      );
+
+      return contenido.includes(texto);
+    });
+  }, [asignados, busquedaAsignado]);
 
   return (
     <div>
@@ -228,16 +344,6 @@ export function SubprocesosProcesoPanel() {
             />
           )}
 
-          <div className="planta-relation-summary">
-            <span>Subprocesos</span>
-
-            <strong>
-              {seleccionados.length}
-            </strong>
-
-            <span>seleccionados</span>
-          </div>
-
           {loading && (
             <div className="planta-empty">
               Cargando subprocesos...
@@ -246,83 +352,222 @@ export function SubprocesosProcesoPanel() {
 
           {!loading && (
             <>
-              <div className="planta-relation-search">
-                <input
-                  type="search"
-                  value={busqueda}
-                  onChange={(e) =>
-                    setBusqueda(e.target.value)
-                  }
-                  placeholder="Buscar subproceso..."
-                />
+              <div className="planta-relation-summary">
+                <span>Subprocesos asignados</span>
+
+                <strong>
+                  {asignados.length}
+                </strong>
               </div>
-              <div className="planta-relation-grid">
-                {subprocesosFiltrados.map(
-                  (subproceso) => {
-                    const seleccionado =
-                      seleccionados.includes(
-                        subproceso.id
-                      );
 
-                    const relacionado =
-                      subproceso.proceso_id ===
-                      procesoId;
+              <div className="planta-relation-transfer">
+                {/* DISPONIBLES */}
+                <div className="planta-relation-transfer-panel">
+                  <div className="planta-relation-transfer-header">
+                    <div>
+                      <span className="planta-section-label">
+                        DISPONIBLES
+                      </span>
 
-                    return (
-                      <label
-                        key={subproceso.id}
-                        className={`planta-relation-item ${
-                          seleccionado
-                            ? 'selected'
-                            : ''
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={seleccionado}
-                          onChange={() =>
-                            cambiarSeleccion(
-                              subproceso.id
-                            )
-                          }
-                        />
+                      <strong>
+                        Subprocesos de otros procesos
+                      </strong>
+                    </div>
 
-                        <div className="planta-relation-content">
-                          <strong>
-                            {subproceso.nombre}
-                          </strong>
+                    <span className="planta-relation-count">
+                      {disponibles.length}
+                    </span>
+                  </div>
 
-                          {subproceso.descripcion && (
-                            <small>
-                              {
-                                subproceso.descripcion
+                  <div className="planta-relation-search">
+                    <span>⌕</span>
+
+                    <input
+                      type="search"
+                      value={busquedaDisponible}
+                      onChange={(e) =>
+                        setBusquedaDisponible(
+                          e.target.value
+                        )
+                      }
+                      placeholder="Buscar subproceso..."
+                    />
+                  </div>
+
+                  <div className="planta-relation-transfer-list">
+                    {disponiblesFiltrados.length === 0 ? (
+                      <div className="planta-empty">
+                        {disponibles.length === 0
+                          ? 'No hay subprocesos disponibles.'
+                          : 'No se encontraron resultados.'}
+                      </div>
+                    ) : (
+                      disponiblesFiltrados.map(
+                        (subproceso) => {
+                          const activo =
+                            seleccionado?.id ===
+                              subproceso.id &&
+                            origenSeleccionado ===
+                              'disponible';
+
+                          return (
+                            <button
+                              type="button"
+                              key={`disponible-${subproceso.id}`}
+                              className={
+                                activo
+                                  ? 'planta-relation-transfer-item selected'
+                                  : 'planta-relation-transfer-item'
                               }
-                            </small>
-                          )}
+                              onClick={() =>
+                                seleccionarSubproceso(
+                                  subproceso,
+                                  'disponible'
+                                )
+                              }
+                            >
+                              <span>
+                                <strong>
+                                  {subproceso.nombre}
+                                </strong>
 
-                          <span
-                            className={`planta-status ${
-                              relacionado
-                                ? 'linked'
-                                : 'available'
-                            }`}
-                          >
-                            {relacionado
-                              ? 'Relacionado'
-                              : 'Disponible'}
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  }
-                )}
-              </div>
+                                {subproceso.descripcion && (
+                                  <small>
+                                    {
+                                      subproceso.descripcion
+                                    }
+                                  </small>
+                                )}
+                              </span>
 
-              {subprocesos.length === 0 && (
-                <div className="planta-empty">
-                  No hay subprocesos registrados.
+                              <span>›</span>
+                            </button>
+                          );
+                        }
+                      )
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {/* ACCIONES */}
+                <div className="planta-relation-transfer-actions">
+                  <button
+                    type="button"
+                    className="planta-relation-transfer-action"
+                    onClick={moverAAsignados}
+                    disabled={
+                      !seleccionado ||
+                      origenSeleccionado !==
+                        'disponible'
+                    }
+                    title="Asignar subproceso"
+                  >
+                    →
+                  </button>
+
+                  <button
+                    type="button"
+                    className="planta-relation-transfer-action"
+                    onClick={moverADisponibles}
+                    disabled={
+                      !seleccionado ||
+                      origenSeleccionado !==
+                        'asignado'
+                    }
+                    title="Quitar subproceso"
+                  >
+                    ←
+                  </button>
+                </div>
+
+                {/* ASIGNADOS */}
+                <div className="planta-relation-transfer-panel">
+                  <div className="planta-relation-transfer-header">
+                    <div>
+                      <span className="planta-section-label">
+                        ASIGNADOS
+                      </span>
+
+                      <strong>
+                        Subprocesos del proceso
+                      </strong>
+                    </div>
+
+                    <span className="planta-relation-count assigned">
+                      {asignados.length}
+                    </span>
+                  </div>
+
+                  <div className="planta-relation-search">
+                    <span>⌕</span>
+
+                    <input
+                      type="search"
+                      value={busquedaAsignado}
+                      onChange={(e) =>
+                        setBusquedaAsignado(
+                          e.target.value
+                        )
+                      }
+                      placeholder="Buscar asignado..."
+                    />
+                  </div>
+
+                  <div className="planta-relation-transfer-list">
+                    {asignadosFiltrados.length === 0 ? (
+                      <div className="planta-empty">
+                        {asignados.length === 0
+                          ? 'No hay subprocesos asignados.'
+                          : 'No se encontraron resultados.'}
+                      </div>
+                    ) : (
+                      asignadosFiltrados.map(
+                        (subproceso) => {
+                          const activo =
+                            seleccionado?.id ===
+                              subproceso.id &&
+                            origenSeleccionado ===
+                              'asignado';
+
+                          return (
+                            <button
+                              type="button"
+                              key={`asignado-${subproceso.id}`}
+                              className={
+                                activo
+                                  ? 'planta-relation-transfer-item selected'
+                                  : 'planta-relation-transfer-item'
+                              }
+                              onClick={() =>
+                                seleccionarSubproceso(
+                                  subproceso,
+                                  'asignado'
+                                )
+                              }
+                            >
+                              <span>
+                                <strong>
+                                  {subproceso.nombre}
+                                </strong>
+
+                                {subproceso.descripcion && (
+                                  <small>
+                                    {
+                                      subproceso.descripcion
+                                    }
+                                  </small>
+                                )}
+                              </span>
+
+                              <span>›</span>
+                            </button>
+                          );
+                        }
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
 
               <div className="planta-relation-actions">
                 <button
