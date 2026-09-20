@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
+import { exportarTablaExcel } from "../../utils/exportarExcel";
 import {
   getEquipos,
   type Equipo,
@@ -131,6 +131,12 @@ export function EquiposLista() {
   const [busquedaFiltro, setBusquedaFiltro] =
     useState("");
 
+   const [posicionFiltro, setPosicionFiltro] =
+   useState({
+      top: 0,
+      left: 0,
+   });
+
   useEffect(() => {
     let activo = true;
 
@@ -252,19 +258,58 @@ export function EquiposLista() {
       );
     }, [filas, filtros]);
 
-  function abrirFiltro(
-    columna: Columna
-  ) {
-    if (
-      filtroAbierto === columna
-    ) {
+   function descargarExcel() {
+   const datos = filasFiltradas.map(
+      (fila) => [
+         fila.codigo,
+         fila.nombre,
+         fila.fase,
+         fila.tipo,
+         fila.proceso,
+         fila.subproceso,
+         fila.componente,
+         fila.ip,
+         fila.estado,
+      ]
+   );
+
+   exportarTablaExcel(
+      "equipos_planta",
+      [
+         "Código",
+         "Equipo",
+         "Fase",
+         "Tipo",
+         "Proceso",
+         "Subproceso",
+         "Componente",
+         "IP",
+         "Estado",
+      ],
+      datos
+   );
+   }
+   
+   function abrirFiltro(
+   columna: Columna,
+   evento: React.MouseEvent<HTMLButtonElement>
+   ) {
+   if (filtroAbierto === columna) {
       setFiltroAbierto(null);
       return;
-    }
+   }
 
-    setFiltroAbierto(columna);
-    setBusquedaFiltro("");
-  }
+   const rect =
+      evento.currentTarget.getBoundingClientRect();
+
+   setPosicionFiltro({
+      top: rect.bottom + 2,
+      left: rect.left,
+   });
+
+   setFiltroAbierto(columna);
+   setBusquedaFiltro("");
+   }
 
   function seleccionarValor(
     columna: Columna,
@@ -334,22 +379,32 @@ export function EquiposLista() {
   return (
     <section className="planta-lista planta-equipos-lista">
       <div className="planta-lista-header">
-        <div>
-          <h2>Equipos</h2>
+      <div>
+         <h2>Equipos</h2>
 
-          <span>
+         <span>
             {filasFiltradas.length} registros ·{" "}
             {equipos.length} equipos
-          </span>
-        </div>
+         </span>
+      </div>
 
-        <button
-          type="button"
-          className="planta-lista-limpiar"
-          onClick={limpiarFiltros}
-        >
-          Limpiar filtros
-        </button>
+      <div className="planta-lista-acciones">
+         <button
+            type="button"
+            className="planta-btn-excel"
+            onClick={descargarExcel}
+         >
+            ↓ Excel
+         </button>
+
+         <button
+            type="button"
+            className="planta-lista-limpiar"
+            onClick={limpiarFiltros}
+         >
+            Limpiar filtros
+         </button>
+      </div>
       </div>
 
       <div className="planta-table-wrapper planta-equipos-table-wrapper">
@@ -375,7 +430,10 @@ export function EquiposLista() {
                   filtros[columna.key];
 
                 return (
-                  <th key={columna.key}>
+                  <th
+                  key={columna.key}
+                  className="planta-excel-th"
+                  >
                     <button
                       type="button"
                       className={`planta-excel-filtro ${
@@ -385,11 +443,12 @@ export function EquiposLista() {
                           ? "filtrado"
                           : ""
                       }`}
-                      onClick={() =>
-                        abrirFiltro(
-                          columna.key
-                        )
-                      }
+                     onClick={(e) =>
+                     abrirFiltro(
+                        columna.key,
+                        e
+                     )
+                     }
                     >
                       <span>
                         {columna.label}
@@ -402,7 +461,13 @@ export function EquiposLista() {
 
                     {filtroAbierto ===
                       columna.key && (
-                      <div className="planta-excel-menu">
+                      <div
+                        className="planta-excel-menu"
+                        style={{
+                           top: posicionFiltro.top,
+                           left: posicionFiltro.left,
+                        }}
+                        >
                         <div className="planta-excel-menu-search">
                           <input
                             type="search"

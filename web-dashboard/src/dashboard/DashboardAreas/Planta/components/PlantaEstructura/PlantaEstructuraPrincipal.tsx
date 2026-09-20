@@ -1,12 +1,12 @@
 import { useState } from 'react';
 
-import type { Equipo } from '../../services/plantaApi';
-
 import { ProcesosEstructura } from '../Procesos/ProcesosEstructura';
 import { SistemasEstructura } from '../Sistemas/SistemasEstructura';
 import { SubprocesosPorEstructura } from '../Subprocesos/SubprocesosPorEstructura';
 import { EquiposPorEstructura } from '../Equipos/EquiposPorEstructura';
 import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
+
+import type { Equipo } from '../../services/plantaEquiposApi';
 
 type Seccion =
   | 'procesos'
@@ -23,51 +23,84 @@ export function PlantaEstructuraPrincipal() {
     useState<Equipo | null>(null);
 
   return (
-    <div className="planta-layout">
-      <aside className="planta-menu">
+    <div className="planta-estructura">
+
+      <div className="planta-estructura-tabs">
 
         <button
           type="button"
-          className={seccion === 'procesos' ? 'active' : ''}
-          onClick={() => setSeccion('procesos')}
+          className={`planta-estructura-btn ${
+            seccion === 'procesos'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('procesos')
+          }
         >
           Procesos
         </button>
 
         <button
           type="button"
-          className={seccion === 'sistemas' ? 'active' : ''}
-          onClick={() => setSeccion('sistemas')}
+          className={`planta-estructura-btn ${
+            seccion === 'sistemas'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('sistemas')
+          }
         >
           Sistemas
         </button>
 
         <button
           type="button"
-          className={seccion === 'subprocesos' ? 'active' : ''}
-          onClick={() => setSeccion('subprocesos')}
+          className={`planta-estructura-btn ${
+            seccion === 'subprocesos'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('subprocesos')
+          }
         >
           Subprocesos
         </button>
 
         <button
           type="button"
-          className={seccion === 'equipos' ? 'active' : ''}
-          onClick={() => setSeccion('equipos')}
+          className={`planta-estructura-btn ${
+            seccion === 'equipos'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('equipos')
+          }
         >
           Equipos
         </button>
 
         <button
           type="button"
-          className={seccion === 'componentes' ? 'active' : ''}
-          onClick={() => setSeccion('componentes')}
+          className={`planta-estructura-btn ${
+            seccion === 'componentes'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('componentes')
+          }
         >
           Componentes
         </button>
-      </aside>
+
+      </div>
 
       <main className="planta-content">
+
         {seccion === 'procesos' && (
           <ProcesosEstructura />
         )}
@@ -83,7 +116,9 @@ export function PlantaEstructuraPrincipal() {
         {seccion === 'equipos' && (
           <>
             <EquiposPorEstructura
-              onSelectEquipo={setEquipoSeleccionado}
+              onSelectEquipo={
+                setEquipoSeleccionado
+              }
             />
 
             {equipoSeleccionado && (
@@ -97,6 +132,7 @@ export function PlantaEstructuraPrincipal() {
         {seccion === 'componentes' && (
           <ComponentesEquipo />
         )}
+
       </main>
     </div>
   );

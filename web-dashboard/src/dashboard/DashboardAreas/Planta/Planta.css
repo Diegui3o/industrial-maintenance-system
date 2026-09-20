@@ -1593,11 +1593,17 @@ button.planta-list-item:hover {
 .planta-equipos-table-wrapper {
   width: 100%;
   height: calc(100% - 62px);
-  overflow: auto;
+
+  overflow-x: auto;
+  overflow-y: auto;
+
   border: 1px solid #e5e7eb;
   border-radius: 10px;
+
   background: #ffffff;
-  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.06);
+
+  box-shadow:
+    0 3px 14px rgba(15, 23, 42, 0.06);
 }
 
 .planta-equipos-table {
@@ -1708,32 +1714,6 @@ button.planta-list-item:hover {
 }
 
 /* =========================
-   MENÚ FILTRO
-========================= */
-
-.planta-excel-menu {
-  position: fixed;
-  z-index: 1000;
-
-  width: 290px;
-  max-height: 400px;
-
-  padding: 8px;
-
-  box-sizing: border-box;
-
-  background: #ffffff;
-
-  border: 1px solid #d7dce2;
-  border-radius: 8px;
-
-  box-shadow:
-    0 8px 24px rgba(15, 23, 42, 0.15);
-
-  color: #374151;
-}
-
-/* =========================
    BUSCADOR
 ========================= */
 
@@ -1812,15 +1792,17 @@ button.planta-list-item:hover {
 }
 
 .planta-excel-valor {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+
   align-items: center;
 
-  gap: 7px;
+  gap: 6px;
 
   width: 100%;
-  min-height: 28px;
+  min-height: 26px;
 
-  padding: 4px 7px;
+  padding: 3px 5px;
 
   box-sizing: border-box;
 
@@ -1836,10 +1818,12 @@ button.planta-list-item:hover {
 }
 
 .planta-excel-valor input {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 
   margin: 0;
+
+  padding: 0;
 
   accent-color: #f59e0b;
 
@@ -1847,11 +1831,54 @@ button.planta-list-item:hover {
 }
 
 .planta-excel-valor span {
+  min-width: 0;
+
   overflow: hidden;
 
   text-overflow: ellipsis;
 
   white-space: nowrap;
+
+  color: #374151;
+}
+
+.planta-excel-valores {
+  max-height: 250px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  margin: 4px 0;
+  padding: 4px 0;
+
+  border-top: 1px solid #edf0f2;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.planta-excel-th {
+  position: relative;
+  overflow: visible !important;
+}
+
+.planta-excel-menu {
+  position: fixed;
+
+  z-index: 99999;
+
+  width: 340px;
+  max-height: 400px;
+
+  padding: 8px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.15);
 }
 
 /* =========================
@@ -2011,4 +2038,140 @@ button.planta-list-item:hover {
   background: #fee2e2;
 
   color: #b91c1c;
+}
+.planta-lista-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planta-btn-excel {
+  height: 34px;
+  padding: 0 13px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #374151;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-btn-excel:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+
+  box-shadow:
+    0 2px 6px rgba(22, 101, 52, 0.08);
+}
+.planta-menu {
+  width: 205px;
+  padding: 12px;
+
+  border-right: 1px solid #e5e7eb;
+
+  background: #ffffff;
+}
+
+.planta-estructura-btn {
+  height: 38px;
+
+  padding: 0 18px;
+
+  border: 1px solid transparent;
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #4b5563;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-estructura-btn:hover {
+  background: #f8fafc;
+
+  border-color: #e5e7eb;
+
+  color: #1f2937;
+}
+
+.planta-estructura-btn.active {
+  background: #fff7df;
+
+  border-color: #f6c453;
+
+  color: #92400e;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 1px 4px rgba(245, 158, 11, 0.12);
+}
+
+.planta-estructura-btn.active::before {
+  content: "";
+  display: inline-block;
+
+  width: 4px;
+  height: 18px;
+
+  margin-right: 9px;
+
+  border-radius: 4px;
+
+  background: #f59e0b;
+
+  vertical-align: middle;
+}
+.planta-estructura {
+  width: 100%;
+  min-width: 0;
+}
+
+.planta-estructura-tabs {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 8px 10px;
+
+  margin-bottom: 12px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.05);
+}
+.planta-content {
+  width: 100%;
+  min-width: 0;
 }
