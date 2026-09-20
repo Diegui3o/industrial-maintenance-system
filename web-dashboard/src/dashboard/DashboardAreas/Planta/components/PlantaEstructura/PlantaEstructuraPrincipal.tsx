@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import type { Equipo } from '../../services/plantaApi';
+
 import { ProcesosEstructura } from '../Procesos/ProcesosEstructura';
 import { SistemasEstructura } from '../Sistemas/SistemasEstructura';
 import { SubprocesosPorEstructura } from '../Subprocesos/SubprocesosPorEstructura';
@@ -17,20 +19,16 @@ export function PlantaEstructuraPrincipal() {
   const [seccion, setSeccion] =
     useState<Seccion>('procesos');
 
+  const [equipoSeleccionado, setEquipoSeleccionado] =
+    useState<Equipo | null>(null);
+
   return (
     <div className="planta-layout">
       <aside className="planta-menu">
-        <div className="planta-menu-title">
-          Estructura
-        </div>
 
         <button
           type="button"
-          className={
-            seccion === 'procesos'
-              ? 'active'
-              : ''
-          }
+          className={seccion === 'procesos' ? 'active' : ''}
           onClick={() => setSeccion('procesos')}
         >
           Procesos
@@ -38,11 +36,7 @@ export function PlantaEstructuraPrincipal() {
 
         <button
           type="button"
-          className={
-            seccion === 'sistemas'
-              ? 'active'
-              : ''
-          }
+          className={seccion === 'sistemas' ? 'active' : ''}
           onClick={() => setSeccion('sistemas')}
         >
           Sistemas
@@ -50,25 +44,15 @@ export function PlantaEstructuraPrincipal() {
 
         <button
           type="button"
-          className={
-            seccion === 'subprocesos'
-              ? 'active'
-              : ''
-          }
-          onClick={() =>
-            setSeccion('subprocesos')
-          }
+          className={seccion === 'subprocesos' ? 'active' : ''}
+          onClick={() => setSeccion('subprocesos')}
         >
           Subprocesos
         </button>
 
         <button
           type="button"
-          className={
-            seccion === 'equipos'
-              ? 'active'
-              : ''
-          }
+          className={seccion === 'equipos' ? 'active' : ''}
           onClick={() => setSeccion('equipos')}
         >
           Equipos
@@ -76,14 +60,8 @@ export function PlantaEstructuraPrincipal() {
 
         <button
           type="button"
-          className={
-            seccion === 'componentes'
-              ? 'active'
-              : ''
-          }
-          onClick={() =>
-            setSeccion('componentes')
-          }
+          className={seccion === 'componentes' ? 'active' : ''}
+          onClick={() => setSeccion('componentes')}
         >
           Componentes
         </button>
@@ -103,7 +81,17 @@ export function PlantaEstructuraPrincipal() {
         )}
 
         {seccion === 'equipos' && (
-          <EquiposPorEstructura />
+          <>
+            <EquiposPorEstructura
+              onSelectEquipo={setEquipoSeleccionado}
+            />
+
+            {equipoSeleccionado && (
+              <ComponentesEquipo
+                equipo={equipoSeleccionado}
+              />
+            )}
+          </>
         )}
 
         {seccion === 'componentes' && (

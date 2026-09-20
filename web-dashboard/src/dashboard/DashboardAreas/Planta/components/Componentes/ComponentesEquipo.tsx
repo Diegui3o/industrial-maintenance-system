@@ -7,9 +7,16 @@ import { ComponentesEquipoSelect } from './ComponentesEquipoSelect';
 import { EquipoSelector } from './EquipoSelector';
 import { ComponentesTransfer } from './ComponentesTransfer';
 import { useComponentesEquipo } from './useComponentesEquipo';
+import type { Equipo } from '../../services/plantaApi';
 import './Componentes.css';
 
-export function ComponentesEquipo() {
+interface Props {
+  equipo?: Equipo | null;
+}
+
+export function ComponentesEquipo({
+  equipo,
+}: Props) {
   const [mostrarForm, setMostrarForm] = useState(false);
 
   const {
@@ -51,7 +58,7 @@ export function ComponentesEquipo() {
     moverADisponibles,
     guardarRelaciones,
     recargarComponentes,
-  } = useComponentesEquipo();
+  } = useComponentesEquipo(equipo);
 
   return (
     <section className="componentes-seccion">
@@ -76,28 +83,30 @@ export function ComponentesEquipo() {
       </div>
 
       {/* ESTRUCTURA */}
-      <div className="componentes-card">
-        <h3 className="componentes-card-title">
-          Estructura
-        </h3>
+      {!equipo && (
+        <div className="componentes-card">
+          <h3 className="componentes-card-title">
+            Estructura
+          </h3>
 
-        <ComponentesEquipoSelect
-          tipoPadre={tipoPadre}
-          procesos={procesos}
-          sistemas={sistemas}
-          subprocesosDisponibles={subprocesosDisponibles}
-          procesoId={procesoId}
-          sistemaId={sistemaId}
-          subprocesoId={subprocesoId}
-          seleccionarTipo={seleccionarTipo}
-          seleccionarProceso={seleccionarProceso}
-          seleccionarSistema={seleccionarSistema}
-          seleccionarSubproceso={seleccionarSubproceso}
-        />
-      </div>
+          <ComponentesEquipoSelect
+            tipoPadre={tipoPadre}
+            procesos={procesos}
+            sistemas={sistemas}
+            subprocesosDisponibles={subprocesosDisponibles}
+            procesoId={procesoId}
+            sistemaId={sistemaId}
+            subprocesoId={subprocesoId}
+            seleccionarTipo={seleccionarTipo}
+            seleccionarProceso={seleccionarProceso}
+            seleccionarSistema={seleccionarSistema}
+            seleccionarSubproceso={seleccionarSubproceso}
+          />
+        </div>
+      )}
 
       {/* EQUIPOS */}
-      {subprocesoId && (
+      {!equipo && subprocesoId && (
         <div className="componentes-card">
           <h3 className="componentes-card-title">
             Equipo padre

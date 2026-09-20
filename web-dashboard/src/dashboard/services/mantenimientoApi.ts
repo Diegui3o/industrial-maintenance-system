@@ -340,3 +340,6 @@ export async function eliminarParada(id: number) {
     method: "DELETE",
   });
 }
+export function listarTodosLosMantenimientos() {
+  return request<any[]>(`${API}`);
+}

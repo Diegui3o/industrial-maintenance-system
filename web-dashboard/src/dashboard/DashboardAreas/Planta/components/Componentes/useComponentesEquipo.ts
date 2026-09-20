@@ -27,7 +27,9 @@ type OrigenSeleccionado =
   | 'asignado'
   | null;
 
-export function useComponentesEquipo() {
+export function useComponentesEquipo(
+  equipoExterno: Equipo | null = null
+) {
   const [tipoPadre, setTipoPadre] =
     useState<TipoPadre>('');
 
@@ -56,7 +58,13 @@ export function useComponentesEquipo() {
     useState<Equipo[]>([]);
 
   const [equipoSeleccionado, setEquipoSeleccionado] =
-    useState<Equipo | null>(null);
+    useState<Equipo | null>(equipoExterno);
+
+  useEffect(() => {
+    if (equipoExterno) {
+      setEquipoSeleccionado(equipoExterno);
+    }
+  }, [equipoExterno]);
 
   const [componentesDisponibles, setComponentesDisponibles] =
     useState<Componente[]>([]);

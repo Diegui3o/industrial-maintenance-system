@@ -2,6 +2,7 @@ package routes
 
 import (
 	"backend/handlers"
+
 	"github.com/gorilla/mux"
 )
 
@@ -15,6 +16,11 @@ func registrarMantenimientoRoutes(
 	r.HandleFunc(
 		"/api/equipos/{id}/mantenimiento",
 		mantenimientoHandler.GetPorEquipo,
+	).Methods("GET")
+
+	r.HandleFunc(
+		"/api/mantenimiento",
+		mantenimientoHandler.ListarTodos,
 	).Methods("GET")
 
 	r.HandleFunc(

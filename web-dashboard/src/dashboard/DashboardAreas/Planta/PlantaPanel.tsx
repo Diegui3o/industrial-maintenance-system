@@ -1,31 +1,90 @@
-import { useState } from 'react';
-import { DashboardHeader } from '../../DashboardHeader/DashboardHeader';
-import { colors } from '../../../theme/colors';
-import { PlantaEstructuraPrincipal } from './components/PlantaEstructura/PlantaEstructuraPrincipal';
-import './Planta.css';
+import { useState } from "react";
 
-type PlantaTab = 'estructura';
+import { DashboardHeader } from "../../DashboardHeader/DashboardHeader";
+import { colors } from "../../../theme/colors";
+
+import { PlantaEstructuraPrincipal } from "./components/PlantaEstructura/PlantaEstructuraPrincipal";
+import { MantenimientosLista } from "./components/Mantenimientos/MantenimientosLista";
+import { EquiposLista } from "./components/Equipos/EquiposLista";
+
+import "./Planta.css";
+
+type PlantaTab =
+  | "estructura"
+  | "mantenimientos"
+  | "equipos";
 
 export function PlantaPanel() {
-  const [tab, setTab] = useState<PlantaTab>('estructura');
+  const [tab, setTab] =
+    useState<PlantaTab>("estructura");
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.background }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: colors.background,
+      }}
+    >
       <DashboardHeader isConnected={true} />
 
       <div className="planta-container">
         <div className="area-panel">
           <div className="area-options">
             <button
-              className={tab === 'estructura' ? 'active' : ''}
-              onClick={() => setTab('estructura')}
+              type="button"
+              className={
+                tab === "estructura"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setTab("estructura")
+              }
             >
               Estructura
+            </button>
+
+            <button
+              type="button"
+              className={
+                tab === "mantenimientos"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setTab("mantenimientos")
+              }
+            >
+              Mantenimientos
+            </button>
+
+            <button
+              type="button"
+              className={
+                tab === "equipos"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setTab("equipos")
+              }
+            >
+              Equipos
             </button>
           </div>
 
           <div className="area-content">
-            {tab === 'estructura' && <PlantaEstructuraPrincipal />}
+            {tab === "estructura" && (
+              <PlantaEstructuraPrincipal />
+            )}
+
+            {tab === "mantenimientos" && (
+              <MantenimientosLista />
+            )}
+
+            {tab === "equipos" && (
+              <EquiposLista />
+            )}
           </div>
         </div>
       </div>

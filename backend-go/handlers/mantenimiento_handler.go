@@ -217,3 +217,27 @@ func (h *MantenimientoHandler) ObtenerCompleto(
 
 	utils.SuccessJSON(w, http.StatusOK, completo)
 }
+func (h *MantenimientoHandler) ListarTodos(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	lista, err := h.Repo.ListarTodos()
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	if lista == nil {
+		lista = []models.Mantenimiento{}
+	}
+
+	utils.SuccessJSON(
+		w,
+		http.StatusOK,
+		lista,
+	)
+}

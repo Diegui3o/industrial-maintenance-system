@@ -399,3 +399,117 @@ func (r *MantenimientoRepository) Actualizar(id int, m models.Mantenimiento) err
 
 	return err
 }
+
+func (r *MantenimientoRepository) ListarTodos() ([]models.Mantenimiento, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			id,
+			equipo_id,
+			usuario_id,
+			fecha_reporte,
+			fase,
+			taller,
+			tipo_criticidad,
+			sistema,
+			inicio_parada,
+			fin_parada,
+			horas,
+			tipo_intervencion,
+			modo_falla,
+			consecuencia_inmediata,
+			descripcion_evento,
+			stand_by,
+			produccion_afectada,
+			tn_dejadas_procesar,
+			enlace,
+			estado_falla,
+			componente_id,
+			subcomponente_id,
+			prioridad,
+			causa,
+			accion_realizada,
+			consecuencia,
+			descripcion_tecnica,
+			fecha_inicio_real,
+			fecha_fin_real,
+			porcentaje_avance,
+			tipo_programacion,
+			fecha_programada,
+			horas_planificadas,
+			hh_planificadas,
+			horas_ejecutadas,
+			hh_ejecutadas,
+			creado_en,
+			actualizado_en
+		FROM mantenimiento
+		ORDER BY fecha_reporte DESC, id DESC
+	`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lista []models.Mantenimiento
+
+	for rows.Next() {
+		var m models.Mantenimiento
+
+		err := rows.Scan(
+			&m.ID,
+			&m.EquipoID,
+			&m.UsuarioID,
+			&m.FechaReporte,
+			&m.Fase,
+			&m.Taller,
+			&m.TipoCriticidad,
+			&m.Sistema,
+			&m.InicioParada,
+			&m.FinParada,
+			&m.Horas,
+			&m.TipoIntervencion,
+			&m.ModoFalla,
+			&m.ConsecuenciaInmediata,
+			&m.DescripcionEvento,
+			&m.StandBy,
+			&m.ProduccionAfectada,
+			&m.TnDejadasProcesar,
+			&m.Enlace,
+			&m.EstadoFalla,
+			&m.ComponenteID,
+			&m.SubcomponenteID,
+			&m.Prioridad,
+			&m.Causa,
+			&m.AccionRealizada,
+			&m.Consecuencia,
+			&m.DescripcionTecnica,
+			&m.FechaInicioReal,
+			&m.FechaFinReal,
+			&m.PorcentajeAvance,
+			&m.TipoProgramacion,
+			&m.FechaProgramada,
+			&m.HorasPlanificadas,
+			&m.HHPlanificadas,
+			&m.HorasEjecutadas,
+			&m.HHEjecutadas,
+			&m.CreadoEn,
+			&m.ActualizadoEn,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		lista = append(lista, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if lista == nil {
+		lista = []models.Mantenimiento{}
+	}
+
+	return lista, nil
+}
