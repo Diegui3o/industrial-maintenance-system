@@ -10,8 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type relacionarComponenteRequest struct {
+	ComponenteID int  `json:"componente_id"`
+	EquipoID     *int `json:"equipo_id"`
+}
+
 type relacionarComponentesRequest struct {
-	ComponenteIDs []int `json:"componente_ids"`
+	Relaciones []relacionarComponenteRequest `json:"relaciones"`
 }
 
 func (h *EstructuraPlantaHandler) GetComponentesParaRelacionEquipo(
@@ -85,9 +90,21 @@ func (h *EstructuraPlantaHandler) PutRelacionarComponentesConEquipo(
 		return
 	}
 
+	relaciones := make([]models.RelacionComponente, 0, len(req.Relaciones))
+
+	for _, item := range req.Relaciones {
+		relaciones = append(
+			relaciones,
+			models.RelacionComponente{
+				ComponenteID: item.ComponenteID,
+				EquipoID:     item.EquipoID,
+			},
+		)
+	}
+
 	if err := h.Service.RelacionarComponentesConEquipo(
 		equipoID,
-		req.ComponenteIDs,
+		relaciones,
 	); err != nil {
 		http.Error(
 			w,

@@ -36,7 +36,7 @@ type SistemaPlanta struct {
 
 type ComponenteEquipo struct {
 	ID          int     `json:"id"`
-	EquipoID    int     `json:"equipo_id"`
+	EquipoID    *int    `json:"equipo_id"`
 	Codigo      *string `json:"codigo,omitempty"`
 	Nombre      string  `json:"nombre"`
 	Descripcion *string `json:"descripcion,omitempty"`
@@ -98,15 +98,19 @@ type SistemaPlantaEquipoDetalle struct {
 	EstadoEquipo        string `json:"estado_equipo"`
 }
 type EquipoPlantaDetalle struct {
-    Equipo *Equipo `json:"equipo"`
+	Equipo *Equipo `json:"equipo"`
 
-    Proceso *ProcesoPlanta `json:"proceso,omitempty"`
-    Subproceso *SubprocesoPlanta `json:"subproceso,omitempty"`
+	Proceso    *ProcesoPlanta    `json:"proceso,omitempty"`
+	Subproceso *SubprocesoPlanta `json:"subproceso,omitempty"`
 
-    Sistema *SistemaPlanta `json:"sistema,omitempty"`
-    SubprocesoSistema *SubprocesoSistemaPlanta `json:"subproceso_sistema,omitempty"`
+	Sistema           *SistemaPlanta           `json:"sistema,omitempty"`
+	SubprocesoSistema *SubprocesoSistemaPlanta `json:"subproceso_sistema,omitempty"`
 
-    Clasificaciones []ClasificacionPlanta `json:"clasificaciones"`
-    Sistemas []SistemaPlanta `json:"sistemas"`
-    Componentes []ComponenteEquipo `json:"componentes"`
+	Clasificaciones []ClasificacionPlanta `json:"clasificaciones"`
+	Sistemas        []SistemaPlanta       `json:"sistemas"`
+	Componentes     []ComponenteEquipo    `json:"componentes"`
+}
+type RelacionComponente struct {
+	ComponenteID int
+	EquipoID     *int
 }

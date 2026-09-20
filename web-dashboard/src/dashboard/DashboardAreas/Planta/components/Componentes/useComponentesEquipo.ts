@@ -8,6 +8,7 @@ import {
   getEquiposParaRelacionSubproceso,
   getComponentesParaRelacionEquipo,
   relacionarComponentesConEquipo,
+  type RelacionComponente,
   type Componente,
   type Equipo,
   type Proceso,
@@ -216,6 +217,7 @@ export function useComponentesEquipo() {
 
       setComponentesAsignados(asignados);
       setComponentesDisponibles(disponibles);
+
       setSeleccionado(null);
       setOrigenSeleccionado(null);
 
@@ -245,14 +247,21 @@ export function useComponentesEquipo() {
       setMensaje('');
 
       try {
+        console.log(
+          'EQUIPO SELECCIONADO:',
+          equipoSeleccionado
+        );
+
         const resultado =
           await getComponentesParaRelacionEquipo(
             equipoSeleccionado.id
           );
 
-        if (!activo) {
-          return;
-        }
+        console.log(
+          'COMPONENTES RELACION:',
+          equipoSeleccionado.id,
+          resultado
+        );
 
         const asignados = resultado.filter(
           (item) =>
@@ -264,8 +273,23 @@ export function useComponentesEquipo() {
             item.equipo_id !== equipoSeleccionado.id
         );
 
+        console.log(
+          'ASIGNADOS:',
+          asignados
+        );
+
+        console.log(
+          'DISPONIBLES:',
+          disponibles
+        );
+
+        if (!activo) {
+          return;
+        }
+
         setComponentesAsignados(asignados);
         setComponentesDisponibles(disponibles);
+
         setSeleccionado(null);
         setOrigenSeleccionado(null);
         setBusquedaDisponible('');
@@ -301,22 +325,34 @@ export function useComponentesEquipo() {
       .trim()
       .toLowerCase();
 
-    if (!texto) {
-      return [];
-    }
+    return [...equipos]
+      .filter((equipo) => {
+        if (!texto) {
+          return true;
+        }
 
-    return equipos.filter((equipo) =>
-      [
-        equipo.codigo ?? '',
-        equipo.nombre,
-        equipo.area ?? '',
-        equipo.tipo ?? '',
-        equipo.estado_equipo ?? '',
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(texto)
-    );
+        return [
+          equipo.codigo ?? '',
+          equipo.nombre,
+          equipo.area ?? '',
+          equipo.tipo ?? '',
+          equipo.estado_equipo ?? '',
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(texto);
+      })
+      .sort((a, b) => {
+        const nombreA = `${a.codigo ?? ''} ${a.nombre}`
+          .trim()
+          .toLowerCase();
+
+        const nombreB = `${b.codigo ?? ''} ${b.nombre}`
+          .trim()
+          .toLowerCase();
+
+        return nombreA.localeCompare(nombreB);
+      });
   }, [equipos, busquedaEquipo]);
 
   const disponiblesFiltrados = useMemo(() => {
@@ -426,7 +462,8 @@ export function useComponentesEquipo() {
   const moverAAsignados = () => {
     if (
       !seleccionado ||
-      origenSeleccionado !== 'disponible'
+      origenSeleccionado !== 'disponible' ||
+      !equipoSeleccionado
     ) {
       return;
     }
@@ -446,7 +483,13 @@ export function useComponentesEquipo() {
         return actuales;
       }
 
-      return [...actuales, seleccionado];
+      return [
+        ...actuales,
+        {
+          ...seleccionado,
+          equipo_id: equipoSeleccionado.id,
+        },
+      ];
     });
 
     setSeleccionado(null);
@@ -476,7 +519,13 @@ export function useComponentesEquipo() {
         return actuales;
       }
 
-      return [...actuales, seleccionado];
+      return [
+        ...actuales,
+        {
+          ...seleccionado,
+          equipo_id: null,
+        },
+      ];
     });
 
     setSeleccionado(null);
@@ -492,17 +541,29 @@ export function useComponentesEquipo() {
     setMensaje('');
 
     try {
-      const ids = Array.from(
-        new Set(
-          componentesAsignados.map(
-            (item) => item.id
-          )
-        )
+      const relaciones: RelacionComponente[] = [
+        ...componentesAsignados.map((item) => ({
+          componente_id: item.id,
+          equipo_id: equipoSeleccionado.id,
+        })),
+        ...componentesDisponibles.map((item) => ({
+          componente_id: item.id,
+          equipo_id: item.equipo_id,
+        })),
+      ];
+
+      const relacionesUnicas = Array.from(
+        new Map(
+          relaciones.map((item) => [
+            item.componente_id,
+            item,
+          ])
+        ).values()
       );
 
       await relacionarComponentesConEquipo(
         equipoSeleccionado.id,
-        ids
+        relacionesUnicas
       );
 
       await cargarComponentes(

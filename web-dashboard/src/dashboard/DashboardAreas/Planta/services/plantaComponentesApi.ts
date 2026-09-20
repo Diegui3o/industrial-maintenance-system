@@ -2,7 +2,7 @@ import { request } from './plantaRequest';
 
 export interface Componente {
   id: number;
-  equipo_id: number;
+  equipo_id: number | null;
   codigo?: string;
   nombre: string;
   descripcion?: string;
@@ -73,16 +73,21 @@ export async function getTodosComponentes(): Promise<Componente[]> {
   );
 }
 
+export interface RelacionComponente {
+  componente_id: number;
+  equipo_id: number | null;
+}
+
 export async function relacionarComponentesConEquipo(
   equipoId: number,
-  componenteIds: number[]
+  relaciones: RelacionComponente[]
 ): Promise<void> {
   await request<void>(
     `/planta/equipos/${equipoId}/componentes-relacion`,
     {
       method: 'PUT',
       body: JSON.stringify({
-        componente_ids: componenteIds,
+        relaciones,
       }),
     }
   );

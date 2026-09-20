@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"strings"
 
 	"backend/models"
 )
@@ -59,14 +58,14 @@ func (r *EstructuraPlantaRepository) ListarComponentesParaRelacionEquipo(
 
 func (r *EstructuraPlantaRepository) RelacionarComponentesConEquipo(
 	equipoID int,
-	componenteIDs []int,
+	relaciones []models.RelacionComponente,
 ) error {
 	if equipoID <= 0 {
 		return fmt.Errorf("equipo_id inválido")
 	}
 
-	if len(componenteIDs) == 0 {
-		return fmt.Errorf("debe seleccionar al menos un componente")
+	if len(relaciones) == 0 {
+		return fmt.Errorf("debe existir al menos una relación")
 	}
 
 	tx, err := r.DB.Begin()
@@ -74,33 +73,28 @@ func (r *EstructuraPlantaRepository) RelacionarComponentesConEquipo(
 		return err
 	}
 
-	placeholders := make([]string, len(componenteIDs))
-	args := make([]interface{}, 0, len(componenteIDs)+1)
+	defer tx.Rollback()
 
-	args = append(args, equipoID)
-
-	for i, id := range componenteIDs {
-		if id <= 0 {
-			_ = tx.Rollback()
-			return fmt.Errorf("componente_id inválido")
+	for _, relacion := range relaciones {
+		if relacion.ComponenteID <= 0 {
+			return fmt.Errorf("relación de componente inválida")
 		}
 
-		placeholders[i] = fmt.Sprintf("$%d", i+2)
-		args = append(args, id)
-	}
+		_, err := tx.Exec(`
+            UPDATE componentes_equipo
+            SET
+                equipo_id = $1,
+                actualizado_en = NOW()
+            WHERE id = $2
+              AND activo = TRUE
+        `,
+			relacion.EquipoID,
+			relacion.ComponenteID,
+		)
 
-	query := fmt.Sprintf(`
-		UPDATE componentes_equipo
-		SET
-			equipo_id = $1,
-			actualizado_en = NOW()
-		WHERE id IN (%s)
-		  AND activo = TRUE
-	`, strings.Join(placeholders, ", "))
-
-	if _, err := tx.Exec(query, args...); err != nil {
-		_ = tx.Rollback()
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

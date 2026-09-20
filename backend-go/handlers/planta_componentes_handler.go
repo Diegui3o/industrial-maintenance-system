@@ -39,8 +39,13 @@ func (h *EstructuraPlantaHandler) PostComponente(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if c.EquipoID <= 0 || c.Nombre == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, "equipo_id y nombre son requeridos")
+	if c.Nombre == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "nombre requerido")
+		return
+	}
+
+	if c.EquipoID != nil && *c.EquipoID <= 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "equipo_id invalido")
 		return
 	}
 

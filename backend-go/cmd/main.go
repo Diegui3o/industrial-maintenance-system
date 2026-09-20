@@ -1,4 +1,3 @@
-// cmd/main.go
 package main
 
 import (
@@ -12,6 +11,10 @@ import (
 
 func main() {
 	db := config.ConnectDB()
+
+	if err := config.RunMigrations(db); err != nil {
+		log.Fatal("Error ejecutando migraciones:", err)
+	}
 
 	firestoreClient := config.ConnectFirestore()
 	defer firestoreClient.Close()

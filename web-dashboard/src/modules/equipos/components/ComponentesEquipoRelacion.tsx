@@ -121,7 +121,10 @@ export function ComponentesEquipoRelacion({
     try {
       await relacionarComponentesConEquipo(
         equipoId,
-        seleccionados
+        seleccionados.map((componenteId) => ({
+          componente_id: componenteId,
+          equipo_id: equipoId,
+        }))
       );
 
       setMensaje(

@@ -12,10 +12,10 @@ func (s *EstructuraPlantaService) ListarComponentesParaRelacionEquipo(
 
 func (s *EstructuraPlantaService) RelacionarComponentesConEquipo(
 	equipoID int,
-	componenteIDs []int,
+	relaciones []models.RelacionComponente,
 ) error {
 	return s.Repo.RelacionarComponentesConEquipo(
 		equipoID,
-		componenteIDs,
+		relaciones,
 	)
 }

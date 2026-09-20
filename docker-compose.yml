@@ -11,7 +11,6 @@ services:
       POSTGRES_DB: mantenimiento
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d mantenimiento"]
       interval: 5s
@@ -26,6 +25,7 @@ services:
     container_name: mantenimiento_backend
     restart: always
     volumes:
+      - ./db/migrations:/app/migrations:ro
       - ./whatsapp_data:/app/whatsapp_data
       - ./whatsapp_sessions:/app/whatsapp_sessions
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
@@ -33,6 +33,7 @@ services:
       - "1883:1883"
     environment:
       DATABASE_URL: "postgres://admin:admin@postgres:5432/mantenimiento?sslmode=disable"
+      MIGRATIONS_DIR: "/app/migrations"
       FIREBASE_PROJECT_ID: "registros-actividades-mina"
       GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/firebase-service-account.json"
     depends_on:
