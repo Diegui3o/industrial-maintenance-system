@@ -838,3 +838,231 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   SELECTOR DE EQUIPO PADRE
+   ========================================================= */
+
+.planta-parent-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planta-parent-search {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.planta-parent-search > label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.planta-parent-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  border: 1px solid #dcdcdc;
+  border-radius: 7px;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-parent-search-box:focus-within {
+  border-color: #e87922;
+  box-shadow: 0 0 0 2px rgba(232, 121, 34, 0.10);
+}
+
+.planta-parent-search-icon {
+  width: 34px;
+  text-align: center;
+  color: #999;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.planta-parent-search-box input {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0 8px 0 0;
+  color: #333;
+  font-size: 12px;
+}
+
+.planta-parent-search-box input::placeholder {
+  color: #aaa;
+}
+
+.planta-parent-search-clear {
+  width: 28px;
+  height: 28px;
+  margin-right: 5px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.planta-parent-search-clear:hover {
+  background: #f3f3f3;
+  color: #555;
+}
+
+.planta-parent-results {
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  color: #888;
+  font-size: 10px;
+}
+
+/* LISTA */
+
+.planta-parent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 230px;
+  padding: 2px 1px;
+  overflow-y: auto;
+}
+
+/* TARJETA */
+
+.planta-parent-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 30px 8px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+  background: #fff;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planta-parent-item:hover {
+  border-color: #d4d4d4;
+  background: #fafafa;
+}
+
+.planta-parent-item.selected {
+  border-color: #e87922;
+  background: #fff8f1;
+  box-shadow: 0 0 0 1px rgba(232, 121, 34, 0.08);
+}
+
+/* CÓDIGO + NOMBRE */
+
+.planta-parent-item-main {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  margin-bottom: 5px;
+}
+
+.planta-parent-item-code {
+  flex-shrink: 0;
+  color: #d4660b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.planta-parent-item-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* INFORMACIÓN */
+
+.planta-parent-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #888;
+  font-size: 9px;
+}
+
+.planta-parent-item-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.planta-parent-item-meta b {
+  color: #aaa;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* CHECK */
+
+.planta-parent-item-check {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #e87922;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* SIN RESULTADOS */
+
+.planta-parent-selector .planta-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 70px;
+  padding: 12px;
+  border: 1px dashed #ddd;
+  border-radius: 7px;
+  background: #fafafa;
+  color: #999;
+  font-size: 10px;
+  text-align: center;
+}
+
+.planta-parent-selector .planta-empty strong {
+  color: #666;
+  font-size: 11px;
+}

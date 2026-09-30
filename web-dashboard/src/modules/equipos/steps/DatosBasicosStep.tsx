@@ -8,6 +8,20 @@ interface Props {
   update: (d: Partial<EquipoFormData>) => void;
 }
 
+const formatearFecha = (fecha: string) => {
+  if (!fecha) return '';
+
+  const partes = fecha.split('-');
+
+  if (partes.length !== 3) {
+    return '';
+  }
+
+  const [anio, mes, dia] = partes;
+
+  return `${dia}/${mes}/${anio}`;
+};
+
 const Field = ({
   label,
   value,
@@ -22,38 +36,82 @@ const Field = ({
   placeholder?: string;
   required?: boolean;
   type?: string;
-}) => (
-  <div style={{ marginBottom: 14 }}>
-    <label
-      style={{
-        display: 'block',
-        fontSize: 11,
-        fontWeight: 600,
-        marginBottom: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        color: colors.text.muted,
-      }}
-    >
-      {label} {required && '*'}
-    </label>
+}) => {
+  const esFecha = type === 'date';
 
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required={required}
-      style={{
-        width: '100%',
-        padding: '10px 12px',
-        border: `1px solid ${colors.border}`,
-        borderRadius: 8,
-        fontSize: 14,
-      }}
-    />
-  </div>
-);
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label
+        style={{
+          display: 'block',
+          fontSize: 11,
+          fontWeight: 600,
+          marginBottom: 4,
+          textTransform: 'uppercase',
+          letterSpacing: 1,
+          color: colors.text.muted,
+        }}
+      >
+        {label} {required && '*'}
+      </label>
+
+      <div
+        style={{
+          position: 'relative',
+        }}
+      >
+        <input
+          type={type}
+          lang={esFecha ? 'es-PE' : undefined}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: esFecha ? '11px 42px 11px 12px' : '10px 12px',
+            border: `1px solid ${colors.border}`,
+            borderRadius: 8,
+            fontSize: 14,
+            background: '#ffffff',
+            color: colors.text.primary,
+            outline: 'none',
+            cursor: esFecha ? 'pointer' : 'text',
+          }}
+        />
+
+        {esFecha && (
+          <span
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              fontSize: 18,
+              pointerEvents: 'none',
+              opacity: 0.7,
+            }}
+          >
+            📅
+          </span>
+        )}
+      </div>
+
+      {esFecha && value && (
+        <div
+          style={{
+            marginTop: 5,
+            fontSize: 11,
+            color: colors.text.muted,
+          }}
+        >
+          Fecha seleccionada: <strong>{formatearFecha(value)}</strong>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function DatosBasicosStep({
   form,
@@ -72,8 +130,15 @@ export default function DatosBasicosStep({
 
   return (
     <div>
-      <h3 style={{ marginBottom: 20 }}>
-        Datos del Equipo
+      <h3
+        style={{
+          marginBottom: 20,
+          fontSize: 18,
+          fontWeight: 700,
+          color: colors.text.primary,
+        }}
+      >
+        Datos del equipo
       </h3>
 
       <div
@@ -130,7 +195,7 @@ export default function DatosBasicosStep({
               color: colors.text.muted,
             }}
           >
-            Fase o Nivel
+            Fase o nivel
           </label>
 
           <select
@@ -146,6 +211,8 @@ export default function DatosBasicosStep({
               border: `1px solid ${colors.border}`,
               borderRadius: 8,
               fontSize: 14,
+              background: '#ffffff',
+              color: colors.text.primary,
             }}
           >
             <option value="">
@@ -177,14 +244,14 @@ export default function DatosBasicosStep({
         />
 
         <Field
-          label="N° Serie"
+          label="N° de serie"
           value={form.numero_serie}
           onChange={set('numero_serie')}
           placeholder="SN123456"
         />
 
         <Field
-          label="Fecha Instalación"
+          label="Fecha de instalación"
           value={form.fecha_instalacion}
           onChange={set('fecha_instalacion')}
           type="date"
@@ -216,6 +283,8 @@ export default function DatosBasicosStep({
               border: `1px solid ${colors.border}`,
               borderRadius: 8,
               fontSize: 14,
+              background: '#ffffff',
+              color: colors.text.primary,
             }}
           >
             <option value="activo">Activo</option>

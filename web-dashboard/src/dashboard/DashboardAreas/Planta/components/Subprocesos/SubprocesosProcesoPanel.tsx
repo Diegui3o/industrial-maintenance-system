@@ -190,14 +190,6 @@ export function SubprocesosProcesoPanel() {
     setOrigenSeleccionado(null);
   };
 
-  /*
-   * Devuelve el subproceso a Disponibles
-   * únicamente dentro de la edición local.
-   *
-   * No se intenta colocar proceso_id = NULL.
-   * Al guardar, el backend solo cambia de proceso
-   * los subprocesos que estén realmente asignados.
-   */
   const moverADisponibles = () => {
     if (
       !seleccionado ||

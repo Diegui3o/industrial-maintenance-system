@@ -22,6 +22,53 @@ interface Props {
   onNavigate: (page: string) => void
 }
 
+function fechaAISO(fecha: string | null | undefined): string | null {
+  if (!fecha) {
+    return null;
+  }
+
+  const partes = fecha.split('-');
+
+  if (partes.length !== 3) {
+    return null;
+  }
+
+  const [anio, mes, dia] = partes.map(Number);
+
+  if (
+    !anio ||
+    !mes ||
+    !dia ||
+    mes < 1 ||
+    mes > 12 ||
+    dia < 1 ||
+    dia > 31
+  ) {
+    return null;
+  }
+
+  const fechaLocal = new Date(
+    anio,
+    mes - 1,
+    dia,
+    0,
+    0,
+    0,
+    0
+  );
+
+  const offset = -fechaLocal.getTimezoneOffset();
+  const signo = offset >= 0 ? '+' : '-';
+  const horas = String(
+    Math.floor(Math.abs(offset) / 60)
+  ).padStart(2, '0');
+  const minutos = String(
+    Math.abs(offset) % 60
+  ).padStart(2, '0');
+
+  return `${fecha}T00:00:00${signo}${horas}:${minutos}`;
+}
+
 export default function EquipoFormPage({ onNavigate }: Props) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<EquipoFormData>(emptyForm)
@@ -53,7 +100,7 @@ export default function EquipoFormPage({ onNavigate }: Props) {
         numero_serie: form.numero_serie,
         critico: form.critico,
         estado_equipo: form.estado_equipo,
-        fecha_instalacion: form.fecha_instalacion || null,
+        fecha_instalacion: fechaAISO(form.fecha_instalacion),
         activo_padre_id: form.activo_padre_id ?? null,
         nivel_jerarquia: form.nivel_jerarquia ?? 0,
         tag: form.tag || '',
