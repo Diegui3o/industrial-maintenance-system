@@ -45,7 +45,7 @@ export async function actualizarProceso(
 
 export interface Subproceso {
   id: number;
-  proceso_id: number;
+  proceso_id: number | null;
   nombre: string;
   descripcion?: string;
   activo: boolean;
@@ -79,7 +79,7 @@ export async function relacionarSubprocesosConProceso(
 }
 
 export async function crearSubproceso(data: {
-  proceso_id: number;
+  proceso_id: number | null;
   nombre: string;
   descripcion?: string;
 }): Promise<Subproceso> {
@@ -92,7 +92,7 @@ export async function crearSubproceso(data: {
 export async function actualizarSubproceso(
   id: number,
   data: {
-    proceso_id: number;
+    proceso_id: number | null;
     nombre: string;
     descripcion?: string;
     activo: boolean;

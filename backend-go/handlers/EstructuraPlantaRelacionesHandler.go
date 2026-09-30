@@ -74,15 +74,6 @@ func (h *EstructuraPlantaHandler) PutRelacionarSubprocesosConProceso(
 		return
 	}
 
-	if len(req.SubprocesoIDs) == 0 {
-		http.Error(
-			w,
-			"debe seleccionar al menos un subproceso",
-			http.StatusBadRequest,
-		)
-		return
-	}
-
 	if err := h.Service.RelacionarSubprocesosConProceso(
 		procesoID,
 		req.SubprocesoIDs,

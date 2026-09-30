@@ -2175,3 +2175,202 @@ button.planta-list-item:hover {
   width: 100%;
   min-width: 0;
 }
+
+/* =========================
+   SUBPROCESOS COMPACTOS
+========================= */
+
+.planta-relation-transfer {
+  gap: 10px;
+}
+
+.planta-relation-transfer-panel {
+  min-width: 0;
+}
+
+.planta-relation-transfer-header {
+  padding: 9px 11px;
+}
+
+.planta-relation-transfer-header strong {
+  font-size: 11px;
+}
+
+.planta-relation-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search {
+  gap: 6px;
+  margin: 8px;
+  padding: 0 8px;
+  height: 30px;
+  border-radius: 6px;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search > span {
+  font-size: 14px;
+}
+
+.planta-relation-transfer-panel
+  .planta-relation-search input {
+  font-size: 11px;
+}
+
+.planta-relation-transfer-list {
+  gap: 5px;
+  min-height: 150px;
+  max-height: 210px;
+  padding: 3px 8px 8px;
+}
+
+.planta-relation-transfer-item {
+  min-height: 38px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.planta-relation-transfer-item > span:first-child {
+  gap: 2px;
+}
+
+.planta-relation-transfer-item strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.planta-relation-transfer-item small {
+  font-size: 9px;
+}
+
+.planta-relation-transfer-item > span:last-child {
+  font-size: 15px;
+}
+
+.planta-relation-transfer-actions {
+  gap: 6px;
+}
+
+.planta-relation-transfer-action {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  font-size: 17px;
+}
+
+/* =========================
+   EDITAR SUBPROCESOS
+========================= */
+
+.planta-subproceso-editor {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+}
+
+.planta-subproceso-editor-header {
+  padding: 10px 13px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.planta-subproceso-editor-header h3 {
+  margin: 2px 0;
+  color: #292929;
+  font-size: 14px;
+}
+
+.planta-subproceso-editor-header p {
+  margin: 2px 0 0;
+  color: #888888;
+  font-size: 10px;
+}
+
+.planta-subproceso-editor-body {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.2fr) minmax(160px, 1fr) minmax(180px, 1.2fr) auto;
+  align-items: end;
+  gap: 9px;
+  padding: 11px 13px;
+}
+
+.planta-subproceso-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.planta-subproceso-editor-field label {
+  color: #555555;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.planta-subproceso-editor-field input,
+.planta-subproceso-editor-field select {
+  width: 100%;
+  height: 31px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  outline: none;
+  background: #ffffff;
+  color: #333333;
+  font-size: 11px;
+}
+
+.planta-subproceso-editor-field input:focus,
+.planta-subproceso-editor-field select:focus {
+  border-color: #e87511;
+  box-shadow: 0 0 0 2px rgba(232, 117, 17, 0.08);
+}
+
+.planta-subproceso-editor-save {
+  height: 31px;
+  padding: 0 13px;
+  border: 1px solid #e87511;
+  border-radius: 6px;
+  background: #e87511;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.planta-subproceso-editor-save:hover:not(:disabled) {
+  background: #d86608;
+}
+
+.planta-subproceso-editor-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planta-subproceso-editor-message {
+  padding: 0 13px 10px;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+@media (max-width: 1000px) {
+  .planta-subproceso-editor-body {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .planta-subproceso-editor-body {
+    grid-template-columns: 1fr;
+  }
+}

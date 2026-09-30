@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -29,15 +30,23 @@ func (r *EstructuraPlantaRepository) ListarTodosSubprocesosPlanta() ([]models.Su
 
 	for rows.Next() {
 		var item models.SubprocesoPlanta
+		var procesoID sql.NullInt64
 
 		if err := rows.Scan(
 			&item.ID,
-			&item.ProcesoID,
+			&procesoID,
 			&item.Nombre,
 			&item.Descripcion,
 			&item.Activo,
 		); err != nil {
 			return nil, err
+		}
+
+		if procesoID.Valid {
+			id := int(procesoID.Int64)
+			item.ProcesoID = &id
+		} else {
+			item.ProcesoID = nil
 		}
 
 		resultado = append(resultado, item)
@@ -58,42 +67,84 @@ func (r *EstructuraPlantaRepository) RelacionarSubprocesosConProceso(
 		return fmt.Errorf("proceso_id inválido")
 	}
 
-	if len(subprocesoIDs) == 0 {
-		return fmt.Errorf("debe seleccionar al menos un subproceso")
-	}
-
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	placeholders := make([]string, len(subprocesoIDs))
-	args := make([]interface{}, 0, len(subprocesoIDs)+1)
+	var queryDesasignar string
 
-	args = append(args, procesoID)
+	if len(subprocesoIDs) == 0 {
+		queryDesasignar = `
+			UPDATE subprocesos_planta
+			SET
+				proceso_id = NULL,
+				actualizado_en = NOW()
+			WHERE proceso_id = $1
+			  AND activo = TRUE
+		`
 
-	for i, id := range subprocesoIDs {
-		if id <= 0 {
-			_ = tx.Rollback()
-			return fmt.Errorf("subproceso_id inválido")
+		if _, err := tx.Exec(queryDesasignar, procesoID); err != nil {
+			return err
+		}
+	} else {
+		placeholders := make([]string, len(subprocesoIDs))
+		args := make([]interface{}, 0, len(subprocesoIDs)+1)
+
+		args = append(args, procesoID)
+
+		for i, id := range subprocesoIDs {
+			if id <= 0 {
+				return fmt.Errorf("subproceso_id inválido")
+			}
+
+			placeholders[i] = fmt.Sprintf("$%d", i+2)
+			args = append(args, id)
 		}
 
-		placeholders[i] = fmt.Sprintf("$%d", i+2)
-		args = append(args, id)
+		queryDesasignar = fmt.Sprintf(`
+			UPDATE subprocesos_planta
+			SET
+				proceso_id = NULL,
+				actualizado_en = NOW()
+			WHERE proceso_id = $1
+			  AND activo = TRUE
+			  AND id NOT IN (%s)
+		`, strings.Join(placeholders, ", "))
+
+		if _, err := tx.Exec(queryDesasignar, args...); err != nil {
+			return err
+		}
 	}
 
-	query := fmt.Sprintf(`
-		UPDATE subprocesos_planta
-		SET
-			proceso_id = $1,
-			actualizado_en = NOW()
-		WHERE id IN (%s)
-		  AND activo = TRUE
-	`, strings.Join(placeholders, ", "))
+	if len(subprocesoIDs) > 0 {
+		placeholders := make([]string, len(subprocesoIDs))
+		args := make([]interface{}, 0, len(subprocesoIDs)+1)
 
-	if _, err := tx.Exec(query, args...); err != nil {
-		_ = tx.Rollback()
-		return err
+		args = append(args, procesoID)
+
+		for i, id := range subprocesoIDs {
+			if id <= 0 {
+				return fmt.Errorf("subproceso_id inválido")
+			}
+
+			placeholders[i] = fmt.Sprintf("$%d", i+2)
+			args = append(args, id)
+		}
+
+		queryAsignar := fmt.Sprintf(`
+			UPDATE subprocesos_planta
+			SET
+				proceso_id = $1,
+				actualizado_en = NOW()
+			WHERE id IN (%s)
+			  AND activo = TRUE
+		`, strings.Join(placeholders, ", "))
+
+		if _, err := tx.Exec(queryAsignar, args...); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

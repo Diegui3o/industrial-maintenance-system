@@ -39,7 +39,7 @@ func (h *EstructuraPlantaHandler) PostSubproceso(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if s.ProcesoID <= 0 || s.Nombre == "" {
+	if s.ProcesoID == nil || *s.ProcesoID <= 0 || s.Nombre == "" {
 		utils.ErrorJSON(w, http.StatusBadRequest, "proceso_id y nombre son requeridos")
 		return
 	}
@@ -52,7 +52,7 @@ func (h *EstructuraPlantaHandler) PostSubproceso(w http.ResponseWriter, r *http.
 	utils.SuccessJSON(w, http.StatusCreated, s)
 }
 
-// ==================== EQUIPO â†’ SUBPROCESO ====================
+// ==================== EQUIPO → SUBPROCESO ====================
 
 func (h *EstructuraPlantaHandler) PutSubproceso(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -67,7 +67,7 @@ func (h *EstructuraPlantaHandler) PutSubproceso(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if s.ProcesoID <= 0 || s.Nombre == "" {
+	if s.ProcesoID == nil || *s.ProcesoID <= 0 || s.Nombre == "" {
 		utils.ErrorJSON(w, http.StatusBadRequest, "proceso_id y nombre son requeridos")
 		return
 	}

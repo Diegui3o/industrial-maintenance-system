@@ -9,7 +9,7 @@ type ProcesoPlanta struct {
 
 type SubprocesoPlanta struct {
 	ID          int     `json:"id"`
-	ProcesoID   int     `json:"proceso_id"`
+	ProcesoID   *int    `json:"proceso_id"`
 	Nombre      string  `json:"nombre"`
 	Descripcion *string `json:"descripcion,omitempty"`
 	Activo      bool    `json:"activo"`

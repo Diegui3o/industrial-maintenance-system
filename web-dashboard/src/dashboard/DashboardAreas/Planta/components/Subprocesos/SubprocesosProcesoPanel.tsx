@@ -9,6 +9,7 @@ import {
 } from '../../services/plantaApi';
 
 import { SubprocesoFormProceso } from './SubprocesoFormProceso';
+import { SubprocesoEditarPanel } from './SubprocesoEditarPanel';
 
 export function SubprocesosProcesoPanel() {
   const [procesos, setProcesos] = useState<Proceso[]>([]);
@@ -34,6 +35,8 @@ export function SubprocesosProcesoPanel() {
   const [guardando, setGuardando] = useState(false);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [mensaje, setMensaje] = useState('');
+  const [refrescarEditor, setRefrescarEditor] =
+    useState(0);
 
   const normalizar = (texto: string) =>
     texto
@@ -47,6 +50,24 @@ export function SubprocesosProcesoPanel() {
         sensitivity: 'base',
       })
     );
+
+  const obtenerRelacion = (
+    lista: Subproceso[],
+    id: number
+  ) => {
+    const relacionados = lista.filter(
+      (item) => item.proceso_id === id
+    );
+
+    const noRelacionados = lista.filter(
+      (item) => item.proceso_id !== id
+    );
+
+    return {
+      relacionados: ordenar(relacionados),
+      noRelacionados: ordenar(noRelacionados),
+    };
+  };
 
   const cargarDatos = useCallback(async () => {
     setLoading(true);
@@ -63,21 +84,24 @@ export function SubprocesosProcesoPanel() {
 
       setProcesos(procesosResultado);
       setSubprocesos(subprocesosResultado);
+      setRefrescarEditor((valor) => valor + 1);
 
       if (procesoId) {
-        const relacionados = subprocesosResultado.filter(
-          (item) => item.proceso_id === procesoId
+        const {
+          relacionados,
+          noRelacionados,
+        } = obtenerRelacion(
+          subprocesosResultado,
+          procesoId
         );
 
-        const noRelacionados = subprocesosResultado.filter(
-          (item) => item.proceso_id !== procesoId
-        );
-
-        setAsignados(ordenar(relacionados));
-        setDisponibles(ordenar(noRelacionados));
+        setAsignados(relacionados);
+        setDisponibles(noRelacionados);
       } else {
         setAsignados([]);
-        setDisponibles(ordenar(subprocesosResultado));
+        setDisponibles(
+          ordenar(subprocesosResultado)
+        );
       }
 
       setSeleccionado(null);
@@ -121,16 +145,16 @@ export function SubprocesosProcesoPanel() {
       return;
     }
 
-    const relacionados = subprocesos.filter(
-      (item) => item.proceso_id === nuevoId
+    const {
+      relacionados,
+      noRelacionados,
+    } = obtenerRelacion(
+      subprocesos,
+      nuevoId
     );
 
-    const noRelacionados = subprocesos.filter(
-      (item) => item.proceso_id !== nuevoId
-    );
-
-    setAsignados(ordenar(relacionados));
-    setDisponibles(ordenar(noRelacionados));
+    setAsignados(relacionados);
+    setDisponibles(noRelacionados);
   };
 
   const seleccionarSubproceso = (
@@ -156,13 +180,24 @@ export function SubprocesosProcesoPanel() {
     );
 
     setAsignados((actuales) =>
-      ordenar([...actuales, seleccionado])
+      ordenar([
+        ...actuales,
+        seleccionado,
+      ])
     );
 
     setSeleccionado(null);
     setOrigenSeleccionado(null);
   };
 
+  /*
+   * Devuelve el subproceso a Disponibles
+   * únicamente dentro de la edición local.
+   *
+   * No se intenta colocar proceso_id = NULL.
+   * Al guardar, el backend solo cambia de proceso
+   * los subprocesos que estén realmente asignados.
+   */
   const moverADisponibles = () => {
     if (
       !seleccionado ||
@@ -178,7 +213,10 @@ export function SubprocesosProcesoPanel() {
     );
 
     setDisponibles((actuales) =>
-      ordenar([...actuales, seleccionado])
+      ordenar([
+        ...actuales,
+        seleccionado,
+      ])
     );
 
     setSeleccionado(null);
@@ -193,7 +231,7 @@ export function SubprocesosProcesoPanel() {
 
     if (asignados.length === 0) {
       setMensaje(
-        'Seleccione al menos un subproceso.'
+        'El proceso debe tener al menos un subproceso. Para retirar un subproceso, transfiéralo a otro proceso.'
       );
       return;
     }
@@ -203,7 +241,11 @@ export function SubprocesosProcesoPanel() {
 
     try {
       const ids = Array.from(
-        new Set(asignados.map((item) => item.id))
+        new Set(
+          asignados.map(
+            (item) => item.id
+          )
+        )
       );
 
       await relacionarSubprocesosConProceso(
@@ -243,17 +285,22 @@ export function SubprocesosProcesoPanel() {
       return disponibles;
     }
 
-    return disponibles.filter((subproceso) => {
-      const contenido = normalizar(
-        [
-          subproceso.nombre,
-          subproceso.descripcion ?? '',
-        ].join(' ')
-      );
+    return disponibles.filter(
+      (subproceso) => {
+        const contenido = normalizar(
+          [
+            subproceso.nombre,
+            subproceso.descripcion ?? '',
+          ].join(' ')
+        );
 
-      return contenido.includes(texto);
-    });
-  }, [disponibles, busquedaDisponible]);
+        return contenido.includes(texto);
+      }
+    );
+  }, [
+    disponibles,
+    busquedaDisponible,
+  ]);
 
   const asignadosFiltrados = useMemo(() => {
     const texto = normalizar(
@@ -264,17 +311,22 @@ export function SubprocesosProcesoPanel() {
       return asignados;
     }
 
-    return asignados.filter((subproceso) => {
-      const contenido = normalizar(
-        [
-          subproceso.nombre,
-          subproceso.descripcion ?? '',
-        ].join(' ')
-      );
+    return asignados.filter(
+      (subproceso) => {
+        const contenido = normalizar(
+          [
+            subproceso.nombre,
+            subproceso.descripcion ?? '',
+          ].join(' ')
+        );
 
-      return contenido.includes(texto);
-    });
-  }, [asignados, busquedaAsignado]);
+        return contenido.includes(texto);
+      }
+    );
+  }, [
+    asignados,
+    busquedaAsignado,
+  ]);
 
   return (
     <div>
@@ -284,7 +336,9 @@ export function SubprocesosProcesoPanel() {
         <select
           value={procesoId ?? ''}
           onChange={(e) =>
-            cambiarProceso(e.target.value)
+            cambiarProceso(
+              e.target.value
+            )
           }
         >
           <option value="">
@@ -315,8 +369,9 @@ export function SubprocesosProcesoPanel() {
               </h3>
 
               <p>
-                Seleccione los subprocesos que
-                pertenecen a este proceso.
+                Seleccione los subprocesos
+                que pertenecen a este
+                proceso.
               </p>
             </div>
 
@@ -353,7 +408,9 @@ export function SubprocesosProcesoPanel() {
           {!loading && (
             <>
               <div className="planta-relation-summary">
-                <span>Subprocesos asignados</span>
+                <span>
+                  Subprocesos asignados
+                </span>
 
                 <strong>
                   {asignados.length}
@@ -361,6 +418,7 @@ export function SubprocesosProcesoPanel() {
               </div>
 
               <div className="planta-relation-transfer">
+
                 {/* DISPONIBLES */}
                 <div className="planta-relation-transfer-panel">
                   <div className="planta-relation-transfer-header">
@@ -384,7 +442,9 @@ export function SubprocesosProcesoPanel() {
 
                     <input
                       type="search"
-                      value={busquedaDisponible}
+                      value={
+                        busquedaDisponible
+                      }
                       onChange={(e) =>
                         setBusquedaDisponible(
                           e.target.value
@@ -398,7 +458,7 @@ export function SubprocesosProcesoPanel() {
                     {disponiblesFiltrados.length === 0 ? (
                       <div className="planta-empty">
                         {disponibles.length === 0
-                          ? 'No hay subprocesos disponibles.'
+                          ? 'No hay subprocesos de otros procesos.'
                           : 'No se encontraron resultados.'}
                       </div>
                     ) : (
@@ -428,7 +488,9 @@ export function SubprocesosProcesoPanel() {
                             >
                               <span>
                                 <strong>
-                                  {subproceso.nombre}
+                                  {
+                                    subproceso.nombre
+                                  }
                                 </strong>
 
                                 {subproceso.descripcion && (
@@ -451,16 +513,19 @@ export function SubprocesosProcesoPanel() {
 
                 {/* ACCIONES */}
                 <div className="planta-relation-transfer-actions">
+
                   <button
                     type="button"
                     className="planta-relation-transfer-action"
-                    onClick={moverAAsignados}
+                    onClick={
+                      moverAAsignados
+                    }
                     disabled={
                       !seleccionado ||
                       origenSeleccionado !==
                         'disponible'
                     }
-                    title="Asignar subproceso"
+                    title="Transferir al proceso"
                   >
                     →
                   </button>
@@ -468,16 +533,19 @@ export function SubprocesosProcesoPanel() {
                   <button
                     type="button"
                     className="planta-relation-transfer-action"
-                    onClick={moverADisponibles}
+                    onClick={
+                      moverADisponibles
+                    }
                     disabled={
                       !seleccionado ||
                       origenSeleccionado !==
                         'asignado'
                     }
-                    title="Quitar subproceso"
+                    title="Retirar de la selección"
                   >
                     ←
                   </button>
+
                 </div>
 
                 {/* ASIGNADOS */}
@@ -493,7 +561,7 @@ export function SubprocesosProcesoPanel() {
                       </strong>
                     </div>
 
-                    <span className="planta-relation-count assigned">
+                    <span className="planta-relation-count">
                       {asignados.length}
                     </span>
                   </div>
@@ -503,13 +571,15 @@ export function SubprocesosProcesoPanel() {
 
                     <input
                       type="search"
-                      value={busquedaAsignado}
+                      value={
+                        busquedaAsignado
+                      }
                       onChange={(e) =>
                         setBusquedaAsignado(
                           e.target.value
                         )
                       }
-                      placeholder="Buscar asignado..."
+                      placeholder="Buscar subproceso..."
                     />
                   </div>
 
@@ -547,7 +617,9 @@ export function SubprocesosProcesoPanel() {
                             >
                               <span>
                                 <strong>
-                                  {subproceso.nombre}
+                                  {
+                                    subproceso.nombre
+                                  }
                                 </strong>
 
                                 {subproceso.descripcion && (
@@ -567,13 +639,16 @@ export function SubprocesosProcesoPanel() {
                     )}
                   </div>
                 </div>
+
               </div>
 
               <div className="planta-relation-actions">
                 <button
                   type="button"
                   className="planta-save-btn"
-                  onClick={guardarRelacion}
+                  onClick={
+                    guardarRelacion
+                  }
                   disabled={guardando}
                 >
                   {guardando
@@ -591,6 +666,10 @@ export function SubprocesosProcesoPanel() {
           )}
         </div>
       )}
+
+      <SubprocesoEditarPanel
+        refrescar={refrescarEditor}
+      />
     </div>
   );
 }
