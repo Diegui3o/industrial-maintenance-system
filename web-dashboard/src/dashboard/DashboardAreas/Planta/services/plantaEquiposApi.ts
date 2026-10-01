@@ -29,6 +29,12 @@ export interface Equipo {
   relacionado?: boolean;
 }
 
+export async function getEquipos(): Promise<Equipo[]> {
+  return request<Equipo[]>(
+    '/planta/equipos'
+  );
+}
+
 export async function getEquiposSinUbicar(): Promise<Equipo[]> {
   return request<Equipo[]>(
     '/planta/equipos/sin-ubicar'
