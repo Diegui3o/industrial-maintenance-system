@@ -99,6 +99,7 @@ func (r *EstructuraPlantaRepository) ListarComponentes(
 	for rows.Next() {
 		var c models.ComponenteEquipo
 		var motor models.ComponenteMotorElectrico
+		var motorID sql.NullInt64
 
 		err := rows.Scan(
 			&c.ID,
@@ -117,7 +118,7 @@ func (r *EstructuraPlantaRepository) ListarComponentes(
 			&c.FechaCreacion,
 			&c.FechaActualizacion,
 
-			&motor.ComponenteID,
+			&motorID,
 			&motor.PlacaMotor,
 			&motor.Fabricante,
 			&motor.CodigoFabricante,
@@ -171,7 +172,8 @@ func (r *EstructuraPlantaRepository) ListarComponentes(
 			return nil, err
 		}
 
-		if motor.ComponenteID != 0 {
+		if motorID.Valid {
+			motor.ComponenteID = int(motorID.Int64)
 			c.MotorElectrico = &motor
 		}
 
@@ -272,6 +274,7 @@ func (r *EstructuraPlantaRepository) ListarTodosComponentes(
 	for rows.Next() {
 		var c models.ComponenteEquipo
 		var motor models.ComponenteMotorElectrico
+		var motorID sql.NullInt64
 
 		err := rows.Scan(
 			&c.ID,
@@ -290,7 +293,7 @@ func (r *EstructuraPlantaRepository) ListarTodosComponentes(
 			&c.FechaCreacion,
 			&c.FechaActualizacion,
 
-			&motor.ComponenteID,
+			&motorID,
 			&motor.PlacaMotor,
 			&motor.Fabricante,
 			&motor.CodigoFabricante,

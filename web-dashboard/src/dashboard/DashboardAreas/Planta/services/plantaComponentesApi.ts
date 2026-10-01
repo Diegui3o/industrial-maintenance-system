@@ -87,19 +87,16 @@ export interface Componente {
 
 export interface CrearComponenteData {
   equipo_id: number;
-
   codigo?: string | null;
   codigo_sap?: string | null;
   tag?: string | null;
-
   nombre: string;
   tipo_componente: string;
-
   marca?: string | null;
   modelo?: string | null;
   numero_serie?: string | null;
   descripcion?: string | null;
-
+  activo?: boolean;
   motor_electrico?: Omit<
     ComponenteMotorElectrico,
     'componente_id'
@@ -110,10 +107,6 @@ export interface ActualizarComponenteData
   extends CrearComponenteData {
   activo: boolean;
 }
-
-/* =========================================================
-   COMPONENTES
-========================================================= */
 
 export async function getTodosComponentes(): Promise<
   Componente[]
@@ -155,12 +148,6 @@ export async function actualizarComponente(
     }
   );
 }
-
-/* =========================================================
-   COMPONENTES - RELACIÓN CON EQUIPO
-   Se mantienen porque todavía existen componentes
-   antiguos que los utilizan.
-========================================================= */
 
 export async function getComponentesParaRelacionEquipo(
   equipoId: number

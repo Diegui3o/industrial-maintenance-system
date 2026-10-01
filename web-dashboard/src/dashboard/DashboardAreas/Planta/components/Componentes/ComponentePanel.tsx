@@ -46,6 +46,8 @@ export function ComponentePanel({
   const [nombre, setNombre] =
     useState('');
 
+const [activo, setActivo] = useState(true);
+
   const [tag, setTag] =
     useState('');
 
@@ -130,6 +132,8 @@ export function ComponentePanel({
         modelo: modelo.trim() || null,
         numero_serie:
           numeroSerie.trim() || null,
+
+        activo,
 
         descripcion:
           descripcion.trim() || null,
@@ -424,6 +428,29 @@ export function ComponentePanel({
                   }
                   placeholder="Número de serie"
                 />
+              </label>
+
+              <label className="componente-form-field full">
+                <span>
+                  Estado
+                </span>
+
+                <select
+                  value={activo ? 'activo' : 'inactivo'}
+                  onChange={(event) =>
+                    setActivo(
+                      event.target.value === 'activo'
+                    )
+                  }
+                >
+                  <option value="activo">
+                    Activo
+                  </option>
+
+                  <option value="inactivo">
+                    Inactivo
+                  </option>
+                </select>
               </label>
 
             </div>

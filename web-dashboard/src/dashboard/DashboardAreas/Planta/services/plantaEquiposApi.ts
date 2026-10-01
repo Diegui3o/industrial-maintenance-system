@@ -30,9 +30,7 @@ export interface Equipo {
 }
 
 export async function getEquipos(): Promise<Equipo[]> {
-  return request<Equipo[]>(
-    '/planta/equipos'
-  );
+  return request<Equipo[]>('/equipos');
 }
 
 export async function getEquiposSinUbicar(): Promise<Equipo[]> {
