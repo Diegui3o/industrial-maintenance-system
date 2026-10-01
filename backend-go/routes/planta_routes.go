@@ -6,13 +6,11 @@ import (
 )
 
 func registrarPlantaRoutes(
-	r *mux.Router,
-	estructuraPlantaHandler *handlers.EstructuraPlantaHandler,
-	tipoEquipoHandler *handlers.TipoEquipoHandler,
+    r *mux.Router,
+    estructuraPlantaHandler *handlers.EstructuraPlantaHandler,
+    tipoEquipoHandler *handlers.TipoEquipoHandler,
 ) {
 
-	// ESTRUCTURA PLANTA
-	// ============================================
 
 	r.HandleFunc(
 		"/api/planta/procesos",
@@ -332,5 +330,10 @@ func registrarPlantaRoutes(
 		"/api/planta/componentes/{componente_id}/subcomponentes-relacion",
 		estructuraPlantaHandler.PutRelacionarSubcomponentes,
 	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/master-general",
+		estructuraPlantaHandler.GetMasterGeneral,
+	).Methods("GET")
 
 }

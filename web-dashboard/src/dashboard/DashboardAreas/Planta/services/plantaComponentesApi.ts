@@ -16,6 +16,7 @@ export interface ComponenteMotorElectrico {
   efficiency?: number | null;
   service_factor?: number | null;
   output?: number | null;
+  horsepower?: number | null;
   rated_speed?: number | null;
 
   number_of_poles?: number | null;

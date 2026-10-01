@@ -61,48 +61,38 @@ export function ComponenteMotorFicha({
 
       <div className="componente-ficha-group">
         <div className="componente-ficha-group-title">
-          Identificación del motor
-        </div>
-
-        <div className="componente-form-grid">
-          {texto(
-            'placa_motor',
-            'Placa del motor'
-          )}
-
-          {texto(
-            'fabricante',
-            'Fabricante'
-          )}
-
-          {texto(
-            'codigo_fabricante',
-            'Código fabricante'
-          )}
-
-          {texto(
-            'producto',
-            'Producto'
-          )}
-        </div>
-      </div>
-
-      <div className="componente-ficha-group">
-        <div className="componente-ficha-group-title">
           Características eléctricas
         </div>
 
         <div className="componente-form-grid">
-          {texto(
-            'rated_voltage',
-            'Tensión nominal',
-            '220/380/440 V'
-          )}
+          <label className="componente-form-field">
+            <span>Tensión nominal (V)</span>
+
+            <select
+              value={(datos.rated_voltage ?? '') as string}
+              onChange={(event) =>
+                onChange(
+                  'rated_voltage',
+                  event.target.value || null
+                )
+              }
+            >
+              <option value="">Seleccionar</option>
+              <option value="220/380/440">220/380/440</option>
+              <option value="220">220</option>
+              <option value="380">380</option>
+              <option value="440">440</option>
+              <option value="460">460</option>
+              <option value="220/440">220/440</option>
+              <option value="230/460">230/460</option>
+              <option value="440/760">440/760</option>
+            </select>
+          </label>
 
           {texto(
             'rated_current',
-            'Corriente nominal',
-            '102/59.1/51.0 A'
+            'Corriente nominal (A)',
+            '102/59.1/51.0'
           )}
 
           {numero(
@@ -121,6 +111,12 @@ export function ComponenteMotorFicha({
             'power_factor',
             'Factor de potencia',
             '0.82'
+          )}
+
+          {numero(
+            'horsepower',
+            'Potencia de salida (HP)',
+            '40'
           )}
 
           {numero(
@@ -242,11 +238,11 @@ export function ComponenteMotorFicha({
 
           {texto(
             'l_r_amperes',
-            'L.R. Amperes',
-            '816/473/408 A'
+            'L.R. Amperes (A)',
+            '816/473/408'
           )}
 
-          {texto(
+          {numero(
             'lrc',
             'LRC',
             '8.0'
@@ -254,8 +250,8 @@ export function ComponenteMotorFicha({
 
           {texto(
             'no_load_current',
-            'Corriente sin carga',
-            '48.0/27.8/24.0 A'
+            'Corriente sin carga (A)',
+            '48.0/27.8/24.0'
           )}
 
           {texto(
@@ -334,43 +330,6 @@ export function ComponenteMotorFicha({
             '6212 ZZ C3'
           )}
 
-          {texto(
-            'front_bearing',
-            'Rodamiento delantero'
-          )}
-
-          {texto(
-            'rear_bearing',
-            'Rodamiento trasero'
-          )}
-        </div>
-      </div>
-
-      <div className="componente-ficha-group">
-        <div className="componente-ficha-group-title">
-          Normativa y fabricación
-        </div>
-
-        <div className="componente-form-grid">
-          {texto(
-            'connection',
-            'Conexión'
-          )}
-
-          {texto(
-            'standard',
-            'Norma'
-          )}
-
-          {texto(
-            'nema_classification',
-            'Clasificación NEMA'
-          )}
-
-          {numero(
-            'year_of_manufacture',
-            'Año de fabricación'
-          )}
         </div>
       </div>
 

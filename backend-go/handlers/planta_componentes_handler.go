@@ -324,3 +324,19 @@ func (h *EstructuraPlantaHandler) GetTodosComponentes(
 		componentes,
 	)
 }
+func (h *EstructuraPlantaHandler) GetMasterGeneral(
+    w http.ResponseWriter,
+    r *http.Request,
+) {
+    resultado, err := h.Service.ListarMasterGeneral()
+    if err != nil {
+        utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+        return
+    }
+
+    if resultado == nil {
+        resultado = []models.MaestroGeneralItem{}
+    }
+
+    utils.SuccessJSON(w, http.StatusOK, resultado)
+}

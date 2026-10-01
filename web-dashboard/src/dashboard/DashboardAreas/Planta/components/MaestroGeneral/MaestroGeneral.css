@@ -1,0 +1,762 @@
+.maestro-general {
+  width: 100%;
+  min-height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  background: #f6f7f9;
+  color: #252525;
+}
+/* ============================================================
+   HEADER COMPACTO
+   ============================================================ */
+
+.maestro-general-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 10px;
+}
+
+.maestro-general-header-info {
+  min-width: 0;
+}
+
+.maestro-general-header-titulo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.maestro-general-header h2 {
+  margin: 0;
+
+  color: #292929;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  letter-spacing: -0.25px;
+}
+
+.maestro-general-header-registros {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 22px;
+
+  padding: 0 8px;
+
+  background: #fff4e8;
+
+  border: 1px solid #f1dcc7;
+  border-radius: 12px;
+
+  color: #9a5719;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.maestro-general-header p {
+  margin: 3px 0 0;
+
+  color: #858585;
+
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.maestro-general-limpiar-filtros {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  height: 28px;
+
+  padding: 0 9px;
+
+  border: 1px solid #e2e2e3;
+  border-radius: 6px;
+
+  background: #fff;
+
+  color: #777;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.maestro-general-limpiar-filtros:hover {
+  background: #fff7f0;
+  border-color: #e5b486;
+  color: #9a5719;
+}
+
+.maestro-general-limpiar-filtros span {
+  font-size: 15px;
+  line-height: 1;
+}
+
+
+/* ============================================================
+   BUSCADOR GENERAL COMPACTO
+   ============================================================ */
+
+.maestro-general-busqueda {
+  position: relative;
+
+  width: 100%;
+
+  margin-bottom: 10px;
+}
+
+.maestro-general-busqueda input {
+  width: 100%;
+  height: 34px;
+
+  box-sizing: border-box;
+
+  padding: 0 34px;
+
+  background: #fff;
+
+  border: 1px solid #dedfe1;
+  border-radius: 7px;
+
+  color: #444;
+
+  font-size: 11px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.maestro-general-busqueda input:hover {
+  border-color: #cfcfd1;
+}
+
+.maestro-general-busqueda input:focus {
+  border-color: #e59a5a;
+
+  box-shadow:
+    0 0 0 2px rgba(230, 126, 34, 0.08);
+}
+
+.maestro-general-busqueda input::placeholder {
+  color: #aaa;
+}
+
+.maestro-general-busqueda-icono {
+  position: absolute;
+
+  left: 11px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #999;
+
+  font-size: 12px;
+
+  pointer-events: none;
+}
+
+.maestro-general-busqueda-limpiar {
+  position: absolute;
+
+  right: 8px;
+  top: 50%;
+
+  width: 20px;
+  height: 20px;
+
+  transform: translateY(-50%);
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #999;
+
+  font-size: 15px;
+  line-height: 20px;
+
+  cursor: pointer;
+}
+
+.maestro-general-busqueda-limpiar:hover {
+  color: #555;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.maestro-general-filtros {
+  position: relative;
+  margin-bottom: 16px;
+
+  background: #fff;
+  border: 1px solid #e2e3e5;
+  border-radius: 11px;
+
+  overflow: visible;
+}
+
+.maestro-general-filtros-titulo {
+  display: flex;
+  align-items: center;
+
+  min-height: 42px;
+  padding: 0 16px;
+
+  background: #fffaf5;
+  border-bottom: 1px solid #eee4da;
+
+  border-radius: 11px 11px 0 0;
+
+  color: #9a5719;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.maestro-general-filtros-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 1fr)
+    minmax(180px, 1.1fr)
+    minmax(200px, 1.2fr);
+
+  gap: 14px;
+
+  padding: 16px;
+}
+
+.maestro-general-filtro {
+  position: relative;
+  min-width: 0;
+}
+
+.maestro-general-filtro label {
+  display: block;
+  margin-bottom: 6px;
+
+  font-size: 11px;
+  font-weight: 650;
+  color: #656565;
+}
+
+.maestro-general-filtro select,
+.maestro-general-filtro input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+
+  padding: 0 11px;
+
+  border: 1px solid #dcdde0;
+  border-radius: 7px;
+
+  background: #fafafa;
+
+  color: #333;
+  font-size: 12px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.maestro-general-filtro select {
+  cursor: pointer;
+}
+
+.maestro-general-filtro select:hover,
+.maestro-general-filtro input:hover {
+  border-color: #c9cace;
+  background: #fff;
+}
+
+.maestro-general-filtro select:focus,
+.maestro-general-filtro input:focus {
+  border-color: #e67e22;
+  background: #fff;
+
+  box-shadow:
+    0 0 0 3px rgba(230, 126, 34, 0.09);
+}
+
+/* ============================================================
+   BUSCADORES EQUIPO / COMPONENTE
+   ============================================================ */
+
+.maestro-general-filtro-buscador {
+  grid-column: span 1;
+}
+
+.maestro-general-input-wrapper {
+  position: relative;
+}
+
+.maestro-general-input-wrapper input {
+  padding-left: 34px;
+}
+
+.maestro-general-input-icono {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  color: #999;
+  font-size: 13px;
+
+  pointer-events: none;
+}
+
+/* ============================================================
+   SUGERENCIAS
+   ============================================================ */
+
+.maestro-general-filtro-sugerencias {
+  position: absolute;
+  z-index: 50;
+
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+
+  max-height: 230px;
+  overflow-y: auto;
+
+  background: #fff;
+
+  border: 1px solid #dedfe2;
+  border-radius: 8px;
+
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.10);
+
+  padding: 5px;
+}
+
+.maestro-general-filtro-sugerencias button {
+  display: block;
+
+  width: 100%;
+  padding: 8px 9px;
+
+  border: 0;
+  border-radius: 5px;
+
+  background: transparent;
+
+  color: #444;
+  font-size: 12px;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.maestro-general-filtro-sugerencias button:hover {
+  background: #fff3e8;
+  color: #9a5719;
+}
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+
+.maestro-general-tabla-wrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  background: #fff;
+
+  border: 1px solid #dedfe2;
+  border-radius: 10px;
+
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.maestro-general-tabla {
+  width: 100%;
+  min-width: 1180px;
+
+  border-collapse: separate;
+  border-spacing: 0;
+
+  font-size: 12px;
+}
+
+/* ============================================================
+   CABECERA TABLA
+   ============================================================ */
+
+.maestro-general-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  height: 42px;
+
+  padding: 0 10px;
+
+  background: #f7f7f8;
+
+  border-bottom: 1px solid #dcdde0;
+  border-right: 1px solid #e8e8ea;
+
+  color: #4a4a4a;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+
+  white-space: nowrap;
+}
+
+.maestro-general-tabla thead th:first-child {
+  border-radius: 9px 0 0 0;
+}
+
+.maestro-general-tabla thead th:last-child {
+  border-right: 0;
+  border-radius: 0 9px 0 0;
+}
+
+.maestro-general-th-contenido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 7px;
+}
+
+/* ============================================================
+   CUERPO
+   ============================================================ */
+
+.maestro-general-tabla tbody td {
+  height: 50px;
+
+  padding: 7px 10px;
+
+  background: #fff;
+
+  border-bottom: 1px solid #eeeeef;
+  border-right: 1px solid #f0f0f1;
+
+  color: #444;
+
+  vertical-align: middle;
+}
+
+.maestro-general-tabla tbody td:last-child {
+  border-right: 0;
+}
+
+.maestro-general-tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.maestro-general-tabla tbody tr:hover td {
+  background: #fffaf5;
+}
+
+/* ============================================================
+   EQUIPO
+   ============================================================ */
+
+.maestro-general-equipo,
+.maestro-general-componente {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  min-width: 150px;
+}
+
+.maestro-general-equipo strong,
+.maestro-general-componente strong {
+  color: #333;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.maestro-general-equipo span,
+.maestro-general-componente span {
+  color: #777;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.maestro-general-componente span:first-of-type {
+  color: #a0612a;
+  font-size: 10px;
+}
+
+/* ============================================================
+   FILAS / TEXTO
+   ============================================================ */
+
+.maestro-general-tabla tbody td:first-child {
+  color: #8c4f18;
+  font-weight: 650;
+}
+
+.maestro-general-tabla tbody td:nth-child(2),
+.maestro-general-tabla tbody td:nth-child(3) {
+  color: #555;
+}
+
+.maestro-general-tabla tbody td:nth-child(6) {
+  color: #999;
+}
+
+/* ============================================================
+   ACCIONES
+   ============================================================ */
+
+.maestro-general-accion-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  min-width: 112px;
+  height: 32px;
+
+  padding: 0 9px;
+
+  border-radius: 6px;
+  border: 1px solid #dedfe2;
+
+  background: #fff;
+
+  color: #555;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.maestro-general-accion-btn:hover {
+  background: #fff6ed;
+  border-color: #e6a267;
+  color: #9a5719;
+}
+
+.maestro-general-accion-btn:active {
+  transform: translateY(1px);
+}
+
+.maestro-general-accion-icono {
+  font-size: 13px;
+}
+
+/* ============================================================
+   TABLA VACÍA
+   ============================================================ */
+
+.maestro-general-tabla-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 220px;
+
+  background: #fff;
+
+  border: 1px solid #e2e3e5;
+  border-radius: 10px;
+
+  color: #777;
+}
+
+.maestro-general-tabla-vacia-icono {
+  margin-bottom: 8px;
+
+  font-size: 25px;
+  opacity: 0.55;
+}
+
+.maestro-general-tabla-vacia h3 {
+  margin: 0;
+
+  color: #444;
+  font-size: 15px;
+}
+
+.maestro-general-tabla-vacia p {
+  margin: 6px 0 0;
+
+  color: #999;
+  font-size: 12px;
+}
+
+/* ============================================================
+   CARGANDO
+   ============================================================ */
+
+.maestro-general-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 300px;
+
+  gap: 12px;
+
+  color: #777;
+  font-size: 13px;
+}
+
+.maestro-general-spinner {
+  width: 30px;
+  height: 30px;
+
+  border: 3px solid #eee;
+  border-top-color: #e67e22;
+
+  border-radius: 50%;
+
+  animation:
+    maestro-general-spin 0.8s linear infinite;
+}
+
+@keyframes maestro-general-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
+.maestro-general-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 300px;
+
+  padding: 30px;
+
+  background: #fff;
+
+  border: 1px solid #eadede;
+  border-radius: 10px;
+
+  text-align: center;
+}
+
+.maestro-general-error-icono {
+  margin-bottom: 8px;
+
+  color: #c7503b;
+  font-size: 27px;
+}
+
+.maestro-general-error h3 {
+  margin: 0;
+
+  color: #444;
+  font-size: 16px;
+}
+
+.maestro-general-error p {
+  margin: 7px 0 15px;
+
+  color: #888;
+  font-size: 12px;
+}
+
+.maestro-general-error button {
+  height: 34px;
+
+  padding: 0 15px;
+
+  border: 0;
+  border-radius: 6px;
+
+  background: #e67e22;
+  color: #fff;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.maestro-general-error button:hover {
+  background: #cf6d17;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1050px) {
+  .maestro-general-filtros-grid {
+    grid-template-columns:
+      repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .maestro-general {
+    padding: 12px;
+  }
+
+  .maestro-general-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .maestro-general-header-resumen {
+    width: 100%;
+  }
+
+  .maestro-general-resumen-item {
+    flex: 1;
+  }
+
+  .maestro-general-filtros-grid {
+    grid-template-columns: 1fr;
+  }
+}

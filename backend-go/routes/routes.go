@@ -268,7 +268,6 @@ func SetupRoutes(
 		estructuraPlantaHandler,
 		tipoEquipoHandler,
 	)
-
 	// ============================================
 	// MANTENIMIENTO
 	// ============================================

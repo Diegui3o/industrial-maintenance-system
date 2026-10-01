@@ -6,11 +6,13 @@ import { colors } from "../../../theme/colors";
 import { PlantaEstructuraPrincipal } from "./components/PlantaEstructura/PlantaEstructuraPrincipal";
 import { MantenimientosLista } from "./components/Mantenimientos/MantenimientosLista";
 import { EquiposLista } from "./components/Equipos/EquiposLista";
+import { MaestroGeneral } from "./components/MaestroGeneral/MaestroGeneral";
 
 import "./Planta.css";
 
 type PlantaTab =
   | "estructura"
+  | "maestro-general"
   | "mantenimientos"
   | "equipos";
 
@@ -71,6 +73,20 @@ export function PlantaPanel() {
             >
               Equipos
             </button>
+
+            <button
+              type="button"
+              className={
+                tab === "maestro-general"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setTab("maestro-general")
+              }
+            >
+              Maestro General
+            </button>
           </div>
 
           <div className="area-content">
@@ -84,6 +100,9 @@ export function PlantaPanel() {
 
             {tab === "equipos" && (
               <EquiposLista />
+            )}
+            {tab === "maestro-general" && (
+              <MaestroGeneral />
             )}
           </div>
         </div>
