@@ -1,0 +1,113 @@
+.motor-electrico-filtros {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.6fr) minmax(180px, 1fr) minmax(180px, 1fr);
+
+  gap: 8px;
+
+  width: 100%;
+
+  margin-bottom: 10px;
+
+  padding: 9px 10px;
+
+  border: 1px solid #e1e1e1;
+  border-radius: 7px;
+
+  background: #fafafa;
+}
+
+
+/* ============================================================
+   FILTRO
+   ============================================================ */
+
+.motor-electrico-filtro {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.motor-electrico-filtro label {
+  flex-shrink: 0;
+
+  color: #666;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.motor-electrico-filtro input,
+.motor-electrico-filtro select {
+  width: 100%;
+  min-width: 0;
+
+  height: 28px;
+
+  padding: 0 8px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 5px;
+
+  background: #fff;
+
+  color: #444;
+
+  font-family: inherit;
+  font-size: 10px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* ============================================================
+   INPUT DE BÚSQUEDA
+   ============================================================ */
+
+.motor-electrico-filtro input::placeholder {
+  color: #aaa;
+}
+
+.motor-electrico-filtro input:hover,
+.motor-electrico-filtro select:hover {
+  border-color: #c7c7c7;
+}
+
+.motor-electrico-filtro input:focus,
+.motor-electrico-filtro select:focus {
+  border-color: #e19a5a;
+
+  box-shadow:
+    0 0 0 2px rgba(225, 154, 90, 0.1);
+}
+
+
+/* ============================================================
+   SELECT
+   ============================================================ */
+
+.motor-electrico-filtro select {
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .motor-electrico-filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .motor-electrico-filtro {
+    width: 100%;
+  }
+}

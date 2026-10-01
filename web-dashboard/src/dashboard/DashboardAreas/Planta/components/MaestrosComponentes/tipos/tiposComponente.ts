@@ -1,0 +1,14 @@
+export const TIPOS_COMPONENTE_BASE = [
+  'MOTOR ELECTRICO',
+  'MODULO',
+  'TABLERO',
+  'COMPONENTE MECANICO',
+  'COMPONENTE INSTRUMENTAL',
+  'COMPONENTE SISTEMAS',
+  'ARRANCADOR',
+  'TANQUE',
+  'ACONDICIONADOR',
+] as const;
+
+export type TipoComponenteBase =
+  (typeof TIPOS_COMPONENTE_BASE)[number];

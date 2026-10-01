@@ -7,12 +7,14 @@ import { PlantaEstructuraPrincipal } from "./components/PlantaEstructura/PlantaE
 import { MantenimientosLista } from "./components/Mantenimientos/MantenimientosLista";
 import { EquiposLista } from "./components/Equipos/EquiposLista";
 import { MaestroGeneral } from "./components/MaestroGeneral/MaestroGeneral";
+import { MaestrosComponentes } from './components/MaestrosComponentes/MaestrosComponentes';
 
 import "./Planta.css";
 
 type PlantaTab =
   | "estructura"
   | "maestro-general"
+  | "maestros-componentes"
   | "mantenimientos"
   | "equipos";
 
@@ -87,6 +89,19 @@ export function PlantaPanel() {
             >
               Maestro General
             </button>
+            <button
+              type="button"
+              onClick={() =>
+                setTab("maestros-componentes")
+              }
+              className={
+                tab === "maestros-componentes"
+                  ? "activo"
+                  : ""
+              }
+            >
+              Maestros de componentes
+            </button>
           </div>
 
           <div className="area-content">
@@ -103,6 +118,9 @@ export function PlantaPanel() {
             )}
             {tab === "maestro-general" && (
               <MaestroGeneral />
+            )}
+            {tab === "maestros-componentes" && (
+              <MaestrosComponentes />
             )}
           </div>
         </div>

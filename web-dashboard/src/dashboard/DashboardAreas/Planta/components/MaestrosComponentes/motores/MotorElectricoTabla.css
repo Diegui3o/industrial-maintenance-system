@@ -1,0 +1,450 @@
+.motor-electrico-maestro {
+  width: 100%;
+  margin-top: 12px;
+}
+
+
+/* ============================================================
+   CABECERA
+   ============================================================ */
+
+.motor-electrico-maestro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 8px;
+}
+
+.motor-electrico-maestro-header h3 {
+  margin: 0;
+
+  color: #303030;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.motor-electrico-maestro-header span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #888;
+
+  font-size: 10px;
+}
+
+
+/* ============================================================
+   CONTROLES DE CABECERA
+   ============================================================ */
+
+.motor-electrico-controles {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  flex-shrink: 0;
+}
+
+.motor-electrico-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 22px;
+
+  padding: 0 8px;
+
+  border: 1px solid #ead8c8;
+  border-radius: 11px;
+
+  background: #fff7ef;
+
+  color: #9a5c25;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   BOTÓN LIMPIAR
+   ============================================================ */
+
+.motor-electrico-limpiar {
+  height: 24px;
+
+  padding: 0 9px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 5px;
+
+  background: #fff;
+
+  color: #777;
+
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.motor-electrico-limpiar:hover {
+  border-color: #d3a477;
+
+  background: #fff8f1;
+
+  color: #9a5c25;
+}
+
+.motor-electrico-limpiar:active {
+  background: #fff1e5;
+}
+
+
+/* ============================================================
+   CONTENEDOR DE TABLA
+   ============================================================ */
+
+.motor-electrico-tabla-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+  overflow-y: visible;
+
+  border: 1px solid #dedede;
+  border-radius: 7px;
+
+  background: #fff;
+
+  scrollbar-width: thin;
+}
+
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+
+.motor-electrico-tabla {
+  width: max-content;
+  min-width: 100%;
+
+  border-collapse: separate;
+  border-spacing: 0;
+
+  color: #444;
+
+  font-size: 10px;
+}
+
+
+/* ============================================================
+   ENCABEZADOS
+   ============================================================ */
+
+.motor-electrico-tabla thead th {
+  position: sticky;
+  top: 0;
+
+  z-index: 2;
+
+  height: 34px;
+
+  padding: 0 9px;
+
+  border-right: 1px solid #e2e2e2;
+  border-bottom: 1px solid #d7d7d7;
+
+  background: #f7f7f7;
+
+  color: #4a4a4a;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  line-height: 1.2;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.motor-electrico-tabla thead th:first-child {
+  border-top-left-radius: 7px;
+}
+
+.motor-electrico-tabla thead th:last-child {
+  border-right: 0;
+
+  border-top-right-radius: 7px;
+}
+
+
+/* ============================================================
+   FILAS
+   ============================================================ */
+
+.motor-electrico-tabla tbody td {
+  height: 36px;
+
+  padding: 5px 9px;
+
+  border-right: 1px solid #eeeeee;
+  border-bottom: 1px solid #eeeeee;
+
+  background: #fff;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+
+  vertical-align: middle;
+}
+
+.motor-electrico-tabla tbody tr:hover td {
+  background: #fffaf5;
+}
+
+.motor-electrico-tabla tbody td:last-child {
+  border-right: 0;
+}
+
+.motor-electrico-tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+
+/* ============================================================
+   DESCRIPCIÓN
+   ============================================================ */
+
+.motor-electrico-tabla tbody td:first-child {
+  min-width: 190px;
+
+  color: #333;
+
+  font-weight: 600;
+
+  white-space: normal;
+}
+
+
+/* ============================================================
+   COLUMNAS IDENTIFICACIÓN
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(2),
+.motor-electrico-tabla td:nth-child(2) {
+  min-width: 90px;
+}
+
+.motor-electrico-tabla th:nth-child(3),
+.motor-electrico-tabla td:nth-child(3) {
+  min-width: 100px;
+}
+
+.motor-electrico-tabla th:nth-child(4),
+.motor-electrico-tabla td:nth-child(4) {
+  min-width: 105px;
+}
+
+.motor-electrico-tabla th:nth-child(5),
+.motor-electrico-tabla td:nth-child(5) {
+  min-width: 150px;
+}
+
+.motor-electrico-tabla th:nth-child(6),
+.motor-electrico-tabla td:nth-child(6),
+.motor-electrico-tabla th:nth-child(7),
+.motor-electrico-tabla td:nth-child(7) {
+  min-width: 90px;
+}
+
+.motor-electrico-tabla th:nth-child(8),
+.motor-electrico-tabla td:nth-child(8) {
+  min-width: 95px;
+}
+
+
+/* ============================================================
+   VALORES TÉCNICOS
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(9),
+.motor-electrico-tabla td:nth-child(9),
+.motor-electrico-tabla th:nth-child(10),
+.motor-electrico-tabla td:nth-child(10),
+.motor-electrico-tabla th:nth-child(11),
+.motor-electrico-tabla td:nth-child(11),
+.motor-electrico-tabla th:nth-child(12),
+.motor-electrico-tabla td:nth-child(12),
+.motor-electrico-tabla th:nth-child(13),
+.motor-electrico-tabla td:nth-child(13),
+.motor-electrico-tabla th:nth-child(14),
+.motor-electrico-tabla td:nth-child(14),
+.motor-electrico-tabla th:nth-child(15),
+.motor-electrico-tabla td:nth-child(15),
+.motor-electrico-tabla th:nth-child(16),
+.motor-electrico-tabla td:nth-child(16),
+.motor-electrico-tabla th:nth-child(17),
+.motor-electrico-tabla td:nth-child(17),
+.motor-electrico-tabla th:nth-child(18),
+.motor-electrico-tabla td:nth-child(18),
+.motor-electrico-tabla th:nth-child(19),
+.motor-electrico-tabla td:nth-child(19) {
+  min-width: 58px;
+
+  text-align: center;
+}
+
+
+/* ============================================================
+   LADOS DEL MOTOR
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(20),
+.motor-electrico-tabla td:nth-child(20),
+.motor-electrico-tabla th:nth-child(22),
+.motor-electrico-tabla td:nth-child(22) {
+  min-width: 105px;
+}
+
+
+/* ============================================================
+   CÓDIGOS SAP
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(21),
+.motor-electrico-tabla td:nth-child(21),
+.motor-electrico-tabla th:nth-child(23),
+.motor-electrico-tabla td:nth-child(23) {
+  min-width: 95px;
+}
+
+
+/* ============================================================
+   ARRANQUE
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(24),
+.motor-electrico-tabla td:nth-child(24) {
+  min-width: 120px;
+}
+
+
+/* ============================================================
+   MARCA / MODELO DEL ARRANQUE
+   ============================================================ */
+
+.motor-electrico-tabla th:nth-child(25),
+.motor-electrico-tabla td:nth-child(25),
+.motor-electrico-tabla th:nth-child(26),
+.motor-electrico-tabla td:nth-child(26) {
+  min-width: 90px;
+}
+
+
+/* ============================================================
+   PDF
+   ============================================================ */
+
+.motor-electrico-tabla th:last-child,
+.motor-electrico-tabla td:last-child {
+  min-width: 58px;
+
+  text-align: center;
+}
+
+.motor-electrico-pdf {
+  min-width: 34px;
+
+  height: 22px;
+
+  padding: 0 6px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 4px;
+
+  background: #f7f7f7;
+
+  color: #aaa;
+
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 700;
+
+  cursor: not-allowed;
+}
+
+.motor-electrico-pdf:disabled {
+  opacity: 0.8;
+}
+
+
+/* ============================================================
+   MENSAJES DE TABLA
+   ============================================================ */
+
+.motor-electrico-tabla tbody td[colspan] {
+  height: 80px;
+
+  color: #999;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+/* ============================================================
+   SCROLL HORIZONTAL
+   ============================================================ */
+
+.motor-electrico-tabla-wrapper::-webkit-scrollbar {
+  height: 7px;
+}
+
+.motor-electrico-tabla-wrapper::-webkit-scrollbar-track {
+  background: #f2f2f2;
+}
+
+.motor-electrico-tabla-wrapper::-webkit-scrollbar-thumb {
+  background: #c9c9c9;
+
+  border-radius: 10px;
+}
+
+.motor-electrico-tabla-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #aaaaaa;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 700px) {
+  .motor-electrico-maestro-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .motor-electrico-controles {
+    width: 100%;
+
+    justify-content: flex-end;
+  }
+}
