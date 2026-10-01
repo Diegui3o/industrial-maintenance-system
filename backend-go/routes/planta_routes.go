@@ -95,6 +95,11 @@ func registrarPlantaRoutes(
 	).Methods("POST")
 
 	r.HandleFunc(
+		"/api/planta/componentes",
+		estructuraPlantaHandler.GetTodosComponentes,
+	).Methods("GET")
+
+	r.HandleFunc(
 		"/api/planta/repuestos",
 		estructuraPlantaHandler.GetRepuestos,
 	).Methods("GET")

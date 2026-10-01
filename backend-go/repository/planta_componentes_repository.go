@@ -181,6 +181,183 @@ func (r *EstructuraPlantaRepository) ListarComponentes(
 	return resultado, rows.Err()
 }
 
+func (r *EstructuraPlantaRepository) ListarTodosComponentes(
+) ([]models.ComponenteEquipo, error) {
+
+	rows, err := r.DB.Query(`
+		SELECT
+			c.id,
+			c.equipo_id,
+			c.codigo,
+			c.codigo_sap,
+			c.tag,
+			c.nombre,
+			c.tipo_componente,
+			c.marca,
+			c.modelo,
+			c.numero_serie,
+			c.descripcion,
+			c.activo,
+			c.creado_en,
+			c.fecha_creacion,
+			c.fecha_actualizacion,
+
+			m.componente_id,
+			m.placa_motor,
+			m.fabricante,
+			m.codigo_fabricante,
+			m.producto,
+			m.rated_voltage,
+			m.rated_current,
+			m.frequency,
+			m.phases,
+			m.power_factor,
+			m.efficiency,
+			m.service_factor,
+			m.output,
+			m.rated_speed,
+			m.number_of_poles,
+			m.design,
+			m.enclosure,
+			m.degree_of_protection,
+			m.frame,
+			m.mounting,
+			m.insulation_class,
+			m.duty_cycle,
+			m.slip,
+			m.rated_torque,
+			m.locked_rotor_torque,
+			m.breakdown_torque,
+			m.starting_method,
+			m.l_r_amperes,
+			m.lrc,
+			m.no_load_current,
+			m.locked_rotor_time,
+			m.rotation,
+			m.moment_of_inertia,
+			m.temperature_rise,
+			m.ambient_temperature,
+			m.altitude,
+			m.noise_level,
+			m.approximate_weight,
+			m.bearing_drive_end,
+			m.bearing_non_drive_end,
+			m.front_bearing,
+			m.rear_bearing,
+			m.connection,
+			m.standard,
+			m.nema_classification,
+			m.year_of_manufacture,
+			m.creado_en,
+			m.actualizado_en
+
+		FROM componentes_equipo c
+
+		LEFT JOIN componente_motor_electrico m
+			ON m.componente_id = c.id
+
+		WHERE c.activo = TRUE
+
+		ORDER BY c.nombre
+	`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var resultado []models.ComponenteEquipo
+
+	for rows.Next() {
+		var c models.ComponenteEquipo
+		var motor models.ComponenteMotorElectrico
+
+		err := rows.Scan(
+			&c.ID,
+			&c.EquipoID,
+			&c.Codigo,
+			&c.CodigoSAP,
+			&c.Tag,
+			&c.Nombre,
+			&c.TipoComponente,
+			&c.Marca,
+			&c.Modelo,
+			&c.NumeroSerie,
+			&c.Descripcion,
+			&c.Activo,
+			&c.CreadoEn,
+			&c.FechaCreacion,
+			&c.FechaActualizacion,
+
+			&motor.ComponenteID,
+			&motor.PlacaMotor,
+			&motor.Fabricante,
+			&motor.CodigoFabricante,
+			&motor.Producto,
+			&motor.RatedVoltage,
+			&motor.RatedCurrent,
+			&motor.Frequency,
+			&motor.Phases,
+			&motor.PowerFactor,
+			&motor.Efficiency,
+			&motor.ServiceFactor,
+			&motor.Output,
+			&motor.RatedSpeed,
+			&motor.NumberOfPoles,
+			&motor.Design,
+			&motor.Enclosure,
+			&motor.DegreeOfProtection,
+			&motor.Frame,
+			&motor.Mounting,
+			&motor.InsulationClass,
+			&motor.DutyCycle,
+			&motor.Slip,
+			&motor.RatedTorque,
+			&motor.LockedRotorTorque,
+			&motor.BreakdownTorque,
+			&motor.StartingMethod,
+			&motor.LRAmpers,
+			&motor.LRC,
+			&motor.NoLoadCurrent,
+			&motor.LockedRotorTime,
+			&motor.Rotation,
+			&motor.MomentOfInertia,
+			&motor.TemperatureRise,
+			&motor.AmbientTemperature,
+			&motor.Altitude,
+			&motor.NoiseLevel,
+			&motor.ApproximateWeight,
+			&motor.BearingDriveEnd,
+			&motor.BearingNonDriveEnd,
+			&motor.FrontBearing,
+			&motor.RearBearing,
+			&motor.Connection,
+			&motor.Standard,
+			&motor.NemaClassification,
+			&motor.YearOfManufacture,
+			&motor.CreadoEn,
+			&motor.ActualizadoEn,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if motor.ComponenteID != 0 {
+			c.MotorElectrico = &motor
+		}
+
+		resultado = append(resultado, c)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return resultado, nil
+}
+
 func (r *EstructuraPlantaRepository) CrearComponente(
 	c *models.ComponenteEquipo,
 ) error {

@@ -3,9 +3,13 @@
 import "backend/models"
 
 func (s *EstructuraPlantaService) ListarComponentes(
-        equipoID int,
+	equipoID int,
 ) ([]models.ComponenteEquipo, error) {
-        return s.Repo.ListarComponentes(equipoID)
+	return s.Repo.ListarComponentes(equipoID)
+}
+
+func (s *EstructuraPlantaService) ListarTodosComponentes() ([]models.ComponenteEquipo, error) {
+	return s.Repo.ListarTodosComponentes()
 }
 
 func (s *EstructuraPlantaService) CrearComponente(

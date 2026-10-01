@@ -9,6 +9,17 @@ export function ComponentesEquipo() {
   const [panelAbierto, setPanelAbierto] =
     useState(false);
 
+  const [catalogoVersion, setCatalogoVersion] =
+    useState(0);
+
+  function componenteGuardado() {
+    setPanelAbierto(false);
+
+    setCatalogoVersion(
+      (actual) => actual + 1
+    );
+  }
+
   return (
     <section className="componentes-seccion">
 
@@ -41,17 +52,22 @@ export function ComponentesEquipo() {
 
       <div className="componentes-card">
 
-        <ComponentesCatalogo
-          onCrear={() => setPanelAbierto(true)}
-        />
-
-      </div>
+      <ComponentesCatalogo
+        key={catalogoVersion}
+        onCrear={() =>
+          setPanelAbierto(true)
+        }
+      />
 
       <ComponentePanel
         abierto={panelAbierto}
-        onCerrar={() => setPanelAbierto(false)}
+        onCerrar={() =>
+          setPanelAbierto(false)
+        }
+        onGuardado={componenteGuardado}
       />
 
+      </div>
     </section>
   );
 }

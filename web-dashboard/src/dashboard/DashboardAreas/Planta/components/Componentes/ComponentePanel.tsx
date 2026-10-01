@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+
+import {
+  crearComponente,
+  type ComponenteMotorElectrico,
+} from '../../services/plantaComponentesApi';
 
 import { ComponenteEquipoSelector } from './ComponenteEquipoSelector';
+import { ComponenteMotorFicha } from './ComponenteMotorFicha';
 
 interface Props {
   abierto: boolean;
   onCerrar: () => void;
+  onGuardado?: () => void;
 }
 
 const TIPOS_COMPONENTE = [
@@ -22,12 +29,16 @@ const TIPOS_COMPONENTE = [
 export function ComponentePanel({
   abierto,
   onCerrar,
+  onGuardado,
 }: Props) {
   const [tipoComponente, setTipoComponente] =
     useState('');
 
   const [equipoId, setEquipoId] =
     useState<number | null>(null);
+
+  const [codigo, setCodigo] =
+    useState('');
 
   const [codigoSAP, setCodigoSAP] =
     useState('');
@@ -47,23 +58,107 @@ export function ComponentePanel({
   const [numeroSerie, setNumeroSerie] =
     useState('');
 
-  useEffect(() => {
-    if (!abierto) {
-      return;
-    }
+  const [descripcion, setDescripcion] =
+    useState('');
 
-    setTipoComponente('');
-    setEquipoId(null);
-    setCodigoSAP('');
-    setNombre('');
-    setTag('');
-    setMarca('');
-    setModelo('');
-    setNumeroSerie('');
-  }, [abierto]);
+  const [motor, setMotor] =
+    useState<Partial<ComponenteMotorElectrico>>(
+      {}
+    );
+
+  const [guardando, setGuardando] =
+    useState(false);
+
+  const [error, setError] =
+    useState('');
 
   if (!abierto) {
     return null;
+  }
+
+  function actualizarMotor(
+    campo: keyof Omit<
+      ComponenteMotorElectrico,
+      'componente_id'
+    >,
+    valor: string | number | null
+  ) {
+    setMotor((actual) => ({
+      ...actual,
+      [campo]: valor,
+    }));
+  }
+
+  async function guardar() {
+    setError('');
+
+    if (!equipoId) {
+      setError(
+        'Debes seleccionar el equipo padre.'
+      );
+      return;
+    }
+
+    if (!nombre.trim()) {
+      setError(
+        'Debes ingresar el nombre del componente.'
+      );
+      return;
+    }
+
+    if (!tipoComponente) {
+      setError(
+        'Debes seleccionar el tipo de componente.'
+      );
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      await crearComponente({
+        equipo_id: equipoId,
+
+        codigo: codigo.trim() || null,
+        codigo_sap: codigoSAP.trim() || null,
+        tag: tag.trim() || null,
+
+        nombre: nombre.trim(),
+        tipo_componente: tipoComponente,
+
+        marca: marca.trim() || null,
+        modelo: modelo.trim() || null,
+        numero_serie:
+          numeroSerie.trim() || null,
+
+        descripcion:
+          descripcion.trim() || null,
+
+        ...(tipoComponente === 'MOTOR ELECTRICO'
+          ? {
+              motor_electrico: motor,
+            }
+          : {}),
+      });
+
+      onGuardado?.();
+      onCerrar();
+
+    } catch (error) {
+      console.error(
+        'Error creando componente:',
+        error
+      );
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el componente.'
+      );
+
+    } finally {
+      setGuardando(false);
+    }
   }
 
   return (
@@ -87,8 +182,8 @@ export function ComponentePanel({
             </h3>
 
             <p>
-              Registra la identificación y
-              características principales del
+              Registra la identificación,
+              asociación y ficha técnica del
               componente.
             </p>
           </div>
@@ -117,12 +212,27 @@ export function ComponentePanel({
                 </strong>
 
                 <small>
-                  Información general del componente
+                  Datos principales del componente
                 </small>
               </div>
             </div>
 
             <div className="componente-form-grid">
+
+              <label className="componente-form-field">
+                <span>Código interno</span>
+
+                <input
+                  type="text"
+                  value={codigo}
+                  onChange={(event) =>
+                    setCodigo(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Código interno"
+                />
+              </label>
 
               <label className="componente-form-field">
                 <span>Código SAP</span>
@@ -131,7 +241,9 @@ export function ComponentePanel({
                   type="text"
                   value={codigoSAP}
                   onChange={(event) =>
-                    setCodigoSAP(event.target.value)
+                    setCodigoSAP(
+                      event.target.value
+                    )
                   }
                   placeholder="Ej. 10023456"
                 />
@@ -144,47 +256,74 @@ export function ComponentePanel({
                   type="text"
                   value={tag}
                   onChange={(event) =>
-                    setTag(event.target.value)
+                    setTag(
+                      event.target.value
+                    )
                   }
                   placeholder="Ej. MOT-001"
                 />
               </label>
 
-              <label className="componente-form-field full">
-                <span>Nombre del componente</span>
+              <label className="componente-form-field">
+                <span>Nombre</span>
 
                 <input
                   type="text"
                   value={nombre}
                   onChange={(event) =>
-                    setNombre(event.target.value)
+                    setNombre(
+                      event.target.value
+                    )
                   }
-                  placeholder="Nombre descriptivo"
+                  placeholder="Nombre del componente"
                 />
               </label>
 
               <label className="componente-form-field full">
-                <span>Tipo de componente</span>
+                <span>
+                  Tipo de componente
+                </span>
 
                 <select
                   value={tipoComponente}
                   onChange={(event) =>
-                    setTipoComponente(event.target.value)
+                    setTipoComponente(
+                      event.target.value
+                    )
                   }
                 >
                   <option value="">
                     Seleccionar tipo
                   </option>
 
-                  {TIPOS_COMPONENTE.map((tipo) => (
-                    <option
-                      key={tipo}
-                      value={tipo}
-                    >
-                      {tipo}
-                    </option>
-                  ))}
+                  {TIPOS_COMPONENTE.map(
+                    (tipo) => (
+                      <option
+                        key={tipo}
+                        value={tipo}
+                      >
+                        {tipo}
+                      </option>
+                    )
+                  )}
                 </select>
+              </label>
+
+              <label className="componente-form-field full">
+                <span>
+                  Descripción
+                </span>
+
+                <textarea
+                  value={descripcion}
+                  onChange={(event) =>
+                    setDescripcion(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Descripción, función o información adicional"
+                  rows={3}
+                />
               </label>
 
             </div>
@@ -202,7 +341,7 @@ export function ComponentePanel({
                 </strong>
 
                 <small>
-                  Define el equipo padre
+                  Define el equipo padre del componente
                 </small>
               </div>
             </div>
@@ -210,7 +349,9 @@ export function ComponentePanel({
             <ComponenteEquipoSelector
               equipoId={equipoId}
               onChange={(equipo) =>
-                setEquipoId(equipo?.id ?? null)
+                setEquipoId(
+                  equipo?.id ?? null
+                )
               }
             />
 
@@ -223,11 +364,11 @@ export function ComponentePanel({
 
               <div>
                 <strong>
-                  Datos técnicos
+                  Datos generales
                 </strong>
 
                 <small>
-                  Información técnica principal
+                  Fabricante y trazabilidad
                 </small>
               </div>
             </div>
@@ -235,39 +376,51 @@ export function ComponentePanel({
             <div className="componente-form-grid">
 
               <label className="componente-form-field">
-                <span>Marca</span>
+                <span>
+                  Marca / fabricante
+                </span>
 
                 <input
                   type="text"
                   value={marca}
                   onChange={(event) =>
-                    setMarca(event.target.value)
+                    setMarca(
+                      event.target.value
+                    )
                   }
                   placeholder="Fabricante"
                 />
               </label>
 
               <label className="componente-form-field">
-                <span>Modelo</span>
+                <span>
+                  Modelo
+                </span>
 
                 <input
                   type="text"
                   value={modelo}
                   onChange={(event) =>
-                    setModelo(event.target.value)
+                    setModelo(
+                      event.target.value
+                    )
                   }
                   placeholder="Modelo"
                 />
               </label>
 
               <label className="componente-form-field full">
-                <span>Número de serie</span>
+                <span>
+                  Número de serie
+                </span>
 
                 <input
                   type="text"
                   value={numeroSerie}
                   onChange={(event) =>
-                    setNumeroSerie(event.target.value)
+                    setNumeroSerie(
+                      event.target.value
+                    )
                   }
                   placeholder="Número de serie"
                 />
@@ -275,7 +428,55 @@ export function ComponentePanel({
 
             </div>
 
-            {tipoComponente === 'MOTOR ELECTRICO' && (
+          </section>
+
+          {tipoComponente ===
+            'MOTOR ELECTRICO' && (
+            <section className="componente-panel-section">
+
+              <div className="componente-panel-section-title">
+                <span>04</span>
+
+                <div>
+                  <strong>
+                    Ficha técnica — Motor eléctrico
+                  </strong>
+
+                  <small>
+                    Características eléctricas,
+                    mecánicas, ambientales y de fabricación
+                  </small>
+                </div>
+              </div>
+
+              <ComponenteMotorFicha
+                datos={motor}
+                onChange={actualizarMotor}
+              />
+
+            </section>
+          )}
+
+          {tipoComponente &&
+            tipoComponente !==
+              'MOTOR ELECTRICO' && (
+            <section className="componente-panel-section">
+
+              <div className="componente-panel-section-title">
+                <span>04</span>
+
+                <div>
+                  <strong>
+                    Ficha técnica
+                  </strong>
+
+                  <small>
+                    Características específicas
+                    del tipo seleccionado
+                  </small>
+                </div>
+              </div>
+
               <div className="componente-ficha-placeholder">
 
                 <div className="componente-ficha-placeholder-icon">
@@ -284,19 +485,26 @@ export function ComponentePanel({
 
                 <div>
                   <strong>
-                    Ficha técnica de motor eléctrico
+                    {tipoComponente}
                   </strong>
 
                   <span>
-                    Los datos específicos del motor se
-                    completarán en la ficha técnica.
+                    La ficha técnica específica
+                    de este tipo se incorporará
+                    con sus propios parámetros.
                   </span>
                 </div>
 
               </div>
-            )}
 
-          </section>
+            </section>
+          )}
+
+          {error && (
+            <div className="componente-form-error">
+              {error}
+            </div>
+          )}
 
         </div>
 
@@ -306,6 +514,7 @@ export function ComponentePanel({
             type="button"
             className="componentes-btn-secondary"
             onClick={onCerrar}
+            disabled={guardando}
           >
             Cancelar
           </button>
@@ -313,8 +522,12 @@ export function ComponentePanel({
           <button
             type="button"
             className="componentes-btn-primary"
+            onClick={() => void guardar()}
+            disabled={guardando}
           >
-            Guardar componente
+            {guardando
+              ? 'Guardando...'
+              : 'Guardar componente'}
           </button>
 
         </footer>

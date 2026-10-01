@@ -300,4 +300,27 @@ func (h *EstructuraPlantaHandler) PutComponenteRepuestos(
 	})
 }
 
-// ==================== CONSULTAR RELACIONES ====================
+func (h *EstructuraPlantaHandler) GetTodosComponentes(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	componentes, err := h.Service.ListarTodosComponentes()
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	if componentes == nil {
+		componentes = []models.ComponenteEquipo{}
+	}
+
+	utils.SuccessJSON(
+		w,
+		http.StatusOK,
+		componentes,
+	)
+}
