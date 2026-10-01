@@ -12,8 +12,18 @@ export interface Equipo {
   numero_serie?: string;
   critico?: boolean;
   estado_equipo?: string;
+  fecha_instalacion?: string | null;
+  fecha_creacion?: string;
+  actualizado_en?: string | null;
+  fase_ubicacion?: string;
+  area_funcional?: string;
   ip?: string;
   relacionado?: boolean;
+}
+
+interface EquiposResponse {
+  value: Equipo[];
+  Count?: number;
 }
 
 export async function getEquipos(): Promise<Equipo[]> {
@@ -23,5 +33,12 @@ export async function getEquipos(): Promise<Equipo[]> {
     throw new Error('Error obteniendo equipos');
   }
 
-  return response.json();
+  const data: Equipo[] | EquiposResponse =
+    await response.json();
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  return data.value ?? [];
 }

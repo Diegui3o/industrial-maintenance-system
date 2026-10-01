@@ -64,8 +64,16 @@ function crearFilas(
       (item) => item.equipo.id === equipo.id
     );
 
-    const componentes =
-      detalle?.componentes ?? [];
+  const componentesOriginales =
+    detalle?.componentes ?? [];
+
+
+  const componentes = componentesOriginales.filter(
+    (componente) =>
+      componente?.nombre !== null &&
+      componente?.nombre !== undefined &&
+      String(componente.nombre).trim() !== ""
+  );
 
     const proceso =
       detalle?.proceso?.nombre ?? "-";
@@ -197,11 +205,13 @@ export function EquiposLista() {
   }, []);
 
   const filas = useMemo(
-    () =>
-      crearFilas(
+    () => {
+      const resultado = crearFilas(
         equipos,
         detalles
-      ),
+      );
+      return resultado;
+    },
     [equipos, detalles]
   );
 

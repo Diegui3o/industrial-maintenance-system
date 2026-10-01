@@ -269,6 +269,24 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 		faseUbicacion = nil
 	}
 
+	tag := interface{}(e.Tag)
+
+	if strings.TrimSpace(e.Tag) == "" {
+		tag = nil
+	}
+
+	ubicacionFisica := interface{}(e.UbicacionFisica)
+
+	if strings.TrimSpace(e.UbicacionFisica) == "" {
+		ubicacionFisica = nil
+	}
+
+	descripcionLarga := interface{}(e.DescripcionLarga)
+
+	if strings.TrimSpace(e.DescripcionLarga) == "" {
+		descripcionLarga = nil
+	}
+
 	err = r.DB.QueryRow(`
 		INSERT INTO equipos (
 			codigo,
@@ -283,10 +301,14 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 			estado_equipo,
 			fecha_instalacion,
 			fase_ubicacion,
-			area_funcional
+			area_funcional,
+			tag,
+			ubicacion_fisica,
+			descripcion_larga
 		)
 		VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+			$1,$2,$3,$4,$5,$6,$7,$8,
+			$9,$10,$11,$12,$13,$14,$15,$16
 		)
 		RETURNING id, fecha_creacion
 	`,
@@ -303,6 +325,9 @@ func (r *EquipoRepository) CrearEquipos(e *models.Equipo) error {
 		e.FechaInstalacion,
 		faseUbicacion,
 		areaFuncional,
+		tag,
+		ubicacionFisica,
+		descripcionLarga,
 	).Scan(&e.ID, &e.FechaCreacion)
 
 	if err != nil {
@@ -332,6 +357,9 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 			e.actualizado_en,
 			e.fase_ubicacion,
 			e.area_funcional,
+			e.tag,
+			e.ubicacion_fisica,
+			e.descripcion_larga,
 			COALESCE(d.ip, '') AS ip
 		FROM equipos e
 		LEFT JOIN LATERAL (
@@ -355,6 +383,9 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 		areaFuncional    sql.NullString
 		fechaInstalacion sql.NullTime
 		actualizadoEn    sql.NullTime
+		tag              sql.NullString
+		ubicacionFisica  sql.NullString
+		descripcionLarga sql.NullString
 	)
 
 	err := r.DB.QueryRow(query, id).Scan(
@@ -374,6 +405,9 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 		&actualizadoEn,
 		&faseUbicacion,
 		&areaFuncional,
+		&tag,
+		&ubicacionFisica,
+		&descripcionLarga,
 		&e.IP,
 	)
 
@@ -391,6 +425,9 @@ func (r *EquipoRepository) ObtenerEquipoPorID(id int) (*models.Equipo, error) {
 	e.NumeroSerie = numeroSerie.String
 	e.FaseUbicacion = faseUbicacion.String
 	e.AreaFuncional = areaFuncional.String
+	e.Tag = tag.String
+	e.UbicacionFisica = ubicacionFisica.String
+	e.DescripcionLarga = descripcionLarga.String
 
 	if fechaInstalacion.Valid {
 		e.FechaInstalacion = &fechaInstalacion.Time
@@ -414,12 +451,6 @@ func (r *EquipoRepository) ActualizarEquipo(
 		areaFuncional = nil
 	}
 
-	faseUbicacion := interface{}(e.FaseUbicacion)
-
-	if strings.TrimSpace(e.FaseUbicacion) == "" {
-		faseUbicacion = nil
-	}
-
 	_, err := r.DB.Exec(`
 		UPDATE equipos SET
 			codigo = $1,
@@ -435,8 +466,11 @@ func (r *EquipoRepository) ActualizarEquipo(
 			fecha_instalacion = $11,
 			fase_ubicacion = $12,
 			area_funcional = $13,
+			tag = $14,
+			ubicacion_fisica = $15,
+			descripcion_larga = $16,
 			actualizado_en = CURRENT_TIMESTAMP
-		WHERE id = $14
+		WHERE id = $17
 	`,
 		e.Codigo,
 		e.Nombre,
@@ -450,8 +484,10 @@ func (r *EquipoRepository) ActualizarEquipo(
 		e.EstadoEquipo,
 		e.FechaInstalacion,
 		e.FaseUbicacion,
-		faseUbicacion,
 		areaFuncional,
+		e.Tag,
+		e.UbicacionFisica,
+		e.DescripcionLarga,
 		id,
 	)
 

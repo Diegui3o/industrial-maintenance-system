@@ -195,16 +195,19 @@ export default function DatosBasicosStep({
               color: colors.text.muted,
             }}
           >
-            Fase o nivel
+            Fase
           </label>
 
           <select
-            value={form.fase_ubicacion}
-            onChange={(e) =>
+            value={form.fase}
+            onChange={(e) => {
+              const value = e.target.value;
+
               update({
-                fase_ubicacion: e.target.value,
-              })
-            }
+                fase: value,
+                fase_ubicacion: value,
+              });
+            }}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -228,6 +231,13 @@ export default function DatosBasicosStep({
             </option>
           </select>
         </div>
+
+        <Field
+          label="Área Funcional"
+          value={form.area_funcional}
+          onChange={set('area_funcional')}
+          placeholder="Mantenimiento Eléctrico"
+        />
 
         <Field
           label="Fabricante"

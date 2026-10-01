@@ -6,8 +6,6 @@ import { SubprocesosPorEstructura } from '../Subprocesos/SubprocesosPorEstructur
 import { EquiposPorEstructura } from '../Equipos/EquiposPorEstructura';
 import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
 
-import type { Equipo } from '../../services/plantaEquiposApi';
-
 type Seccion =
   | 'procesos'
   | 'sistemas'
@@ -18,9 +16,6 @@ type Seccion =
 export function PlantaEstructuraPrincipal() {
   const [seccion, setSeccion] =
     useState<Seccion>('procesos');
-
-  const [equipoSeleccionado, setEquipoSeleccionado] =
-    useState<Equipo | null>(null);
 
   return (
     <div className="planta-estructura">
@@ -114,19 +109,7 @@ export function PlantaEstructuraPrincipal() {
         )}
 
         {seccion === 'equipos' && (
-          <>
-            <EquiposPorEstructura
-              onSelectEquipo={
-                setEquipoSeleccionado
-              }
-            />
-
-            {equipoSeleccionado && (
-              <ComponentesEquipo
-                equipo={equipoSeleccionado}
-              />
-            )}
-          </>
+          <EquiposPorEstructura />
         )}
 
         {seccion === 'componentes' && (

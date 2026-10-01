@@ -1,0 +1,4 @@
+ALTER TABLE equipos
+    ADD COLUMN IF NOT EXISTS tag TEXT,
+    ADD COLUMN IF NOT EXISTS ubicacion_fisica TEXT,
+    ADD COLUMN IF NOT EXISTS descripcion_larga TEXT;
