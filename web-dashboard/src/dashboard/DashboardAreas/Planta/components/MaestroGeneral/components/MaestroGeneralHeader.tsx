@@ -15,7 +15,7 @@ export function MaestroGeneralHeader({
     <header className="maestro-general-header">
       <div className="maestro-general-header-info">
         <div className="maestro-general-header-titulo">
-          <h2>Maestro General</h2>
+          <h2>Master principal</h2>
 
           <span className="maestro-general-header-registros">
             {cantidadVisible}

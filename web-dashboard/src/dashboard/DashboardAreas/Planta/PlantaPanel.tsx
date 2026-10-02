@@ -87,7 +87,7 @@ export function PlantaPanel() {
                 setTab("maestro-general")
               }
             >
-              Maestro General
+              Master principal
             </button>
             <button
               type="button"

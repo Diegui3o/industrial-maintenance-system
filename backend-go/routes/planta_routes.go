@@ -336,4 +336,9 @@ func registrarPlantaRoutes(
 		estructuraPlantaHandler.GetMasterGeneral,
 	).Methods("GET")
 
+	r.HandleFunc(
+        "/api/planta/maestros-componentes/motores-electricos",
+        estructuraPlantaHandler.GetMaestrosMotoresElectricos,
+	).Methods("GET")
+
 }

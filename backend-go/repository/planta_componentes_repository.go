@@ -2,6 +2,7 @@ package repository
 
 import (
     "database/sql"
+    "fmt"
 
     "backend/models"
 )
@@ -388,14 +389,22 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 			modelo,
 			numero_serie,
 			descripcion,
-			activo
+			activo,
+			fecha_creacion,
+			fecha_actualizacion
 		)
 		VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9, $10,
-			TRUE
+			TRUE,
+			NOW(),
+			NOW()
 		)
-		RETURNING id, creado_en, fecha_creacion
+		RETURNING
+			id,
+			creado_en,
+			fecha_creacion,
+			fecha_actualizacion
 	`,
 		c.EquipoID,
 		c.Codigo,
@@ -411,6 +420,7 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 		&c.ID,
 		&c.CreadoEn,
 		&c.FechaCreacion,
+		&c.FechaActualizacion,
 	)
 
 	if err != nil {
@@ -418,6 +428,10 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 	}
 
 	c.Activo = true
+
+	// --------------------------------------------------------
+	// MOTOR ELÉCTRICO
+	// --------------------------------------------------------
 
 	if c.TipoComponente != nil &&
 		*c.TipoComponente == "MOTOR ELECTRICO" &&
@@ -434,6 +448,39 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 		}
 
 		c.MotorElectrico.ComponenteID = c.ID
+	}
+
+	// --------------------------------------------------------
+	// AUDITORÍA - CREACIÓN
+	// --------------------------------------------------------
+
+	detalle := fmt.Sprintf(
+		"Componente creado. ID=%d, nombre=%q, tipo=%q, marca=%q, modelo=%q, numero_serie=%q",
+		c.ID,
+		c.Nombre,
+		pointerString(c.TipoComponente),
+		pointerString(c.Marca),
+		pointerString(c.Modelo),
+		pointerString(c.NumeroSerie),
+	)
+
+	_, err = tx.Exec(`
+		INSERT INTO auditoria (
+			usuario_id,
+			tabla,
+			accion,
+			detalle
+		)
+		VALUES (
+			NULL,
+			'componentes_equipo',
+			'CREACION',
+			$1
+		)
+	`, detalle)
+
+	if err != nil {
+		return fmt.Errorf("error registrando auditoría de creación: %w", err)
 	}
 
 	err = tx.Commit()
@@ -579,21 +626,312 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 		}
 	}()
 
+	// ============================================================
+	// 1. Leer información actual del componente
+	// ============================================================
+
+	var actual models.ComponenteEquipo
+
+	err = tx.QueryRow(`
+		SELECT
+			id,
+			equipo_id,
+			codigo,
+			codigo_sap,
+			tag,
+			nombre,
+			tipo_componente,
+			marca,
+			modelo,
+			numero_serie,
+			descripcion,
+			activo,
+			creado_en,
+			fecha_creacion,
+			fecha_actualizacion
+		FROM componentes_equipo
+		WHERE id = $1
+	`, id).Scan(
+		&actual.ID,
+		&actual.EquipoID,
+		&actual.Codigo,
+		&actual.CodigoSAP,
+		&actual.Tag,
+		&actual.Nombre,
+		&actual.TipoComponente,
+		&actual.Marca,
+		&actual.Modelo,
+		&actual.NumeroSerie,
+		&actual.Descripcion,
+		&actual.Activo,
+		&actual.CreadoEn,
+		&actual.FechaCreacion,
+		&actual.FechaActualizacion,
+	)
+
+	if err != nil {
+		return fmt.Errorf("error leyendo componente actual: %w", err)
+	}
+
+	// ============================================================
+	// 2. Comparar información principal
+	// ============================================================
+
+	var cambios []string
+
+	if !equalIntPtr(actual.EquipoID, c.EquipoID) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"equipo_id: %s → %s",
+				pointerIntString(actual.EquipoID),
+				pointerIntString(c.EquipoID),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.Codigo, c.Codigo) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"codigo: %q → %q",
+				pointerString(actual.Codigo),
+				pointerString(c.Codigo),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.CodigoSAP, c.CodigoSAP) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"codigo_sap: %q → %q",
+				pointerString(actual.CodigoSAP),
+				pointerString(c.CodigoSAP),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.Tag, c.Tag) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"tag: %q → %q",
+				pointerString(actual.Tag),
+				pointerString(c.Tag),
+			),
+		)
+	}
+
+	if actual.Nombre != c.Nombre {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"nombre: %q → %q",
+				actual.Nombre,
+				c.Nombre,
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.TipoComponente, c.TipoComponente) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"tipo_componente: %q → %q",
+				pointerString(actual.TipoComponente),
+				pointerString(c.TipoComponente),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.Marca, c.Marca) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"marca: %q → %q",
+				pointerString(actual.Marca),
+				pointerString(c.Marca),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.Modelo, c.Modelo) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"modelo: %q → %q",
+				pointerString(actual.Modelo),
+				pointerString(c.Modelo),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.NumeroSerie, c.NumeroSerie) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"numero_serie: %q → %q",
+				pointerString(actual.NumeroSerie),
+				pointerString(c.NumeroSerie),
+			),
+		)
+	}
+
+	if !equalStringPtr(actual.Descripcion, c.Descripcion) {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"descripcion: %q → %q",
+				pointerString(actual.Descripcion),
+				pointerString(c.Descripcion),
+			),
+		)
+	}
+
+	if actual.Activo != c.Activo {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"activo: %t → %t",
+				actual.Activo,
+				c.Activo,
+			),
+		)
+	}
+
+	// ============================================================
+	// 3. Leer información actual del motor, si existe
+	// ============================================================
+
+	var motorActual *models.ComponenteMotorElectrico
+
+	if actual.TipoComponente != nil &&
+		*actual.TipoComponente == "MOTOR ELECTRICO" {
+
+		var m models.ComponenteMotorElectrico
+
+		errMotor := tx.QueryRow(`
+			SELECT
+				componente_id,
+				placa_motor,
+				fabricante,
+				codigo_fabricante,
+				producto,
+				rated_voltage,
+				rated_current,
+				frequency,
+				phases,
+				power_factor,
+				efficiency,
+				service_factor,
+				output,
+				rated_speed,
+				number_of_poles,
+				design,
+				enclosure,
+				degree_of_protection,
+				frame,
+				mounting,
+				insulation_class,
+				duty_cycle,
+				slip,
+				rated_torque,
+				locked_rotor_torque,
+				breakdown_torque,
+				starting_method,
+				l_r_amperes,
+				lrc,
+				no_load_current,
+				locked_rotor_time,
+				rotation,
+				moment_of_inertia,
+				temperature_rise,
+				ambient_temperature,
+				altitude,
+				noise_level,
+				approximate_weight,
+				bearing_drive_end,
+				bearing_non_drive_end,
+				front_bearing,
+				rear_bearing,
+				connection,
+				standard,
+				nema_classification,
+				year_of_manufacture,
+				creado_en,
+				actualizado_en
+			FROM componente_motor_electrico
+			WHERE componente_id = $1
+		`, id).Scan(
+			&m.ComponenteID,
+			&m.PlacaMotor,
+			&m.Fabricante,
+			&m.CodigoFabricante,
+			&m.Producto,
+			&m.RatedVoltage,
+			&m.RatedCurrent,
+			&m.Frequency,
+			&m.Phases,
+			&m.PowerFactor,
+			&m.Efficiency,
+			&m.ServiceFactor,
+			&m.Output,
+			&m.RatedSpeed,
+			&m.NumberOfPoles,
+			&m.Design,
+			&m.Enclosure,
+			&m.DegreeOfProtection,
+			&m.Frame,
+			&m.Mounting,
+			&m.InsulationClass,
+			&m.DutyCycle,
+			&m.Slip,
+			&m.RatedTorque,
+			&m.LockedRotorTorque,
+			&m.BreakdownTorque,
+			&m.StartingMethod,
+			&m.LRAmpers,
+			&m.LRC,
+			&m.NoLoadCurrent,
+			&m.LockedRotorTime,
+			&m.Rotation,
+			&m.MomentOfInertia,
+			&m.TemperatureRise,
+			&m.AmbientTemperature,
+			&m.Altitude,
+			&m.NoiseLevel,
+			&m.ApproximateWeight,
+			&m.BearingDriveEnd,
+			&m.BearingNonDriveEnd,
+			&m.FrontBearing,
+			&m.RearBearing,
+			&m.Connection,
+			&m.Standard,
+			&m.NemaClassification,
+			&m.YearOfManufacture,
+			&m.CreadoEn,
+			&m.ActualizadoEn,
+		)
+
+		if errMotor == nil {
+			motorActual = &m
+		} else if errMotor != sql.ErrNoRows {
+			return fmt.Errorf("error leyendo datos del motor: %w", errMotor)
+		}
+	}
+
+	// ============================================================
+	// 4. Actualizar componente principal
+	// ============================================================
+
 	_, err = tx.Exec(`
 		UPDATE componentes_equipo
-		SET codigo = $1,
-			codigo_sap = $2,
-			tag = $3,
-			nombre = $4,
-			tipo_componente = $5,
-			marca = $6,
-			modelo = $7,
-			numero_serie = $8,
-			descripcion = $9,
-			activo = $10,
+		SET
+			equipo_id = $1,
+			codigo = $2,
+			codigo_sap = $3,
+			tag = $4,
+			nombre = $5,
+			tipo_componente = $6,
+			marca = $7,
+			modelo = $8,
+			numero_serie = $9,
+			descripcion = $10,
+			activo = $11,
 			actualizado_en = NOW()
-		WHERE id = $11
+		WHERE id = $12
 	`,
+		c.EquipoID,
 		c.Codigo,
 		c.CodigoSAP,
 		c.Tag,
@@ -608,128 +946,274 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 	)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error actualizando componente: %w", err)
 	}
+
+	// ============================================================
+	// 5. Procesar motor eléctrico
+	// ============================================================
 
 	if c.TipoComponente != nil &&
 		*c.TipoComponente == "MOTOR ELECTRICO" &&
 		c.MotorElectrico != nil {
 
-		_, err = tx.Exec(`
-			INSERT INTO componente_motor_electrico (
-				componente_id
-			)
-			VALUES ($1)
-			ON CONFLICT (componente_id)
-			DO NOTHING
-		`, id)
+		// Si no existe todavía, crearlo.
+		if motorActual == nil {
 
-		if err != nil {
-			return err
+			err = insertarMotorElectrico(
+				tx,
+				id,
+				c.MotorElectrico,
+			)
+
+			if err != nil {
+				return fmt.Errorf(
+					"error insertando datos del motor: %w",
+					err,
+				)
+			}
+
+			c.MotorElectrico.ComponenteID = id
+
+		} else {
+
+			// ====================================================
+			// Comparar campos técnicos
+			// ====================================================
+
+			cambiosMotor := compararMotorElectrico(
+				motorActual,
+				c.MotorElectrico,
+			)
+
+			// ====================================================
+			// Actualizar motor
+			// ====================================================
+
+			_, err = tx.Exec(`
+				UPDATE componente_motor_electrico
+				SET
+					placa_motor = $1,
+					fabricante = $2,
+					codigo_fabricante = $3,
+					producto = $4,
+					rated_voltage = $5,
+					rated_current = $6,
+					frequency = $7,
+					phases = $8,
+					power_factor = $9,
+					efficiency = $10,
+					service_factor = $11,
+					output = $12,
+					rated_speed = $13,
+					number_of_poles = $14,
+					design = $15,
+					enclosure = $16,
+					degree_of_protection = $17,
+					frame = $18,
+					mounting = $19,
+					insulation_class = $20,
+					duty_cycle = $21,
+					slip = $22,
+					rated_torque = $23,
+					locked_rotor_torque = $24,
+					breakdown_torque = $25,
+					starting_method = $26,
+					l_r_amperes = $27,
+					lrc = $28,
+					no_load_current = $29,
+					locked_rotor_time = $30,
+					rotation = $31,
+					moment_of_inertia = $32,
+					temperature_rise = $33,
+					ambient_temperature = $34,
+					altitude = $35,
+					noise_level = $36,
+					approximate_weight = $37,
+					bearing_drive_end = $38,
+					bearing_non_drive_end = $39,
+					front_bearing = $40,
+					rear_bearing = $41,
+					connection = $42,
+					standard = $43,
+					nema_classification = $44,
+					year_of_manufacture = $45,
+					actualizado_en = NOW()
+				WHERE componente_id = $46
+			`,
+				c.MotorElectrico.PlacaMotor,
+				c.MotorElectrico.Fabricante,
+				c.MotorElectrico.CodigoFabricante,
+				c.MotorElectrico.Producto,
+				c.MotorElectrico.RatedVoltage,
+				c.MotorElectrico.RatedCurrent,
+				c.MotorElectrico.Frequency,
+				c.MotorElectrico.Phases,
+				c.MotorElectrico.PowerFactor,
+				c.MotorElectrico.Efficiency,
+				c.MotorElectrico.ServiceFactor,
+				c.MotorElectrico.Output,
+				c.MotorElectrico.RatedSpeed,
+				c.MotorElectrico.NumberOfPoles,
+				c.MotorElectrico.Design,
+				c.MotorElectrico.Enclosure,
+				c.MotorElectrico.DegreeOfProtection,
+				c.MotorElectrico.Frame,
+				c.MotorElectrico.Mounting,
+				c.MotorElectrico.InsulationClass,
+				c.MotorElectrico.DutyCycle,
+				c.MotorElectrico.Slip,
+				c.MotorElectrico.RatedTorque,
+				c.MotorElectrico.LockedRotorTorque,
+				c.MotorElectrico.BreakdownTorque,
+				c.MotorElectrico.StartingMethod,
+				c.MotorElectrico.LRAmpers,
+				c.MotorElectrico.LRC,
+				c.MotorElectrico.NoLoadCurrent,
+				c.MotorElectrico.LockedRotorTime,
+				c.MotorElectrico.Rotation,
+				c.MotorElectrico.MomentOfInertia,
+				c.MotorElectrico.TemperatureRise,
+				c.MotorElectrico.AmbientTemperature,
+				c.MotorElectrico.Altitude,
+				c.MotorElectrico.NoiseLevel,
+				c.MotorElectrico.ApproximateWeight,
+				c.MotorElectrico.BearingDriveEnd,
+				c.MotorElectrico.BearingNonDriveEnd,
+				c.MotorElectrico.FrontBearing,
+				c.MotorElectrico.RearBearing,
+				c.MotorElectrico.Connection,
+				c.MotorElectrico.Standard,
+				c.MotorElectrico.NemaClassification,
+				c.MotorElectrico.YearOfManufacture,
+				id,
+			)
+
+			if err != nil {
+				return fmt.Errorf(
+					"error actualizando datos del motor: %w",
+					err,
+				)
+			}
+
+			// ====================================================
+			// Auditoría técnica del motor
+			// ====================================================
+
+			if len(cambiosMotor) > 0 {
+
+				detalleMotor := fmt.Sprintf(
+					"Componente ID=%d. Cambios técnicos: %s",
+					id,
+					joinCambios(cambiosMotor),
+				)
+
+				_, err = tx.Exec(`
+					INSERT INTO auditoria (
+						usuario_id,
+						tabla,
+						accion,
+						detalle
+					)
+					VALUES (
+						NULL,
+						'componente_motor_electrico',
+						'ACTUALIZACION_TECNICA',
+						$1
+					)
+				`, detalleMotor)
+
+				if err != nil {
+					return fmt.Errorf(
+						"error registrando auditoría técnica: %w",
+						err,
+					)
+				}
+
+				// El cambio técnico del motor también modifica
+				// la fecha de actualización del componente padre.
+				_, err = tx.Exec(`
+					UPDATE componentes_equipo
+					SET fecha_actualizacion = NOW()
+					WHERE id = $1
+				`, id)
+
+				if err != nil {
+					return fmt.Errorf(
+						"error actualizando fecha del componente: %w",
+						err,
+					)
+				}
+			}
+		}
+	}
+
+	// ============================================================
+	// 6. Auditoría del componente principal
+	// ============================================================
+
+	if len(cambios) > 0 {
+
+		detalle := fmt.Sprintf(
+			"Componente ID=%d. Cambios: %s",
+			id,
+			joinCambios(cambios),
+		)
+
+		accion := "ACTUALIZACION"
+
+		// Si únicamente cambió activo, lo clasificamos como
+		// cambio de estado.
+		if len(cambios) == 1 &&
+			actual.Activo != c.Activo {
+
+			accion = "CAMBIO_ESTADO"
 		}
 
 		_, err = tx.Exec(`
-			UPDATE componente_motor_electrico
-			SET placa_motor = $1,
-				fabricante = $2,
-				codigo_fabricante = $3,
-				producto = $4,
-				rated_voltage = $5,
-				rated_current = $6,
-				frequency = $7,
-				phases = $8,
-				power_factor = $9,
-				efficiency = $10,
-				service_factor = $11,
-				output = $12,
-				rated_speed = $13,
-				number_of_poles = $14,
-				design = $15,
-				enclosure = $16,
-				degree_of_protection = $17,
-				frame = $18,
-				mounting = $19,
-				insulation_class = $20,
-				duty_cycle = $21,
-				slip = $22,
-				rated_torque = $23,
-				locked_rotor_torque = $24,
-				breakdown_torque = $25,
-				starting_method = $26,
-				l_r_amperes = $27,
-				lrc = $28,
-				no_load_current = $29,
-				locked_rotor_time = $30,
-				rotation = $31,
-				moment_of_inertia = $32,
-				temperature_rise = $33,
-				ambient_temperature = $34,
-				altitude = $35,
-				noise_level = $36,
-				approximate_weight = $37,
-				bearing_drive_end = $38,
-				bearing_non_drive_end = $39,
-				front_bearing = $40,
-				rear_bearing = $41,
-				connection = $42,
-				standard = $43,
-				nema_classification = $44,
-				year_of_manufacture = $45,
-				actualizado_en = NOW()
-			WHERE componente_id = $46
+			INSERT INTO auditoria (
+				usuario_id,
+				tabla,
+				accion,
+				detalle
+			)
+			VALUES (
+				NULL,
+				'componentes_equipo',
+				$1,
+				$2
+			)
 		`,
-			c.MotorElectrico.PlacaMotor,
-			c.MotorElectrico.Fabricante,
-			c.MotorElectrico.CodigoFabricante,
-			c.MotorElectrico.Producto,
-			c.MotorElectrico.RatedVoltage,
-			c.MotorElectrico.RatedCurrent,
-			c.MotorElectrico.Frequency,
-			c.MotorElectrico.Phases,
-			c.MotorElectrico.PowerFactor,
-			c.MotorElectrico.Efficiency,
-			c.MotorElectrico.ServiceFactor,
-			c.MotorElectrico.Output,
-			c.MotorElectrico.RatedSpeed,
-			c.MotorElectrico.NumberOfPoles,
-			c.MotorElectrico.Design,
-			c.MotorElectrico.Enclosure,
-			c.MotorElectrico.DegreeOfProtection,
-			c.MotorElectrico.Frame,
-			c.MotorElectrico.Mounting,
-			c.MotorElectrico.InsulationClass,
-			c.MotorElectrico.DutyCycle,
-			c.MotorElectrico.Slip,
-			c.MotorElectrico.RatedTorque,
-			c.MotorElectrico.LockedRotorTorque,
-			c.MotorElectrico.BreakdownTorque,
-			c.MotorElectrico.StartingMethod,
-			c.MotorElectrico.LRAmpers,
-			c.MotorElectrico.LRC,
-			c.MotorElectrico.NoLoadCurrent,
-			c.MotorElectrico.LockedRotorTime,
-			c.MotorElectrico.Rotation,
-			c.MotorElectrico.MomentOfInertia,
-			c.MotorElectrico.TemperatureRise,
-			c.MotorElectrico.AmbientTemperature,
-			c.MotorElectrico.Altitude,
-			c.MotorElectrico.NoiseLevel,
-			c.MotorElectrico.ApproximateWeight,
-			c.MotorElectrico.BearingDriveEnd,
-			c.MotorElectrico.BearingNonDriveEnd,
-			c.MotorElectrico.FrontBearing,
-			c.MotorElectrico.RearBearing,
-			c.MotorElectrico.Connection,
-			c.MotorElectrico.Standard,
-			c.MotorElectrico.NemaClassification,
-			c.MotorElectrico.YearOfManufacture,
-			id,
+			accion,
+			detalle,
 		)
 
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"error registrando auditoría del componente: %w",
+				err,
+			)
+		}
+
+		// Asegurar que la fecha de actualización represente
+		// el cambio real detectado.
+		_, err = tx.Exec(`
+			UPDATE componentes_equipo
+			SET fecha_actualizacion = NOW()
+			WHERE id = $1
+		`, id)
+
+		if err != nil {
+			return fmt.Errorf(
+				"error actualizando fecha de actualización: %w",
+				err,
+			)
 		}
 	}
+
+	// ============================================================
+	// 7. Confirmar todo
+	// ============================================================
 
 	err = tx.Commit()
 	if err != nil {
@@ -737,4 +1221,446 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 	}
 
 	return nil
+}
+
+func pointerString(v *string) string {
+	if v == nil {
+		return ""
+	}
+
+	return *v
+}
+
+func equalStringPtr(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	return *a == *b
+}
+
+func equalIntPtr(a, b *int) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	return *a == *b
+}
+
+func pointerIntString(v *int) string {
+	if v == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%d", *v)
+}
+
+func joinCambios(cambios []string) string {
+	resultado := ""
+
+	for i, cambio := range cambios {
+		if i > 0 {
+			resultado += "; "
+		}
+
+		resultado += cambio
+	}
+
+	return resultado
+}
+func compararMotorElectrico(
+	actual *models.ComponenteMotorElectrico,
+	nuevo *models.ComponenteMotorElectrico,
+) []string {
+
+	var cambios []string
+
+	if !equalStringPtr(actual.PlacaMotor, nuevo.PlacaMotor) {
+		cambios = append(cambios, fmt.Sprintf(
+			"placa_motor: %q → %q",
+			pointerString(actual.PlacaMotor),
+			pointerString(nuevo.PlacaMotor),
+		))
+	}
+
+	if !equalStringPtr(actual.Fabricante, nuevo.Fabricante) {
+		cambios = append(cambios, fmt.Sprintf(
+			"fabricante: %q → %q",
+			pointerString(actual.Fabricante),
+			pointerString(nuevo.Fabricante),
+		))
+	}
+
+	if !equalStringPtr(actual.CodigoFabricante, nuevo.CodigoFabricante) {
+		cambios = append(cambios, fmt.Sprintf(
+			"codigo_fabricante: %q → %q",
+			pointerString(actual.CodigoFabricante),
+			pointerString(nuevo.CodigoFabricante),
+		))
+	}
+
+	if !equalStringPtr(actual.Producto, nuevo.Producto) {
+		cambios = append(cambios, fmt.Sprintf(
+			"producto: %q → %q",
+			pointerString(actual.Producto),
+			pointerString(nuevo.Producto),
+		))
+	}
+
+	if !equalStringPtr(actual.RatedVoltage, nuevo.RatedVoltage) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rated_voltage: %q → %q",
+			pointerString(actual.RatedVoltage),
+			pointerString(nuevo.RatedVoltage),
+		))
+	}
+
+	if !equalStringPtr(actual.RatedCurrent, nuevo.RatedCurrent) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rated_current: %q → %q",
+			pointerString(actual.RatedCurrent),
+			pointerString(nuevo.RatedCurrent),
+		))
+	}
+
+	if !equalNumericPtr(actual.Frequency, nuevo.Frequency) {
+		cambios = append(cambios, fmt.Sprintf(
+			"frequency: %s → %s",
+			pointerNumericString(actual.Frequency),
+			pointerNumericString(nuevo.Frequency),
+		))
+	}
+
+	if !equalIntPtr(actual.Phases, nuevo.Phases) {
+		cambios = append(cambios, fmt.Sprintf(
+			"phases: %s → %s",
+			pointerIntString(actual.Phases),
+			pointerIntString(nuevo.Phases),
+		))
+	}
+
+	if !equalNumericPtr(actual.PowerFactor, nuevo.PowerFactor) {
+		cambios = append(cambios, fmt.Sprintf(
+			"power_factor: %s → %s",
+			pointerNumericString(actual.PowerFactor),
+			pointerNumericString(nuevo.PowerFactor),
+		))
+	}
+
+	if !equalNumericPtr(actual.Efficiency, nuevo.Efficiency) {
+		cambios = append(cambios, fmt.Sprintf(
+			"efficiency: %s → %s",
+			pointerNumericString(actual.Efficiency),
+			pointerNumericString(nuevo.Efficiency),
+		))
+	}
+
+	if !equalNumericPtr(actual.ServiceFactor, nuevo.ServiceFactor) {
+		cambios = append(cambios, fmt.Sprintf(
+			"service_factor: %s → %s",
+			pointerNumericString(actual.ServiceFactor),
+			pointerNumericString(nuevo.ServiceFactor),
+		))
+	}
+
+	if !equalNumericPtr(actual.Output, nuevo.Output) {
+		cambios = append(cambios, fmt.Sprintf(
+			"output: %s → %s",
+			pointerNumericString(actual.Output),
+			pointerNumericString(nuevo.Output),
+		))
+	}
+
+	if !equalNumericPtr(actual.RatedSpeed, nuevo.RatedSpeed) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rated_speed: %s → %s",
+			pointerNumericString(actual.RatedSpeed),
+			pointerNumericString(nuevo.RatedSpeed),
+		))
+	}
+
+	if !equalIntPtr(actual.NumberOfPoles, nuevo.NumberOfPoles) {
+		cambios = append(cambios, fmt.Sprintf(
+			"number_of_poles: %s → %s",
+			pointerIntString(actual.NumberOfPoles),
+			pointerIntString(nuevo.NumberOfPoles),
+		))
+	}
+
+	if !equalStringPtr(actual.Design, nuevo.Design) {
+		cambios = append(cambios, fmt.Sprintf(
+			"design: %q → %q",
+			pointerString(actual.Design),
+			pointerString(nuevo.Design),
+		))
+	}
+
+	if !equalStringPtr(actual.Enclosure, nuevo.Enclosure) {
+		cambios = append(cambios, fmt.Sprintf(
+			"enclosure: %q → %q",
+			pointerString(actual.Enclosure),
+			pointerString(nuevo.Enclosure),
+		))
+	}
+
+	if !equalStringPtr(actual.DegreeOfProtection, nuevo.DegreeOfProtection) {
+		cambios = append(cambios, fmt.Sprintf(
+			"degree_of_protection: %q → %q",
+			pointerString(actual.DegreeOfProtection),
+			pointerString(nuevo.DegreeOfProtection),
+		))
+	}
+
+	if !equalStringPtr(actual.Frame, nuevo.Frame) {
+		cambios = append(cambios, fmt.Sprintf(
+			"frame: %q → %q",
+			pointerString(actual.Frame),
+			pointerString(nuevo.Frame),
+		))
+	}
+
+	if !equalStringPtr(actual.Mounting, nuevo.Mounting) {
+		cambios = append(cambios, fmt.Sprintf(
+			"mounting: %q → %q",
+			pointerString(actual.Mounting),
+			pointerString(nuevo.Mounting),
+		))
+	}
+
+	if !equalStringPtr(actual.InsulationClass, nuevo.InsulationClass) {
+		cambios = append(cambios, fmt.Sprintf(
+			"insulation_class: %q → %q",
+			pointerString(actual.InsulationClass),
+			pointerString(nuevo.InsulationClass),
+		))
+	}
+
+	if !equalStringPtr(actual.DutyCycle, nuevo.DutyCycle) {
+		cambios = append(cambios, fmt.Sprintf(
+			"duty_cycle: %q → %q",
+			pointerString(actual.DutyCycle),
+			pointerString(nuevo.DutyCycle),
+		))
+	}
+
+	if !equalNumericPtr(actual.Slip, nuevo.Slip) {
+		cambios = append(cambios, fmt.Sprintf(
+			"slip: %s → %s",
+			pointerNumericString(actual.Slip),
+			pointerNumericString(nuevo.Slip),
+		))
+	}
+
+	if !equalNumericPtr(actual.RatedTorque, nuevo.RatedTorque) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rated_torque: %s → %s",
+			pointerNumericString(actual.RatedTorque),
+			pointerNumericString(nuevo.RatedTorque),
+		))
+	}
+
+	if !equalNumericPtr(actual.LockedRotorTorque, nuevo.LockedRotorTorque) {
+		cambios = append(cambios, fmt.Sprintf(
+			"locked_rotor_torque: %s → %s",
+			pointerNumericString(actual.LockedRotorTorque),
+			pointerNumericString(nuevo.LockedRotorTorque),
+		))
+	}
+
+	if !equalNumericPtr(actual.BreakdownTorque, nuevo.BreakdownTorque) {
+		cambios = append(cambios, fmt.Sprintf(
+			"breakdown_torque: %s → %s",
+			pointerNumericString(actual.BreakdownTorque),
+			pointerNumericString(nuevo.BreakdownTorque),
+		))
+	}
+
+	if !equalStringPtr(actual.StartingMethod, nuevo.StartingMethod) {
+		cambios = append(cambios, fmt.Sprintf(
+			"starting_method: %q → %q",
+			pointerString(actual.StartingMethod),
+			pointerString(nuevo.StartingMethod),
+		))
+	}
+
+	if !equalStringPtr(actual.LRAmpers, nuevo.LRAmpers) {
+		cambios = append(cambios, fmt.Sprintf(
+			"l_r_amperes: %q → %q",
+			pointerString(actual.LRAmpers),
+			pointerString(nuevo.LRAmpers),
+		))
+	}
+
+	if !equalStringPtr(actual.LRC, nuevo.LRC) {
+		cambios = append(cambios, fmt.Sprintf(
+			"lrc: %q → %q",
+			pointerString(actual.LRC),
+			pointerString(nuevo.LRC),
+		))
+	}
+
+	if !equalStringPtr(actual.NoLoadCurrent, nuevo.NoLoadCurrent) {
+		cambios = append(cambios, fmt.Sprintf(
+			"no_load_current: %q → %q",
+			pointerString(actual.NoLoadCurrent),
+			pointerString(nuevo.NoLoadCurrent),
+		))
+	}
+
+	if !equalStringPtr(actual.LockedRotorTime, nuevo.LockedRotorTime) {
+		cambios = append(cambios, fmt.Sprintf(
+			"locked_rotor_time: %q → %q",
+			pointerString(actual.LockedRotorTime),
+			pointerString(nuevo.LockedRotorTime),
+		))
+	}
+
+	if !equalStringPtr(actual.Rotation, nuevo.Rotation) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rotation: %q → %q",
+			pointerString(actual.Rotation),
+			pointerString(nuevo.Rotation),
+		))
+	}
+
+	if !equalNumericPtr(actual.MomentOfInertia, nuevo.MomentOfInertia) {
+		cambios = append(cambios, fmt.Sprintf(
+			"moment_of_inertia: %s → %s",
+			pointerNumericString(actual.MomentOfInertia),
+			pointerNumericString(nuevo.MomentOfInertia),
+		))
+	}
+
+	if !equalNumericPtr(actual.TemperatureRise, nuevo.TemperatureRise) {
+		cambios = append(cambios, fmt.Sprintf(
+			"temperature_rise: %s → %s",
+			pointerNumericString(actual.TemperatureRise),
+			pointerNumericString(nuevo.TemperatureRise),
+		))
+	}
+
+	if !equalNumericPtr(actual.AmbientTemperature, nuevo.AmbientTemperature) {
+		cambios = append(cambios, fmt.Sprintf(
+			"ambient_temperature: %s → %s",
+			pointerNumericString(actual.AmbientTemperature),
+			pointerNumericString(nuevo.AmbientTemperature),
+		))
+	}
+
+	if !equalNumericPtr(actual.Altitude, nuevo.Altitude) {
+		cambios = append(cambios, fmt.Sprintf(
+			"altitude: %s → %s",
+			pointerNumericString(actual.Altitude),
+			pointerNumericString(nuevo.Altitude),
+		))
+	}
+
+	if !equalNumericPtr(actual.NoiseLevel, nuevo.NoiseLevel) {
+		cambios = append(cambios, fmt.Sprintf(
+			"noise_level: %s → %s",
+			pointerNumericString(actual.NoiseLevel),
+			pointerNumericString(nuevo.NoiseLevel),
+		))
+	}
+
+	if !equalNumericPtr(actual.ApproximateWeight, nuevo.ApproximateWeight) {
+		cambios = append(cambios, fmt.Sprintf(
+			"approximate_weight: %s → %s",
+			pointerNumericString(actual.ApproximateWeight),
+			pointerNumericString(nuevo.ApproximateWeight),
+		))
+	}
+
+	if !equalStringPtr(actual.BearingDriveEnd, nuevo.BearingDriveEnd) {
+		cambios = append(cambios, fmt.Sprintf(
+			"bearing_drive_end: %q → %q",
+			pointerString(actual.BearingDriveEnd),
+			pointerString(nuevo.BearingDriveEnd),
+		))
+	}
+
+	if !equalStringPtr(actual.BearingNonDriveEnd, nuevo.BearingNonDriveEnd) {
+		cambios = append(cambios, fmt.Sprintf(
+			"bearing_non_drive_end: %q → %q",
+			pointerString(actual.BearingNonDriveEnd),
+			pointerString(nuevo.BearingNonDriveEnd),
+		))
+	}
+
+	if !equalStringPtr(actual.FrontBearing, nuevo.FrontBearing) {
+		cambios = append(cambios, fmt.Sprintf(
+			"front_bearing: %q → %q",
+			pointerString(actual.FrontBearing),
+			pointerString(nuevo.FrontBearing),
+		))
+	}
+
+	if !equalStringPtr(actual.RearBearing, nuevo.RearBearing) {
+		cambios = append(cambios, fmt.Sprintf(
+			"rear_bearing: %q → %q",
+			pointerString(actual.RearBearing),
+			pointerString(nuevo.RearBearing),
+		))
+	}
+
+	if !equalStringPtr(actual.Connection, nuevo.Connection) {
+		cambios = append(cambios, fmt.Sprintf(
+			"connection: %q → %q",
+			pointerString(actual.Connection),
+			pointerString(nuevo.Connection),
+		))
+	}
+
+	if !equalStringPtr(actual.Standard, nuevo.Standard) {
+		cambios = append(cambios, fmt.Sprintf(
+			"standard: %q → %q",
+			pointerString(actual.Standard),
+			pointerString(nuevo.Standard),
+		))
+	}
+
+	if !equalStringPtr(actual.NemaClassification, nuevo.NemaClassification) {
+		cambios = append(cambios, fmt.Sprintf(
+			"nema_classification: %q → %q",
+			pointerString(actual.NemaClassification),
+			pointerString(nuevo.NemaClassification),
+		))
+	}
+
+	if !equalIntPtr(actual.YearOfManufacture, nuevo.YearOfManufacture) {
+		cambios = append(cambios, fmt.Sprintf(
+			"year_of_manufacture: %s → %s",
+			pointerIntString(actual.YearOfManufacture),
+			pointerIntString(nuevo.YearOfManufacture),
+		))
+	}
+
+	return cambios
+}
+func equalNumericPtr[T comparable](a, b *T) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	return *a == *b
+}
+
+func pointerNumericString[T any](v *T) string {
+	if v == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%v", *v)
 }

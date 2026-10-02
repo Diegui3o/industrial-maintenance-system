@@ -115,11 +115,9 @@ func SetupRoutes(
 	equipoTagHandler := handlers.NewEquipoTagHandler(tagDescubiertoRepo)
 	estructuraPlantaHandler := handlers.NewEstructuraPlantaHandler(
 		estructuraPlantaService,
+		db,
 	)
 
-	// ============================================
-	// RUTAS
-	// ============================================
 	// ============================================
 	// EQUIPOS
 	// ============================================

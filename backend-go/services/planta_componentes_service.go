@@ -68,3 +68,7 @@ func (s *EstructuraPlantaService) ActualizarComponenteRepuesto(
                 notas,
         )
 }
+
+func (s *EstructuraPlantaService) ListarMaestrosMotoresElectricos() ([]models.MaestroMotorElectrico, error) {
+	return s.Repo.ListarMaestrosMotoresElectricos()
+}

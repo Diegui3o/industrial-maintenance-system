@@ -1,60 +1,85 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { getMaestrosMotoresElectricos } from '../../../services/maestrosComponentesApi';
+
+import type { MaestroMotorElectrico } from '../../../services/maestrosComponentesApi';
 
 import { MotorElectricoFiltros } from './MotorElectricoFiltros';
 
 import './MotorElectricoTabla.css';
 import './MotorElectricoFiltros.css';
 
-export interface MotorElectricoFila {
-  componente_id: number;
-
-  descripcion_componente: string | null;
-  tag: string | null;
-  placa_motor: string | null;
-  fecha_actualizacion: string | null;
-
-  zona: string | null;
-
-  marca: string | null;
-  modelo: string | null;
-  numero_serie: string | null;
-
-  kw: number | null;
-  hp: number | null;
-  volt: number | null;
-  amp: number | null;
-  rpm: number | null;
-
-  frame: string | null;
-
-  fs: number | null;
-  fp: number | null;
-
-  clase: string | null;
-  duty: string | null;
-  eff: number | null;
-
-  lado_polea: string | null;
-  codigo_sap_polea: string | null;
-
-  lado_ventilador: string | null;
-  codigo_sap_ventilador: string | null;
-
-  tipo_arranque: string | null;
-  marca_arranque: string | null;
-  modelo_arranque: string | null;
-}
-
 interface MotorElectricoTablaProps {
-  datos?: MotorElectricoFila[];
+  datos?: MaestroMotorElectrico[];
 }
 
 export function MotorElectricoTabla({
-  datos = [],
+  datos: datosIniciales,
 }: MotorElectricoTablaProps) {
+  const [datos, setDatos] = useState<MaestroMotorElectrico[]>(
+    datosIniciales ?? [],
+  );
+
+  const [cargando, setCargando] = useState(
+    datosIniciales === undefined,
+  );
+
+  const [error, setError] = useState<string | null>(null);
+
   const [busqueda, setBusqueda] = useState('');
   const [zona, setZona] = useState('');
   const [marca, setMarca] = useState('');
+
+  useEffect(() => {
+    if (datosIniciales !== undefined) {
+      setDatos(datosIniciales);
+      setCargando(false);
+      return;
+    }
+
+    let activo = true;
+
+    async function cargarMotores() {
+      try {
+        setCargando(true);
+        setError(null);
+
+        const resultado =
+          await getMaestrosMotoresElectricos();
+
+        if (!activo) {
+          return;
+        }
+
+        setDatos(resultado);
+      } catch (err) {
+        if (!activo) {
+          return;
+        }
+
+        console.error(
+          'Error al cargar maestros de motores eléctricos:',
+          err,
+        );
+
+        setError(
+          'No fue posible cargar los motores eléctricos.',
+        );
+
+        setDatos([]);
+      } finally {
+        if (activo) {
+          setCargando(false);
+        }
+      }
+    }
+
+    cargarMotores();
+
+    return () => {
+      activo = false;
+    };
+  }, [datosIniciales]);
 
   const zonas = useMemo(() => {
     return Array.from(
@@ -91,12 +116,19 @@ export function MotorElectricoTabla({
       const coincideBusqueda =
         !texto ||
         [
-          item.descripcion_componente,
+          item.codigo_interno,
+          item.codigo_sap,
+          item.tipo_componente,
+          item.nombre_componente,
           item.tag,
           item.placa_motor,
           item.numero_serie,
-          item.codigo_sap_polea,
-          item.codigo_sap_ventilador,
+          item.marca,
+          item.modelo,
+          item.frame,
+          item.tipo_arranque,
+          item.rodamiento_de,
+          item.rodamiento_nde,
         ].some((valor) =>
           valor
             ?.toLowerCase()
@@ -129,6 +161,32 @@ export function MotorElectricoTabla({
     setZona('');
     setMarca('');
   };
+
+  if (cargando) {
+    return (
+      <div className="maestro-componentes-tabla-vacia">
+        <h3>
+          Cargando motores eléctricos...
+        </h3>
+
+        <p>
+          Consultando información técnica del maestro.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="maestro-componentes-tabla-vacia">
+        <h3>
+          No se pudo cargar el maestro
+        </h3>
+
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="motor-electrico-maestro">
@@ -178,211 +236,156 @@ export function MotorElectricoTabla({
         <table className="motor-electrico-tabla">
           <thead>
             <tr>
-              <th>
-                Descripción del componente
-              </th>
-
+              <th>Código interno</th>
+              <th>Código SAP</th>
+              <th>Nombre de componente</th>
               <th>TAG</th>
-
-              <th>
-                Placa de motor
-              </th>
-
-              <th>
-                Fecha de actualización
-              </th>
-
+              <th>Placa de motor</th>
+              <th>Fecha de actualización</th>
               <th>Zona</th>
-
               <th>Marca</th>
-
               <th>Modelo</th>
-
               <th>N° / Serie</th>
 
               <th>KW</th>
-
               <th>HP</th>
-
-              <th>Volt</th>
-
-              <th>Amp</th>
-
+              <th>VOLT</th>
+              <th>AMP</th>
               <th>RPM</th>
-
-              <th>Frame</th>
-
+              <th>FRAME</th>
               <th>F.S</th>
-
               <th>F.P</th>
+              <th>CLASE</th>
+              <th>DUTY</th>
+              <th>EFF</th>
 
-              <th>Clase</th>
+              <th>Tipo de arranque</th>
 
-              <th>Duty</th>
-
-              <th>Eff</th>
-
-              <th>Lado polea</th>
-
-              <th>Código SAP</th>
-
-              <th>Lado ventilador</th>
-
-              <th>Código SAP</th>
-
-              <th>
-                Tipo de arranque
-              </th>
-
-              <th>Marca</th>
-
-              <th>Modelo</th>
+              <th>Rodamiento DE</th>
+              <th>Rodamiento NDE</th>
 
               <th>PDF</th>
             </tr>
           </thead>
 
           <tbody>
-            {datosFiltrados.length === 0 ? (
-              <tr>
-                <td colSpan={27}>
-                  {datos.length === 0
-                    ? 'No hay motores eléctricos para mostrar.'
-                    : 'No se encontraron motores con los filtros seleccionados.'}
+            {datosFiltrados.map((motor) => (
+              <tr key={motor.componente_id}>
+                <td>
+                  {motor.codigo_interno || '—'}
+                </td>
+
+                <td>
+                  {motor.codigo_sap || '—'}
+                </td>
+
+                <td>
+                  {motor.tipo_componente &&
+                  motor.nombre_componente
+                    ? `${motor.tipo_componente} - ${motor.nombre_componente}`
+                    : motor.nombre_componente ||
+                      motor.tipo_componente ||
+                      '—'}
+                </td>
+
+                <td>
+                  {motor.tag || '—'}
+                </td>
+
+                <td>
+                  {motor.placa_motor || '—'}
+                </td>
+
+                <td>
+                  {motor.fecha_actualizacion
+                    ? new Date(
+                        motor.fecha_actualizacion,
+                      ).toLocaleDateString()
+                    : '—'}
+                </td>
+
+                <td>
+                  {motor.zona || '—'}
+                </td>
+
+                <td>
+                  {motor.marca || '—'}
+                </td>
+
+                <td>
+                  {motor.modelo || '—'}
+                </td>
+
+                <td>
+                  {motor.numero_serie || '—'}
+                </td>
+
+                <td>
+                  {motor.kw ?? '—'}
+                </td>
+
+                <td>
+                  {motor.hp ?? '—'}
+                </td>
+
+                <td>
+                  {motor.volt || '—'}
+                </td>
+
+                <td>
+                  {motor.amp || '—'}
+                </td>
+
+                <td>
+                  {motor.rpm ?? '—'}
+                </td>
+
+                <td>
+                  {motor.frame || '—'}
+                </td>
+
+                <td>
+                  {motor.fs ?? '—'}
+                </td>
+
+                <td>
+                  {motor.fp ?? '—'}
+                </td>
+
+                <td>
+                  {motor.clase || '—'}
+                </td>
+
+                <td>
+                  {motor.duty || '—'}
+                </td>
+
+                <td>
+                  {motor.eff ?? '—'}
+                </td>
+
+                <td>
+                  {motor.tipo_arranque || '—'}
+                </td>
+
+                <td>
+                  {motor.rodamiento_de || '—'}
+                </td>
+
+                <td>
+                  {motor.rodamiento_nde || '—'}
+                </td>
+
+                <td>
+                  <button
+                    type="button"
+                    disabled
+                  >
+                    PDF
+                  </button>
                 </td>
               </tr>
-            ) : (
-              datosFiltrados.map((motor) => (
-                <tr
-                  key={motor.componente_id}
-                >
-                  <td>
-                    {motor.descripcion_componente ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.tag || '—'}
-                  </td>
-
-                  <td>
-                    {motor.placa_motor || '—'}
-                  </td>
-
-                  <td>
-                    {motor.fecha_actualizacion ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.zona || '—'}
-                  </td>
-
-                  <td>
-                    {motor.marca || '—'}
-                  </td>
-
-                  <td>
-                    {motor.modelo || '—'}
-                  </td>
-
-                  <td>
-                    {motor.numero_serie ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.kw ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.hp ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.volt ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.amp ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.rpm ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.frame || '—'}
-                  </td>
-
-                  <td>
-                    {motor.fs ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.fp ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.clase || '—'}
-                  </td>
-
-                  <td>
-                    {motor.duty || '—'}
-                  </td>
-
-                  <td>
-                    {motor.eff ?? '—'}
-                  </td>
-
-                  <td>
-                    {motor.lado_polea ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.codigo_sap_polea ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.lado_ventilador ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.codigo_sap_ventilador ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.tipo_arranque ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.marca_arranque ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    {motor.modelo_arranque ||
-                      '—'}
-                  </td>
-
-                  <td>
-                    <button
-                      type="button"
-                      className="motor-electrico-pdf"
-                      disabled
-                      title="PDF próximamente"
-                    >
-                      PDF
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
