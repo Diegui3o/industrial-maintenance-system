@@ -17,37 +17,62 @@ type Equipo = {
 export default function MantenimientoNoProgramado({
   onCerrar,
 }: Props) {
-  const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [busqueda, setBusqueda] = useState("");
-  const [equipo, setEquipo] = useState<Equipo | null>(null);
+  const [equipos, setEquipos] =
+    useState<Equipo[]>([]);
 
-  const [fecha, setFecha] = useState("");
-  const [horaInicio, setHoraInicio] = useState("");
-  const [horaFin, setHoraFin] = useState("");
+  const [busqueda, setBusqueda] =
+    useState("");
+
+  const [equipo, setEquipo] =
+    useState<Equipo | null>(null);
+
+  const [fecha, setFecha] =
+    useState("");
+
+  const [horaInicio, setHoraInicio] =
+    useState("");
+
+  const [horaFin, setHoraFin] =
+    useState("");
 
   const [tipoIntervencion, setTipoIntervencion] =
     useState("");
 
-  const [modoFalla, setModoFalla] = useState("");
-  const [causa, setCausa] = useState("");
-  const [consecuencia, setConsecuencia] = useState("");
+  const [modoFalla, setModoFalla] =
+    useState("");
+
+  const [causa, setCausa] =
+    useState("");
+
+  const [consecuencia, setConsecuencia] =
+    useState("");
+
   const [descripcionEvento, setDescripcionEvento] =
     useState("");
+
   const [accionRealizada, setAccionRealizada] =
     useState("");
 
-  const [standBy, setStandBy] = useState(false);
+  const [standBy, setStandBy] =
+    useState(false);
+
   const [produccionAfectada, setProduccionAfectada] =
     useState(false);
 
   const [tnDejadasProcesar, setTnDejadasProcesar] =
     useState("");
 
-  const [personal, setPersonal] = useState("");
-  const [horasReales, setHorasReales] = useState("");
+  const [personal, setPersonal] =
+    useState("");
 
-  const [criticidad, setCriticidad] = useState("");
-  const [prioridad, setPrioridad] = useState("");
+  const [horasReales, setHorasReales] =
+    useState("");
+
+  const [criticidad, setCriticidad] =
+    useState("");
+
+  const [prioridad, setPrioridad] =
+    useState("");
 
   useEffect(() => {
     getEquipos()
@@ -55,53 +80,100 @@ export default function MantenimientoNoProgramado({
       .catch(() => setEquipos([]));
   }, []);
 
-  const equiposFiltrados = equipos.filter((item) => {
-    const texto =
-      `${item.codigo} ${item.nombre}`.toLowerCase();
+  const equiposFiltrados =
+    equipos.filter((item) => {
+      const texto =
+        `${item.codigo} ${item.nombre}`
+          .toLowerCase();
 
-    return texto.includes(busqueda.toLowerCase());
-  });
+      return texto.includes(
+        busqueda.toLowerCase()
+      );
+    });
 
-  const horas = Number(horasReales) || 0;
-  const cantidadPersonal = Number(personal) || 0;
-  const hh = horas * cantidadPersonal;
+  const horas =
+    Number(horasReales) || 0;
+
+  const cantidadPersonal =
+    Number(personal) || 0;
+
+  const hh =
+    horas * cantidadPersonal;
 
   function registrar() {
     if (!equipo) {
-      alert("Selecciona un equipo.");
+      alert(
+        "Selecciona un equipo."
+      );
       return;
     }
 
     if (!fecha) {
-      alert("Ingresa la fecha del trabajo.");
+      alert(
+        "Ingresa la fecha del trabajo."
+      );
       return;
     }
 
     if (!tipoIntervencion) {
-      alert("Selecciona el tipo de intervención.");
+      alert(
+        "Selecciona el tipo de intervención."
+      );
       return;
     }
 
     console.log({
-      equipo_id: equipo.id,
-      fecha_reporte: fecha,
-      inicio_parada: horaInicio,
-      fin_parada: horaFin,
-      tipo_intervencion: tipoIntervencion,
-      modo_falla: modoFalla,
+      equipo_id:
+        equipo.id,
+
+      fecha_reporte:
+        fecha,
+
+      inicio_parada:
+        horaInicio,
+
+      fin_parada:
+        horaFin,
+
+      tipo_intervencion:
+        tipoIntervencion,
+
+      modo_falla:
+        modoFalla,
+
       causa,
+
       consecuencia,
-      descripcion_evento: descripcionEvento,
-      accion_realizada: accionRealizada,
-      stand_by: standBy,
-      produccion_afectada: produccionAfectada,
-      tn_dejadas_procesar: produccionAfectada
-        ? Number(tnDejadasProcesar) || 0
-        : 0,
-      personal: cantidadPersonal,
-      horas_reales: horas,
+
+      descripcion_evento:
+        descripcionEvento,
+
+      accion_realizada:
+        accionRealizada,
+
+      stand_by:
+        standBy,
+
+      produccion_afectada:
+        produccionAfectada,
+
+      tn_dejadas_procesar:
+        produccionAfectada
+          ? Number(
+              tnDejadasProcesar
+            ) || 0
+          : 0,
+
+      personal:
+        cantidadPersonal,
+
+      horas_reales:
+        horas,
+
       hh,
+
       criticidad,
+
       prioridad,
     });
 
@@ -114,8 +186,11 @@ export default function MantenimientoNoProgramado({
       <div className="prog-form">
 
         <div className="prog-form-header">
+
           <div>
-            <span>MANTENIMIENTO NO PROGRAMADO</span>
+            <span>
+              CORRECTIVO NO PROGRAMADO
+            </span>
 
             <h3>
               Registrar trabajo o evento
@@ -125,9 +200,11 @@ export default function MantenimientoNoProgramado({
           <button
             type="button"
             onClick={onCerrar}
+            aria-label="Cerrar"
           >
             ×
           </button>
+
         </div>
 
         <section className="prog-section">
@@ -146,7 +223,10 @@ export default function MantenimientoNoProgramado({
                 placeholder="Buscar por código o nombre..."
                 value={busqueda}
                 onChange={(e) => {
-                  setBusqueda(e.target.value);
+                  setBusqueda(
+                    e.target.value
+                  );
+
                   setEquipo(null);
                 }}
               />
@@ -154,7 +234,8 @@ export default function MantenimientoNoProgramado({
 
             {busqueda &&
               !equipo &&
-              equiposFiltrados.length > 0 && (
+              equiposFiltrados.length >
+                0 && (
 
                 <div className="prog-results">
 
@@ -166,7 +247,10 @@ export default function MantenimientoNoProgramado({
                         type="button"
                         key={item.id}
                         onClick={() => {
-                          setEquipo(item);
+                          setEquipo(
+                            item
+                          );
+
                           setBusqueda(
                             `${item.codigo} - ${item.nombre}`
                           );
@@ -236,33 +320,42 @@ export default function MantenimientoNoProgramado({
 
             <label>
               Fecha *
+
               <input
                 type="date"
                 value={fecha}
                 onChange={(e) =>
-                  setFecha(e.target.value)
+                  setFecha(
+                    e.target.value
+                  )
                 }
               />
             </label>
 
             <label>
               Hora inicio
+
               <input
                 type="time"
                 value={horaInicio}
                 onChange={(e) =>
-                  setHoraInicio(e.target.value)
+                  setHoraInicio(
+                    e.target.value
+                  )
                 }
               />
             </label>
 
             <label>
               Hora fin
+
               <input
                 type="time"
                 value={horaFin}
                 onChange={(e) =>
-                  setHoraFin(e.target.value)
+                  setHoraFin(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -290,12 +383,15 @@ export default function MantenimientoNoProgramado({
                 type="button"
                 key={tipo}
                 className={`prog-choice ${
-                  tipoIntervencion === tipo
+                  tipoIntervencion ===
+                  tipo
                     ? "active"
                     : ""
                 }`}
                 onClick={() =>
-                  setTipoIntervencion(tipo)
+                  setTipoIntervencion(
+                    tipo
+                  )
                 }
               >
                 <strong>
@@ -315,30 +411,39 @@ export default function MantenimientoNoProgramado({
 
             <label>
               Modo de falla
+
               <input
                 value={modoFalla}
                 onChange={(e) =>
-                  setModoFalla(e.target.value)
+                  setModoFalla(
+                    e.target.value
+                  )
                 }
               />
             </label>
 
             <label>
               Causa
+
               <input
                 value={causa}
                 onChange={(e) =>
-                  setCausa(e.target.value)
+                  setCausa(
+                    e.target.value
+                  )
                 }
               />
             </label>
 
             <label>
               Consecuencia
+
               <input
                 value={consecuencia}
                 onChange={(e) =>
-                  setConsecuencia(e.target.value)
+                  setConsecuencia(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -349,9 +454,13 @@ export default function MantenimientoNoProgramado({
             Descripción del evento
 
             <textarea
-              value={descripcionEvento}
+              value={
+                descripcionEvento
+              }
               onChange={(e) =>
-                setDescripcionEvento(e.target.value)
+                setDescripcionEvento(
+                  e.target.value
+                )
               }
             />
           </label>
@@ -368,9 +477,13 @@ export default function MantenimientoNoProgramado({
             Acción realizada
 
             <textarea
-              value={accionRealizada}
+              value={
+                accionRealizada
+              }
               onChange={(e) =>
-                setAccionRealizada(e.target.value)
+                setAccionRealizada(
+                  e.target.value
+                )
               }
             />
           </label>
@@ -399,9 +512,15 @@ export default function MantenimientoNoProgramado({
 
               <button
                 type="button"
-                className={standBy ? "active" : ""}
+                className={
+                  standBy
+                    ? "active"
+                    : ""
+                }
                 onClick={() =>
-                  setStandBy(!standBy)
+                  setStandBy(
+                    !standBy
+                  )
                 }
               >
                 Stand by
@@ -436,7 +555,9 @@ export default function MantenimientoNoProgramado({
                 <input
                   type="number"
                   min="0"
-                  value={tnDejadasProcesar}
+                  value={
+                    tnDejadasProcesar
+                  }
                   onChange={(e) =>
                     setTnDejadasProcesar(
                       e.target.value
@@ -466,7 +587,9 @@ export default function MantenimientoNoProgramado({
                 min="0"
                 value={personal}
                 onChange={(e) =>
-                  setPersonal(e.target.value)
+                  setPersonal(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -480,7 +603,9 @@ export default function MantenimientoNoProgramado({
                 step="0.25"
                 value={horasReales}
                 onChange={(e) =>
-                  setHorasReales(e.target.value)
+                  setHorasReales(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -514,7 +639,9 @@ export default function MantenimientoNoProgramado({
               <input
                 value={criticidad}
                 onChange={(e) =>
-                  setCriticidad(e.target.value)
+                  setCriticidad(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -525,7 +652,9 @@ export default function MantenimientoNoProgramado({
               <input
                 value={prioridad}
                 onChange={(e) =>
-                  setPrioridad(e.target.value)
+                  setPrioridad(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -537,6 +666,7 @@ export default function MantenimientoNoProgramado({
         <div className="prog-bottom">
 
           <div>
+
             <button
               type="button"
               className="prog-cancel"
@@ -552,6 +682,7 @@ export default function MantenimientoNoProgramado({
             >
               Registrar evento
             </button>
+
           </div>
 
         </div>

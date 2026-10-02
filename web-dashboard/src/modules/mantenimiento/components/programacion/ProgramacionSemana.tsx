@@ -185,8 +185,10 @@ export default function ProgramacionSemana() {
 
                   fecha:
                     String(fecha).slice(0, 10),
-
-                  programado: true,
+                    
+                  programado:
+                    mantenimiento.tipo_programacion !==
+                    "correctivo_no_programado",
 
                   equipo:
                     equipo?.codigo &&
@@ -402,6 +404,15 @@ export default function ProgramacionSemana() {
 
   return (
     <section className="prog">
+      <div className="prog-top-action">
+        <button
+          type="button"
+          className="prog-btn prog-btn--main"
+          onClick={() => setProgramar(true)}
+        >
+          + Programar mantenimiento
+        </button>
+      </div>
       <SemanaHeader
         semana={semana}
         onAnterior={() =>
@@ -625,18 +636,6 @@ export default function ProgramacionSemana() {
                 }
               )
             )}
-          </div>
-
-          <div className="prog-actions">
-            <button
-              type="button"
-              className="prog-btn prog-btn--main"
-              onClick={() =>
-                setProgramar(true)
-              }
-            >
-              + Programar mantenimiento
-            </button>
           </div>
         </div>
 

@@ -33,11 +33,34 @@ CREATE TABLE IF NOT EXISTS equipo_grupo (
 -- =====================================================
 -- INSERT DE INSTANCIA PARA EL ADMINISTRADOR
 -- =====================================================
-INSERT INTO whatsapp_instancias (nombre, telefono, estado, ruta_sesion, usuario_id)
-VALUES ('Bot Administrador', NULL, 'pendiente', 'session_admin.db', 1)
+-- No se asume que el administrador tenga id = 1.
+-- Se obtiene su ID mediante el username estable "admin".
+
+INSERT INTO whatsapp_instancias (
+    nombre,
+    telefono,
+    estado,
+    ruta_sesion,
+    usuario_id
+)
+SELECT
+    'Bot Administrador',
+    NULL,
+    'pendiente',
+    'session_admin.db',
+    u.id
+FROM usuarios u
+WHERE u.username = 'admin'
 ON CONFLICT (usuario_id) DO NOTHING;
 
--- Actualizar cualquier instancia sin usuario_id asignado
-UPDATE whatsapp_instancias
-SET usuario_id = 1
-WHERE usuario_id IS NULL;
+-- =====================================================
+-- ASIGNAR ADMINISTRADOR A INSTANCIAS SIN USUARIO
+-- =====================================================
+-- Solo se ejecuta si existe el usuario administrador.
+
+UPDATE whatsapp_instancias wi
+SET usuario_id = u.id,
+    actualizado_en = NOW()
+FROM usuarios u
+WHERE u.username = 'admin'
+  AND wi.usuario_id IS NULL;

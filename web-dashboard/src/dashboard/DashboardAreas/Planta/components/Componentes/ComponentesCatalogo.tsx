@@ -12,12 +12,12 @@ import {
 
 interface Props {
   onCrear: () => void;
-  onEditar?: (componente: Componente) => void;
+  onVer?: (componente: Componente) => void;
 }
 
 export function ComponentesCatalogo({
   onCrear,
-  onEditar,
+  onVer,
 }: Props) {
   const [componentes, setComponentes] =
     useState<Componente[]>([]);
@@ -260,7 +260,7 @@ export function ComponentesCatalogo({
           <span>Equipo</span>
           <span>Fecha de actualización</span>
           <span>Estado</span>
-          <span></span>
+          <span>OPCIONES</span>
         </div>
 
         {loading && (
@@ -410,8 +410,8 @@ export function ComponentesCatalogo({
                     <button
                       type="button"
                       className="componente-row-action"
-                      title="Editar componente"
-                      onClick={() => onEditar?.(componente)}
+                      title="Ver información completa"
+                      onClick={() => onVer?.(componente)}
                     >
                       ›
                     </button>

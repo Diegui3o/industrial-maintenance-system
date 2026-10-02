@@ -35,8 +35,12 @@ func (h *EstructuraPlantaHandler) PostComponente(w http.ResponseWriter, r *http.
 	var c models.ComponenteEquipo
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "JSON invalido")
-		return
+			utils.ErrorJSON(
+					w,
+					http.StatusBadRequest,
+					"JSON invalido: "+err.Error(),
+			)
+			return
 	}
 
 	if c.Nombre == "" {

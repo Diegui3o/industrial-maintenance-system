@@ -242,7 +242,7 @@ export function ComponenteMotorFicha({
             '816/473/408'
           )}
 
-          {numero(
+          {texto(
             'lrc',
             'LRC',
             '8.0'
@@ -329,7 +329,6 @@ export function ComponenteMotorFicha({
             'Rodamiento NDE',
             '6212 ZZ C3'
           )}
-
         </div>
       </div>
 

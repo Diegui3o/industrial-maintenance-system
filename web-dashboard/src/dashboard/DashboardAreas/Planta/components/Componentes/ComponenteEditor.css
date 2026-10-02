@@ -1,0 +1,153 @@
+.componente-editor {
+  width: 100%;
+}
+
+.componente-editor-bloque {
+  margin-bottom: 24px;
+  padding: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.componente-editor-bloque-titulo {
+  margin-bottom: 18px;
+}
+
+.componente-editor-bloque-titulo h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #252525;
+}
+
+.componente-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(230px, 1fr)
+  );
+  gap: 16px;
+}
+
+.componente-editor-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.componente-editor-campo span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.componente-editor-campo input {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #d7dbe0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #20252b;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.componente-editor-campo input:focus {
+  border-color: #f28c28;
+  box-shadow: 0 0 0 3px
+    rgba(242, 140, 40, 0.12);
+}
+
+.componente-editor-descripcion {
+  width: 100%;
+  min-height: 100px;
+  padding: 11px;
+  border: 1px solid #d7dbe0;
+  border-radius: 8px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  color: #20252b;
+  outline: none;
+}
+
+.componente-editor-descripcion:focus {
+  border-color: #f28c28;
+  box-shadow: 0 0 0 3px
+    rgba(242, 140, 40, 0.12);
+}
+
+.componente-editor-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fff1f1;
+  border: 1px solid #f0caca;
+  color: #a72828;
+  font-size: 13px;
+}
+
+.componente-editor-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-bottom: 10px;
+}
+
+.componente-editor-acciones button {
+  min-width: 110px;
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.componente-editor-cancelar {
+  background: #ffffff;
+  border-color: #d5d9de !important;
+  color: #4b5563;
+}
+
+.componente-editor-cancelar:hover {
+  background: #f6f7f8;
+}
+
+.componente-editor-guardar {
+  background: #f28c28;
+  color: #ffffff;
+}
+
+.componente-editor-guardar:hover {
+  background: #df7b1d;
+}
+
+.componente-editor-acciones button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .componente-editor-bloque {
+    padding: 16px;
+  }
+
+  .componente-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .componente-editor-acciones {
+    flex-direction: column-reverse;
+  }
+
+  .componente-editor-acciones button {
+    width: 100%;
+  }
+}

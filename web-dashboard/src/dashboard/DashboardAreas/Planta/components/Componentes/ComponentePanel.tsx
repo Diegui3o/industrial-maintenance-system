@@ -118,29 +118,70 @@ const [activo, setActivo] = useState(true);
     setGuardando(true);
 
     try {
+      const motorNormalizado =
+        tipoComponente === 'MOTOR ELECTRICO'
+          ? {
+              ...motor,
+
+              // El backend define estos campos como string.
+              rated_voltage:
+                motor.rated_voltage != null
+                  ? String(motor.rated_voltage)
+                  : null,
+
+              rated_current:
+                motor.rated_current != null
+                  ? String(motor.rated_current)
+                  : null,
+
+              l_r_amperes:
+                motor.l_r_amperes != null
+                  ? String(motor.l_r_amperes)
+                  : null,
+
+              lrc:
+                motor.lrc != null
+                  ? String(motor.lrc)
+                  : null,
+
+              no_load_current:
+                motor.no_load_current != null
+                  ? String(motor.no_load_current)
+                  : null,
+
+              locked_rotor_time:
+                motor.locked_rotor_time != null
+                  ? String(motor.locked_rotor_time)
+                  : null,
+
+              rotation:
+                motor.rotation != null
+                  ? String(motor.rotation)
+                  : null,
+
+              ambient_temperature:
+                motor.ambient_temperature != null
+                  ? String(motor.ambient_temperature)
+                  : null,
+            }
+          : undefined;
+
       await crearComponente({
         equipo_id: equipoId,
-
         codigo: codigo.trim() || null,
         codigo_sap: codigoSAP.trim() || null,
         tag: tag.trim() || null,
-
         nombre: nombre.trim(),
         tipo_componente: tipoComponente,
-
         marca: marca.trim() || null,
         modelo: modelo.trim() || null,
-        numero_serie:
-          numeroSerie.trim() || null,
-
+        numero_serie: numeroSerie.trim() || null,
         activo,
+        descripcion: descripcion.trim() || null,
 
-        descripcion:
-          descripcion.trim() || null,
-
-        ...(tipoComponente === 'MOTOR ELECTRICO'
+        ...(motorNormalizado
           ? {
-              motor_electrico: motor,
+              motor_electrico: motorNormalizado,
             }
           : {}),
       });

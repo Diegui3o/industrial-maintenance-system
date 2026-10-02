@@ -70,8 +70,9 @@ type ComponenteMotorElectrico struct {
 	Efficiency            *float64 `json:"efficiency,omitempty"`
 	ServiceFactor         *float64 `json:"service_factor,omitempty"`
 
-	Output                *float64 `json:"output,omitempty"`
-	RatedSpeed            *float64 `json:"rated_speed,omitempty"`
+	Output     *float64 `json:"output,omitempty"`
+	Horsepower *float64 `json:"horsepower,omitempty"`
+	RatedSpeed *float64 `json:"rated_speed,omitempty"`
 	NumberOfPoles         *int     `json:"number_of_poles,omitempty"`
 
 	Design                *string  `json:"design,omitempty"`

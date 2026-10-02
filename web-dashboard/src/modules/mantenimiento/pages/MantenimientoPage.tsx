@@ -7,7 +7,6 @@ import {
 import MantenimientoGeneral from "../components/MantenimientoGeneral";
 import MantenimientoDetalle from "../components/MantenimientoDetalle";
 import MantenimientoDetalleForm from "../components/MantenimientoDetalleForm";
-import MantenimientoNoProgramado from "../components/MantenimientoNoProgramado";
 
 import MantenimientoRegistrosSemana from "./MantenimientoRegistrosSemana";
 import ProgramacionSemana from "../components/programacion/ProgramacionSemana";
@@ -34,10 +33,9 @@ export default function MantenimientoPage({
     useState("");
 
   const [seleccionado, setSeleccionado] =
-    useState<number | undefined>(mantenimientoId);
-
-  const [noProgramado, setNoProgramado] =
-    useState(false);
+    useState<number | undefined>(
+      mantenimientoId
+    );
 
   useEffect(() => {
     setSeleccionado(mantenimientoId);
@@ -81,7 +79,7 @@ export default function MantenimientoPage({
     detalle?.mantenimiento?.id ||
     detalle?.id ||
     seleccionado;
-    
+
   return (
     <div className="mantenimiento-page">
 
@@ -103,16 +101,6 @@ export default function MantenimientoPage({
 
           <div className="mantenimiento-actions">
 
-            <button
-              type="button"
-              className="mantenimiento-btn"
-              onClick={() =>
-                setNoProgramado(true)
-              }
-            >
-              + Registrar no programado
-            </button>
-
           </div>
 
         </div>
@@ -123,14 +111,6 @@ export default function MantenimientoPage({
         <div className="mantenimiento-error">
           {error}
         </div>
-      )}
-
-      {noProgramado && (
-        <MantenimientoNoProgramado
-          onCerrar={() =>
-            setNoProgramado(false)
-          }
-        />
       )}
 
       <div className="mantenimiento-layout">
@@ -191,18 +171,23 @@ export default function MantenimientoPage({
               />
 
               <MantenimientoDetalleForm
-                mantenimientoId={idMantenimiento}
+                mantenimientoId={
+                  idMantenimiento
+                }
                 onCreado={refrescar}
               />
 
               <MantenimientoDetalle
-                mantenimientoId={idMantenimiento}
+                mantenimientoId={
+                  idMantenimiento
+                }
               />
             </>
 
           )}
 
         </main>
+
       </div>
 
     </div>

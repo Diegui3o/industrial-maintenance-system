@@ -2,7 +2,6 @@ import { request } from './plantaRequest';
 
 export interface ComponenteMotorElectrico {
   componente_id: number;
-
   placa_motor?: string | null;
   fabricante?: string | null;
   codigo_fabricante?: string | null;
@@ -64,25 +63,19 @@ export interface ComponenteMotorElectrico {
 export interface Componente {
   id: number;
   equipo_id: number | null;
-
   codigo?: string | null;
   codigo_sap?: string | null;
   tag?: string | null;
   nombre: string;
-
   tipo_componente?: string | null;
-
   marca?: string | null;
   modelo?: string | null;
   numero_serie?: string | null;
-
   descripcion?: string | null;
   activo: boolean;
-
   creado_en?: string | null;
   fecha_creacion?: string | null;
   fecha_actualizacion?: string | null;
-
   motor_electrico?: ComponenteMotorElectrico | null;
 }
 
@@ -98,6 +91,7 @@ export interface CrearComponenteData {
   numero_serie?: string | null;
   descripcion?: string | null;
   activo?: boolean;
+
   motor_electrico?: Omit<
     ComponenteMotorElectrico,
     'componente_id'
@@ -109,12 +103,8 @@ export interface ActualizarComponenteData
   activo: boolean;
 }
 
-export async function getTodosComponentes(): Promise<
-  Componente[]
-> {
-  return request<Componente[]>(
-    '/planta/componentes'
-  );
+export async function getTodosComponentes(): Promise<Componente[]> {
+  return request<Componente[]>('/planta/componentes');
 }
 
 export async function getComponentes(
@@ -171,9 +161,7 @@ export async function relacionarComponentesConEquipo(
     `/planta/equipos/${equipoId}/componentes-relacion`,
     {
       method: 'PUT',
-      body: JSON.stringify({
-        relaciones,
-      }),
+      body: JSON.stringify({ relaciones }),
     }
   );
 }

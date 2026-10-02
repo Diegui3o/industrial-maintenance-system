@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
+
 import {
   crearMantenimiento,
   crearProgramacion,
 } from "../../../../dashboard/services/mantenimientoApi";
+
 import { getComponentes } from "../../../../dashboard/DashboardAreas/Planta/services/plantaComponentesApi";
-import type { Equipo, Componente, Props } from "./types";
+
+import type {
+  Equipo,
+  Componente,
+  Props,
+} from "./types";
+
 import BuscadorEquipo from "./BuscadorEquipo";
 import SelectorComponente from "./SelectorComponente";
 import FormularioTrabajoRecursos from "./FormularioTrabajoRecursos";
+import MantenimientoNoProgramado from "../MantenimientoNoProgramado";
+
 import "./programar.css";
 
 type TipoProgramacion =
@@ -60,14 +70,24 @@ export default function ProgramarTrabajo({
   onCerrar,
   fechaProgramada,
 }: Props) {
-  const [equipoBusqueda, setEquipoBusqueda] = useState("");
-  const [equipo, setEquipo] = useState<Equipo | null>(null);
-  const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [cargando, setCargando] = useState(false);
+  const [equipoBusqueda, setEquipoBusqueda] =
+    useState("");
 
-  const [componentes, setComponentes] = useState<Componente[]>([]);
+  const [equipo, setEquipo] =
+    useState<Equipo | null>(null);
+
+  const [equipos, setEquipos] =
+    useState<Equipo[]>([]);
+
+  const [cargando, setCargando] =
+    useState(false);
+
+  const [componentes, setComponentes] =
+    useState<Componente[]>([]);
+
   const [componente, setComponente] =
     useState<Componente | null>(null);
+
   const [cargandoComponentes, setCargandoComponentes] =
     useState(false);
 
@@ -77,18 +97,36 @@ export default function ProgramarTrabajo({
   const [taller, setTaller] =
     useState<Taller>("Eléctrico");
 
-  const [actividad, setActividad] = useState("");
-  const [ot, setOt] = useState("");
+  const [actividad, setActividad] =
+    useState("");
 
-  const [numeroPersonal, setNumeroPersonal] = useState("");
-  const [horas, setHoras] = useState("");
-  const [responsable, setResponsable] = useState("");
-  const [turno, setTurno] = useState("");
+  const [ot, setOt] =
+    useState("");
 
-  const [comentario, setComentario] = useState("");
+  const [numeroPersonal, setNumeroPersonal] =
+    useState("");
 
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState("");
+  const [horas, setHoras] =
+    useState("");
+
+  const [responsable, setResponsable] =
+    useState("");
+
+  const [turno, setTurno] =
+    useState("");
+
+  const [comentario, setComentario] =
+    useState("");
+
+  const [guardando, setGuardando] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const esNoProgramado =
+    tipoProgramacion ===
+    "correctivo_no_programado";
 
   useEffect(() => {
     cargarEquipos();
@@ -98,7 +136,8 @@ export default function ProgramarTrabajo({
     try {
       setCargando(true);
 
-      const respuesta = await fetch("/api/equipos");
+      const respuesta =
+        await fetch("/api/equipos");
 
       if (!respuesta.ok) {
         throw new Error(
@@ -106,10 +145,13 @@ export default function ProgramarTrabajo({
         );
       }
 
-      const data = await respuesta.json();
+      const data =
+        await respuesta.json();
 
       setEquipos(
-        Array.isArray(data) ? data : []
+        Array.isArray(data)
+          ? data
+          : []
       );
     } catch (error) {
       console.error(
@@ -132,7 +174,9 @@ export default function ProgramarTrabajo({
       setComponente(null);
 
       const data =
-        await getComponentes(equipoId);
+        await getComponentes(
+          equipoId
+        );
 
       setComponentes(
         Array.isArray(data)
@@ -162,13 +206,19 @@ export default function ProgramarTrabajo({
   const horasNumero =
     Number(horas) || 0;
 
-  const hh = personal * horasNumero;
+  const hh =
+    personal * horasNumero;
 
-  function seleccionarEquipo(item: Equipo) {
+  function seleccionarEquipo(
+    item: Equipo
+  ) {
     setEquipo(item);
     setEquipoBusqueda("");
     setError("");
-    cargarComponentes(item.id);
+
+    cargarComponentes(
+      item.id
+    );
   }
 
   function cambiarEquipo() {
@@ -194,13 +244,16 @@ export default function ProgramarTrabajo({
       );
 
     setComponente(
-      componenteSeleccionado || null
+      componenteSeleccionado ||
+        null
     );
   }
 
   async function registrar() {
     if (!equipo) {
-      setError("Selecciona un equipo.");
+      setError(
+        "Selecciona un equipo."
+      );
       return;
     }
 
@@ -219,7 +272,9 @@ export default function ProgramarTrabajo({
     }
 
     if (!taller) {
-      setError("Selecciona un taller.");
+      setError(
+        "Selecciona un taller."
+      );
       return;
     }
 
@@ -227,23 +282,23 @@ export default function ProgramarTrabajo({
       setGuardando(true);
       setError("");
 
-      /*
-       * mantenimiento usa time.Time.
-       * La programación usa DATE.
-       */
       const fechaISO =
         `${fechaProgramada}T00:00:00Z`;
 
       const mantenimiento =
         await crearMantenimiento({
-          equipo_id: equipo.id,
+          equipo_id:
+            equipo.id,
 
           componente_id:
-            componente?.id ?? null,
+            componente?.id ??
+            null,
 
-          fecha_reporte: fechaISO,
+          fecha_reporte:
+            fechaISO,
 
-          fecha_programada: fechaISO,
+          fecha_programada:
+            fechaISO,
 
           fase:
             equipo.fase?.trim() ||
@@ -257,24 +312,30 @@ export default function ProgramarTrabajo({
               ? "Preventivo"
               : "Correctivo",
 
-          estado_falla: "abierta",
+          estado_falla:
+            "abierta",
 
-          prioridad: "Media",
+          prioridad:
+            "Media",
 
           sistema:
-            equipo.tipo?.trim() || null,
+            equipo.tipo?.trim() ||
+            null,
 
           descripcion_evento:
             actividad.trim(),
 
           descripcion_tecnica:
-            comentario.trim() || null,
+            comentario.trim() ||
+            null,
 
           causa: null,
 
-          accion_realizada: null,
+          accion_realizada:
+            null,
 
-          consecuencia: null,
+          consecuencia:
+            null,
 
           tipo_programacion:
             tipoProgramacion,
@@ -289,7 +350,8 @@ export default function ProgramarTrabajo({
               ? hh
               : null,
 
-          porcentaje_avance: 0,
+          porcentaje_avance:
+            0,
         });
 
       const mantenimientoId =
@@ -312,7 +374,8 @@ export default function ProgramarTrabajo({
             fechaProgramada,
 
           ot:
-            ot.trim() || null,
+            ot.trim() ||
+            null,
 
           horas_planificadas:
             horasNumero > 0
@@ -330,18 +393,22 @@ export default function ProgramarTrabajo({
               : null,
 
           responsable_planificado:
-            responsable.trim() || null,
+            responsable.trim() ||
+            null,
 
           turno_planificado:
-            turno || null,
+            turno ||
+            null,
 
           comentario:
-            comentario.trim() || null,
+            comentario.trim() ||
+            null,
 
           instrucciones:
             actividad.trim(),
 
-          prioridad: "Media",
+          prioridad:
+            "Media",
         }
       );
 
@@ -362,26 +429,40 @@ export default function ProgramarTrabajo({
     }
   }
 
-  const fechaTexto = fechaProgramada
-    ? new Date(
-        `${fechaProgramada}T00:00:00`
-      ).toLocaleDateString(
-        "es-PE",
-        {
-          weekday: "long",
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }
-      )
-    : "";
+  /*
+   * MCNP usa el formulario existente
+   * de MantenimientoNoProgramado.
+   *
+   * Se retorna directamente para evitar
+   * colocar un modal dentro de otro modal.
+   */
+  if (esNoProgramado) {
+    return (
+      <MantenimientoNoProgramado
+        onCerrar={onCerrar}
+      />
+    );
+  }
+
+  const fechaTexto =
+    fechaProgramada
+      ? new Date(
+          `${fechaProgramada}T00:00:00`
+        ).toLocaleDateString(
+          "es-PE",
+          {
+            weekday: "long",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          }
+        )
+      : "";
 
   return (
     <div className="prog-modal">
 
       <div className="prog-form">
-
-        {/* CABECERA */}
 
         <div className="prog-form-header">
 
@@ -405,15 +486,11 @@ export default function ProgramarTrabajo({
 
         </div>
 
-        {/* ERROR */}
-
         {error && (
           <div className="prog-error">
             {error}
           </div>
         )}
-
-        {/* FECHA */}
 
         <section className="prog-section">
 
@@ -428,8 +505,6 @@ export default function ProgramarTrabajo({
           </div>
 
         </section>
-
-        {/* TIPO */}
 
         <section className="prog-section">
 
@@ -473,8 +548,6 @@ export default function ProgramarTrabajo({
           </div>
 
         </section>
-
-        {/* TALLER */}
 
         <section className="prog-section">
 
@@ -525,8 +598,6 @@ export default function ProgramarTrabajo({
 
         </section>
 
-        {/* EQUIPO */}
-
         <BuscadorEquipo
           equipo={equipo}
           equipoBusqueda={
@@ -545,12 +616,14 @@ export default function ProgramarTrabajo({
           }
         />
 
-        {/* COMPONENTE */}
-
         <SelectorComponente
           equipo={equipo}
-          componentes={componentes}
-          componente={componente}
+          componentes={
+            componentes
+          }
+          componente={
+            componente
+          }
           cargandoComponentes={
             cargandoComponentes
           }
@@ -559,31 +632,37 @@ export default function ProgramarTrabajo({
           }
         />
 
-        {/* TRABAJO Y RECURSOS */}
-
         <FormularioTrabajoRecursos
           actividad={actividad}
-          setActividad={setActividad}
+          setActividad={
+            setActividad
+          }
           ot={ot}
           setOt={setOt}
-          comentario={comentario}
-          setComentario={setComentario}
-          numeroPersonal={numeroPersonal}
+          comentario={
+            comentario
+          }
+          setComentario={
+            setComentario
+          }
+          numeroPersonal={
+            numeroPersonal
+          }
           setNumeroPersonal={
             setNumeroPersonal
           }
           horas={horas}
           setHoras={setHoras}
           hh={hh}
-          responsable={responsable}
+          responsable={
+            responsable
+          }
           setResponsable={
             setResponsable
           }
           turno={turno}
           setTurno={setTurno}
         />
-
-        {/* MATERIALES */}
 
         <section className="prog-section">
 
@@ -599,8 +678,6 @@ export default function ProgramarTrabajo({
           </div>
 
         </section>
-
-        {/* ACCIONES */}
 
         <div className="prog-bottom">
 
