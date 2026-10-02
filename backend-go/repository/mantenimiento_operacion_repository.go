@@ -15,19 +15,23 @@ func NewMantenimientoOperacionRepository(db *sql.DB) *MantenimientoOperacionRepo
 // ============================================================
 
 type MantenimientoProgramacion struct {
-	ID                int      `json:"id"`
-	MantenimientoID   int      `json:"mantenimiento_id"`
-	TipoProgramacion  string   `json:"tipo_programacion"`
-	FechaProgramada   string   `json:"fecha_programada"`
-	Semana            *int     `json:"semana"`
-	CodigoPrograma    *string  `json:"codigo_programa"`
-	OT                *string  `json:"ot"`
-	CodigoSAP         *string  `json:"codigo_sap"`
-	HorasPlanificadas *float64 `json:"horas_planificadas"`
-	HHPlanificadas    *float64 `json:"hh_planificadas"`
-	Prioridad         *string  `json:"prioridad"`
-	Instrucciones     *string  `json:"instrucciones"`
-	Comentario        *string  `json:"comentario"`
+	ID                   int      `json:"id"`
+	MantenimientoID      int      `json:"mantenimiento_id"`
+	TipoProgramacion     string   `json:"tipo_programacion"`
+	FechaProgramada      string   `json:"fecha_programada"`
+	Semana               *int     `json:"semana"`
+	CodigoPrograma       *string  `json:"codigo_programa"`
+	OT                   *string  `json:"ot"`
+	CodigoSAP            *string  `json:"codigo_sap"`
+	HorasPlanificadas    *float64 `json:"horas_planificadas"`
+	HHPlanificadas       *float64 `json:"hh_planificadas"`
+	Prioridad            *string  `json:"prioridad"`
+	Instrucciones        *string  `json:"instrucciones"`
+	Comentario           *string  `json:"comentario"`
+
+	PersonalPlanificado    *int    `json:"personal_planificado"`
+	ResponsablePlanificado *string `json:"responsable_planificado"`
+	TurnoPlanificado       *string `json:"turno_planificado"`
 }
 
 func (r *MantenimientoOperacionRepository) CrearProgramacion(
@@ -49,10 +53,13 @@ func (r *MantenimientoOperacionRepository) CrearProgramacion(
 			hh_planificadas,
 			prioridad,
 			instrucciones,
-			comentario
+			comentario,
+			personal_planificado,
+			responsable_planificado,
+			turno_planificado
 		)
 		VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
 		)
 		RETURNING id
 	`,
@@ -68,6 +75,9 @@ func (r *MantenimientoOperacionRepository) CrearProgramacion(
 		p.Prioridad,
 		p.Instrucciones,
 		p.Comentario,
+		p.PersonalPlanificado,
+		p.ResponsablePlanificado,
+		p.TurnoPlanificado,
 	).Scan(&id)
 
 	return id, err

@@ -343,3 +343,11 @@ export async function eliminarParada(id: number) {
 export function listarTodosLosMantenimientos() {
   return request<any[]>(`${API}`);
 }
+export function listarProgramacionesSemana(
+  fechaInicio: string,
+  fechaFin: string
+) {
+  return request<any[]>(
+    `${API}/programacion/semana?inicio=${fechaInicio}&fin=${fechaFin}`
+  );
+}

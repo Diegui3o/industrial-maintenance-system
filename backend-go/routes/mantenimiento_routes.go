@@ -24,6 +24,11 @@ func registrarMantenimientoRoutes(
 	).Methods("GET")
 
 	r.HandleFunc(
+		"/api/mantenimiento",
+		mantenimientoHandler.Crear,
+	).Methods("POST")
+
+	r.HandleFunc(
 		"/api/mantenimiento/{id}",
 		mantenimientoHandler.GetPorID,
 	).Methods("GET")
