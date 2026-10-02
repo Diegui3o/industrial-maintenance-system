@@ -21,5 +21,9 @@ ALTER TABLE componente_motor_electrico
     ADD COLUMN IF NOT EXISTS creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ADD COLUMN IF NOT EXISTS actualizado_en TIMESTAMPTZ;
 
+ALTER TABLE mantenimiento_programacion
+    ADD COLUMN IF NOT EXISTS personal_planificado INT,
+    ADD COLUMN IF NOT EXISTS responsable_planificado TEXT,
+    ADD COLUMN IF NOT EXISTS turno_planificado TEXT;
 
 COMMIT;

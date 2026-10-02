@@ -937,3 +937,60 @@
   color: #888;
   text-align: center;
 }
+/* =========================================
+   TIPO DE MANTENIMIENTO
+   ========================================= */
+
+.prog-type-selector {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.prog-type-option {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 9px 10px;
+
+  border: 1px solid #d9dde3;
+  border-radius: 8px;
+
+  background: #fff;
+  color: #4b5563;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.prog-type-option strong {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.prog-type-option span {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prog-type-option:hover {
+  border-color: #f0a000;
+}
+
+.prog-type-option--active {
+  border-color: #f0a000;
+  background: #fff7e6;
+  color: #9a6200;
+}

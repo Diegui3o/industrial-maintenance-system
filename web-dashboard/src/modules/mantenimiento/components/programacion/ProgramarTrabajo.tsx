@@ -10,6 +10,29 @@ import SelectorComponente from "./SelectorComponente";
 import FormularioTrabajoRecursos from "./FormularioTrabajoRecursos";
 import "./programar.css";
 
+type TipoProgramacion =
+  | "preventivo"
+  | "correctivo_programado"
+  | "correctivo_no_programado";
+
+const TIPOS_PROGRAMACION = [
+  {
+    codigo: "preventivo" as const,
+    abreviatura: "MP",
+    nombre: "Mantenimiento Preventivo",
+  },
+  {
+    codigo: "correctivo_programado" as const,
+    abreviatura: "MCP",
+    nombre: "Correctivo Programado",
+  },
+  {
+    codigo: "correctivo_no_programado" as const,
+    abreviatura: "MCNP",
+    nombre: "Correctivo No Programado",
+  },
+];
+
 export default function ProgramarTrabajo({
   onCerrar,
   fechaProgramada,
@@ -22,6 +45,9 @@ export default function ProgramarTrabajo({
   const [componentes, setComponentes] = useState<Componente[]>([]);
   const [componente, setComponente] = useState<Componente | null>(null);
   const [cargandoComponentes, setCargandoComponentes] = useState(false);
+
+  const [tipoProgramacion, setTipoProgramacion] =
+    useState<TipoProgramacion>("preventivo");
 
   const [actividad, setActividad] = useState("");
   const [ot, setOt] = useState("");
@@ -43,11 +69,15 @@ export default function ProgramarTrabajo({
   async function cargarEquipos() {
     try {
       setCargando(true);
+
       const respuesta = await fetch("/api/equipos");
+
       if (!respuesta.ok) {
         throw new Error("No se pudieron cargar los equipos");
       }
+
       const data = await respuesta.json();
+
       setEquipos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error cargando equipos:", error);
@@ -106,9 +136,11 @@ export default function ProgramarTrabajo({
       setComponente(null);
       return;
     }
+
     const componenteSeleccionado = componentes.find(
       (item) => item.id === Number(valor)
     );
+
     setComponente(componenteSeleccionado || null);
   }
 
@@ -132,26 +164,47 @@ export default function ProgramarTrabajo({
       setGuardando(true);
       setError("");
 
+      /*
+       * mantenimiento usa time.Time.
+       * La programación usa DATE.
+       */
+      const fechaISO = `${fechaProgramada}T00:00:00Z`;
+
       const mantenimiento = await crearMantenimiento({
-        const fechaISO = `${fechaProgramada}T00:00:00Z`;
         equipo_id: equipo.id,
         componente_id: componente?.id ?? null,
+
         fecha_reporte: fechaISO,
         fecha_programada: fechaISO,
+
         fase: equipo.fase?.trim() || "Sin clasificar",
         taller: "Mantenimiento Eléctrico",
-        tipo_intervencion: "Preventivo",
+
+        tipo_intervencion:
+          tipoProgramacion === "preventivo"
+            ? "Preventivo"
+            : "Correctivo",
+
         estado_falla: "abierta",
         prioridad: "Media",
+
         sistema: equipo.tipo?.trim() || null,
+
         descripcion_evento: actividad.trim(),
         descripcion_tecnica: comentario.trim() || null,
+
         causa: null,
         accion_realizada: null,
         consecuencia: null,
-        tipo_programacion: "preventivo",
-        horas_planificadas: horasNumero > 0 ? horasNumero : null,
-        hh_planificadas: hh > 0 ? hh : null,
+
+        tipo_programacion: tipoProgramacion,
+
+        horas_planificadas:
+          horasNumero > 0 ? horasNumero : null,
+
+        hh_planificadas:
+          hh > 0 ? hh : null,
+
         porcentaje_avance: 0,
       });
 
@@ -165,11 +218,17 @@ export default function ProgramarTrabajo({
       }
 
       await crearProgramacion(mantenimientoId, {
-        tipo_programacion: "preventivo",
+        tipo_programacion: tipoProgramacion,
+
         fecha_programada: fechaProgramada,
+
         ot: ot.trim() || null,
-        horas_planificadas: horasNumero > 0 ? horasNumero : null,
-        hh_planificadas: hh > 0 ? hh : null,
+
+        horas_planificadas:
+          horasNumero > 0 ? horasNumero : null,
+
+        hh_planificadas:
+          hh > 0 ? hh : null,
 
         personal_planificado:
           personal > 0 ? personal : null,
@@ -192,6 +251,7 @@ export default function ProgramarTrabajo({
       onCerrar();
     } catch (error) {
       console.error("Error registrando programación:", error);
+
       setError(
         error instanceof Error
           ? error.message
@@ -203,12 +263,15 @@ export default function ProgramarTrabajo({
   }
 
   const fechaTexto = fechaProgramada
-    ? new Date(`${fechaProgramada}T00:00:00`).toLocaleDateString("es-PE", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+    ? new Date(`${fechaProgramada}T00:00:00`).toLocaleDateString(
+        "es-PE",
+        {
+          weekday: "long",
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }
+      )
     : "";
 
   return (
@@ -220,7 +283,12 @@ export default function ProgramarTrabajo({
             <span>PROGRAMACIÓN SEMANAL</span>
             <h3>Programar mantenimiento</h3>
           </div>
-          <button type="button" onClick={onCerrar} aria-label="Cerrar">
+
+          <button
+            type="button"
+            onClick={onCerrar}
+            aria-label="Cerrar"
+          >
             ×
           </button>
         </div>
@@ -230,9 +298,41 @@ export default function ProgramarTrabajo({
 
         {/* FECHA */}
         <section className="prog-section">
-          <div className="prog-section-title">Día programado</div>
+          <div className="prog-section-title">
+            Día programado
+          </div>
+
           <div className="prog-program-date">
             <strong>{fechaTexto}</strong>
+          </div>
+        </section>
+
+        {/* TIPO */}
+        <section className="prog-section">
+          <div className="prog-section-title">
+            Tipo de mantenimiento
+          </div>
+
+          <div className="prog-type-selector">
+            {TIPOS_PROGRAMACION.map((tipo) => (
+              <button
+                key={tipo.codigo}
+                type="button"
+                className={`prog-type-option ${
+                  tipoProgramacion === tipo.codigo
+                    ? "prog-type-option--active"
+                    : ""
+                }`}
+                onClick={() => {
+                  setTipoProgramacion(tipo.codigo);
+                  setError("");
+                }}
+                title={tipo.nombre}
+              >
+                <strong>{tipo.abreviatura}</strong>
+                <span>{tipo.nombre}</span>
+              </button>
+            ))}
           </div>
         </section>
 
@@ -277,10 +377,13 @@ export default function ProgramarTrabajo({
 
         {/* MATERIALES */}
         <section className="prog-section">
-          <div className="prog-section-title">Materiales</div>
+          <div className="prog-section-title">
+            Materiales
+          </div>
+
           <div className="prog-material-placeholder">
-            Los repuestos y materiales se incorporarán posteriormente cuando esté
-            disponible el catálogo.
+            Los repuestos y materiales se incorporarán
+            posteriormente cuando esté disponible el catálogo.
           </div>
         </section>
 
@@ -299,9 +402,15 @@ export default function ProgramarTrabajo({
             type="button"
             className="prog-save"
             onClick={registrar}
-            disabled={guardando || !equipo || !actividad.trim()}
+            disabled={
+              guardando ||
+              !equipo ||
+              !actividad.trim()
+            }
           >
-            {guardando ? "Guardando..." : "Programar mantenimiento"}
+            {guardando
+              ? "Guardando..."
+              : "Programar mantenimiento"}
           </button>
         </div>
       </div>
