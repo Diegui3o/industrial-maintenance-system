@@ -136,6 +136,20 @@ func bootstrapExistingDatabase(
 		return nil
 	}
 
+	var existeEquipos bool
+	err = db.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.tables
+			WHERE table_schema = 'public'
+			  AND table_name = 'equipos'
+		)
+	`).Scan(&existeEquipos)
+
+	if err != nil {
+		return err
+	}
+
 	var existeMantenimiento bool
 	err = db.QueryRow(`
 		SELECT EXISTS (
@@ -150,41 +164,13 @@ func bootstrapExistingDatabase(
 		return err
 	}
 
-	if !existeMantenimiento {
+	if !existeEquipos || !existeMantenimiento {
 		return nil
 	}
 
-	var existeMantenimientoActividades bool
-	err = db.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.tables
-			WHERE table_schema = 'public'
-			  AND table_name = 'mantenimiento_actividades'
-		)
-	`).Scan(&existeMantenimientoActividades)
-
-	if err != nil {
-		return err
-	}
-
-	if !existeMantenimientoActividades {
-		return fmt.Errorf(
-			"la BD ya contiene esquema, pero no coincide con la versión 018; no se puede establecer el historial automáticamente",
-		)
-	}
-
-	maxVersion := 0
-
-	for _, migration := range migrations {
-		if migration.version <= 18 {
-			maxVersion = migration.version
-		}
-	}
-
-	if maxVersion == 0 {
-		return nil
-	}
+	// La BD existente corresponde al esquema anterior
+	// a la migracion 015.
+	const maxVersion = 14
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -240,13 +226,32 @@ func applyMigration(
 		return err
 	}
 
+	sqlContent := string(content)
+	hasTransaction := strings.Contains(strings.ToUpper(sqlContent), "BEGIN")
+
+	if hasTransaction {
+		if _, err := db.Exec(sqlContent); err != nil {
+			return err
+		}
+
+		_, err = db.Exec(`
+			INSERT INTO schema_migrations (
+				version,
+				nombre
+			)
+			VALUES ($1, $2)
+		`, migration.version, migration.name)
+
+		return err
+	}
+
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(string(content)); err != nil {
+	if _, err := tx.Exec(sqlContent); err != nil {
 		return err
 	}
 
