@@ -27,6 +27,7 @@ export interface Equipo {
   area_funcional?: string;
   ip?: string;
   relacionado?: boolean;
+  subproceso_nombre?: string;
 }
 
 export async function getEquipos(): Promise<Equipo[]> {

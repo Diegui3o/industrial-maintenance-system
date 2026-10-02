@@ -18,12 +18,13 @@ type Equipo struct {
 	FechaCreacion    time.Time  `json:"fecha_creacion"`
 	ActualizadoEn    *time.Time `json:"actualizado_en"`
 
-	FaseUbicacion  string `json:"fase_ubicacion"`
-	AreaFuncional  string `json:"area_funcional"`
-	Tag            string `json:"tag"`
+	FaseUbicacion   string `json:"fase_ubicacion"`
+	AreaFuncional   string `json:"area_funcional"`
+	Tag             string `json:"tag"`
 	UbicacionFisica string `json:"ubicacion_fisica"`
 	DescripcionLarga string `json:"descripcion_larga"`
 
-	IP         string `json:"ip"`
-	Relacionado bool   `json:"relacionado"`
+	IP               string `json:"ip"`
+	Relacionado      bool   `json:"relacionado"`
+	SubprocesoNombre string `json:"subproceso_nombre,omitempty"`
 }

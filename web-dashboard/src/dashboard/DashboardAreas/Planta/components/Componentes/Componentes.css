@@ -1132,20 +1132,16 @@
 .componentes-tabla-row {
   display: grid;
   grid-template-columns:
-    minmax(110px, 0.9fr)
-    minmax(90px, 0.8fr)
-    minmax(220px, 1.8fr)
-    minmax(130px, 1fr)
-    minmax(190px, 1.4fr)
-    minmax(170px, 1.2fr)
-    minmax(90px, 0.7fr)
-    90px;
+    130px
+    minmax(260px, 1.4fr)
+    minmax(300px, 1.6fr)
+    minmax(140px, 0.8fr)
+    minmax(180px, 1fr)
+    90px
+    70px;
 
   width: 100%;
   min-width: 1100px;
-}
-.componentes-tabla-header,
-.componentes-tabla-row {
   font-size: 12px;
 }
 
@@ -2026,10 +2022,26 @@
 .componentes-tabla-row > span {
   min-width: 0;
   overflow: visible;
-  white-space: normal;
+  min-width: 0;
+  white-space: nowrap;
   text-overflow: clip;
   word-break: normal;
   overflow-wrap: anywhere;
+}
+
+.componente-row-tipo,
+.componente-row-equipo {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.componente-row-tipo strong + strong {
+  margin-left: 6px;
+}
+
+.componente-row-equipo strong + strong {
+  margin-left: 4px;
 }
 
 .componentes-tabla-row > span:nth-child(3) strong {

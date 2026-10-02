@@ -38,9 +38,12 @@ func (r *EquipoRepository) ObtenerEquipos(
 			e.actualizado_en,
 			e.fase_ubicacion,
 			e.area_funcional,
-			COALESCE(d.ip, '') AS ip
+			COALESCE(d.ip, '') AS ip,
+		COALESCE(sp.nombre, '') AS subproceso_nombre
 		FROM equipos e
 		LEFT JOIN dispositivos_red d ON d.equipo_id = e.id
+		LEFT JOIN planta_equipos pe ON pe.equipo_id = e.id
+		LEFT JOIN subprocesos_planta sp ON sp.id = pe.subproceso_id
 		WHERE 1=1
 	`
 
@@ -207,6 +210,7 @@ func (r *EquipoRepository) ObtenerEquipos(
 			&faseUbicacion,
 			&areaFuncional,
 			&e.IP,
+			&e.SubprocesoNombre,
 		)
 
 		if err != nil {

@@ -143,6 +143,7 @@ export function ComponentesCatalogo({
             componente.numero_serie ?? '',
             equipo?.codigo ?? '',
             equipo?.nombre ?? '',
+            equipo?.subproceso_nombre ?? '',
           ]
             .join(' ')
             .toLowerCase();
@@ -254,10 +255,9 @@ export function ComponentesCatalogo({
 
         <div className="componentes-tabla-header">
           <span>Código SAP</span>
-          <span>TAG</span>
-          <span>Componente</span>
-          <span>Tipo</span>
-          <span>Equipo</span>
+          <span>Tipo / Componente</span>
+          <span>Subproceso - Equipo</span>
+          <span>Marca / fabricante</span>
           <span>Fecha de actualización</span>
           <span>Estado</span>
           <span>OPCIONES</span>
@@ -330,52 +330,47 @@ export function ComponentesCatalogo({
                   key={componente.id}
                   className="componentes-tabla-row"
                 >
-
                   <span>
                     {componente.codigo_sap || '—'}
                   </span>
 
-                  <span>
-                    {componente.tag || '—'}
-                  </span>
+                  <span className="componente-row-tipo">
+                    <strong>
+                      {componente.tipo_componente || '—'}
+                    </strong>
 
-                  <span>
+                    {' '}
+
                     <strong>
                       {componente.nombre}
                     </strong>
-
-                    {(componente.marca || componente.modelo) && (
-                      <small>
-                        {[
-                          componente.marca,
-                          componente.modelo,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </small>
-                    )}
                   </span>
 
-                  <span>
-                    {componente.tipo_componente || '—'}
-                  </span>
-
-                  <span>
+                  <span className="componente-row-equipo">
                     {equipo ? (
-                      <>
-                        <strong>
-                          {equipo.codigo || equipo.nombre}
-                        </strong>
+                      equipo.subproceso_nombre ? (
+                        <>
+                          <strong>
+                            {equipo.subproceso_nombre}
+                          </strong>
 
-                        {equipo.codigo && (
-                          <small>
+                          <strong>
+                            {' - '}
                             {equipo.nombre}
-                          </small>
-                        )}
-                      </>
+                          </strong>
+                        </>
+                      ) : (
+                        <strong>
+                          {equipo.nombre}
+                        </strong>
+                      )
                     ) : (
                       'Sin equipo'
                     )}
+                  </span>
+
+                  <span>
+                    {componente.marca || '—'}
                   </span>
 
                   <span>
@@ -416,7 +411,6 @@ export function ComponentesCatalogo({
                       ›
                     </button>
                   </span>
-
                 </div>
               );
             }
