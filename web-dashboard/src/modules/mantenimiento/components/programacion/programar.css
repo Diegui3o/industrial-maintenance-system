@@ -793,3 +793,147 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+/* =========================================================
+   SELECTOR COMPACTO DE EQUIPO
+   ========================================================= */
+
+.prog-equipment-search {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+}
+
+.prog-equipment-searchbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.prog-equipment-searchbox input {
+  width: 100%;
+  height: 40px;
+  padding: 0 38px 0 36px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: #2f2f2f;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.prog-equipment-searchbox input:focus {
+  border-color: #e58a00;
+  box-shadow: 0 0 0 3px rgba(229, 138, 0, 0.10);
+}
+
+.prog-equipment-searchbox input::placeholder {
+  color: #999;
+}
+
+.prog-search-icon {
+  position: absolute;
+  left: 12px;
+  z-index: 2;
+  font-size: 18px;
+  line-height: 1;
+  color: #888;
+  pointer-events: none;
+}
+
+.prog-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 25px;
+  height: 25px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #888;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.prog-search-clear:hover {
+  background: #f1f1f1;
+  color: #444;
+}
+
+/* Lista pequeña y controlada */
+
+.prog-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid #e2e2e2;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+
+/* Cada equipo ocupa poco espacio */
+
+.prog-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.prog-result:hover {
+  background: #f7f7f7;
+}
+
+.prog-result-code {
+  flex: 0 0 105px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e07b00;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prog-result-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  color: #333;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prog-results-more {
+  padding: 7px 9px 5px;
+  border-top: 1px solid #eee;
+  font-size: 10px;
+  color: #999;
+  text-align: center;
+}
+
+.prog-no-results {
+  padding: 14px 10px;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}

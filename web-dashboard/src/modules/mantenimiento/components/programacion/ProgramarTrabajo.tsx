@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import {
+  crearMantenimiento,
+  crearProgramacion,
+} from "../../../../dashboard/services/mantenimientoApi";
+import { getComponentes } from "../../../../dashboard/DashboardAreas/Planta/services/plantaComponentesApi";
 import "./programar.css";
 
 type Equipo = {
@@ -11,16 +16,19 @@ type Equipo = {
   ubicacion?: string;
 };
 
-type Material = {
-  codigoSap: string;
-  descripcion: string;
-  cantidad: string;
-  costo: string;
-  stock: string;
-  unidad: string;
-  tipoMaterial: string;
-  mpv: string;
-  mcp: string;
+type Componente = {
+  id: number;
+  equipo_id?: number | null;
+  codigo?: string | null;
+  codigo_sap?: string | null;
+  tag?: string | null;
+  nombre: string;
+  tipo_componente?: string | null;
+  marca?: string | null;
+  modelo?: string | null;
+  numero_serie?: string | null;
+  descripcion?: string | null;
+  activo?: boolean;
 };
 
 type Props = {
@@ -37,6 +45,12 @@ export default function ProgramarTrabajo({
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [cargando, setCargando] = useState(false);
 
+  const [componentes, setComponentes] = useState<Componente[]>([]);
+  const [componente, setComponente] =
+    useState<Componente | null>(null);
+  const [cargandoComponentes, setCargandoComponentes] =
+    useState(false);
+
   const [actividad, setActividad] = useState("");
   const [ot, setOt] = useState("");
 
@@ -47,19 +61,8 @@ export default function ProgramarTrabajo({
 
   const [comentario, setComentario] = useState("");
 
-  const [mostrarMaterial, setMostrarMaterial] = useState(false);
-
-  const [material, setMaterial] = useState<Material>({
-    codigoSap: "",
-    descripcion: "",
-    cantidad: "",
-    costo: "",
-    stock: "",
-    unidad: "",
-    tipoMaterial: "",
-    mpv: "",
-    mcp: "",
-  });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     cargarEquipos();
@@ -86,8 +89,40 @@ export default function ProgramarTrabajo({
     }
   }
 
+  async function cargarComponentes(equipoId: number) {
+    try {
+      setCargandoComponentes(true);
+      setComponentes([]);
+      setComponente(null);
+
+      const data = await getComponentes(equipoId);
+
+      setComponentes(
+        Array.isArray(data)
+          ? data.filter(
+              (item) =>
+                item.activo === undefined ||
+                item.activo === true
+            )
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Error cargando componentes:",
+        error
+      );
+
+      setComponentes([]);
+      setComponente(null);
+    } finally {
+      setCargandoComponentes(false);
+    }
+  }
+
   const resultados = equipos.filter((item) => {
-    const texto = equipoBusqueda.toLowerCase().trim();
+    const texto = equipoBusqueda
+      .toLowerCase()
+      .trim();
 
     if (!texto) {
       return false;
@@ -103,37 +138,217 @@ export default function ProgramarTrabajo({
   const horasNumero = Number(horas) || 0;
   const hh = personal * horasNumero;
 
-  function cambiarMaterial(
-    campo: keyof Material,
-    valor: string
-  ) {
-    setMaterial((prev) => ({
-      ...prev,
-      [campo]: valor,
-    }));
+  function seleccionarEquipo(item: Equipo) {
+    setEquipo(item);
+    setEquipoBusqueda("");
+    setError("");
+
+    cargarComponentes(item.id);
   }
 
-  function registrar() {
-    const datos = {
-      equipoId: equipo?.id,
-      equipo,
-      fechaProgramada,
-      actividad,
-      ot,
-      numeroPersonal: personal,
-      horas: horasNumero,
-      hh,
-      responsable,
-      turno,
-      materiales: mostrarMaterial ? [material] : [],
-      comentario,
-    };
+  function cambiarEquipo() {
+    setEquipo(null);
+    setEquipoBusqueda("");
 
-    console.log("PROGRAMACIÓN SEMANAL:", datos);
+    setComponentes([]);
+    setComponente(null);
 
-    // Siguiente paso:
-    // conectar esta información con el endpoint
-    // de programación semanal.
+    setError("");
+  }
+
+  function cambiarComponente(valor: string) {
+    if (!valor) {
+      setComponente(null);
+      return;
+    }
+
+    const componenteSeleccionado =
+      componentes.find(
+        (item) => item.id === Number(valor)
+      );
+
+    setComponente(
+      componenteSeleccionado || null
+    );
+  }
+
+  async function registrar() {
+    if (!equipo) {
+      setError("Selecciona un equipo.");
+      return;
+    }
+
+    if (!actividad.trim()) {
+      setError("Ingresa la actividad a realizar.");
+      return;
+    }
+
+    if (!fechaProgramada) {
+      setError(
+        "No se encontró la fecha programada."
+      );
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      setError("");
+
+      /*
+       * Primero creamos el mantenimiento.
+       *
+       * El equipo es obligatorio.
+       * El componente es opcional.
+       */
+      const mantenimiento =
+        await crearMantenimiento({
+          equipo_id: equipo.id,
+
+          componente_id:
+            componente?.id ?? null,
+
+          fecha_reporte:
+            fechaProgramada,
+
+          fecha_programada:
+            fechaProgramada,
+
+          fase:
+            equipo.fase?.trim() ||
+            "Sin clasificar",
+
+          taller:
+            "Mantenimiento Eléctrico",
+
+          tipo_intervencion:
+            "Preventivo",
+
+          estado_falla:
+            "abierta",
+
+          prioridad:
+            "Media",
+
+          sistema:
+            equipo.tipo?.trim() || null,
+
+          descripcion_evento:
+            actividad.trim(),
+
+          descripcion_tecnica:
+            comentario.trim() || null,
+
+          causa:
+            null,
+
+          accion_realizada:
+            null,
+
+          consecuencia:
+            null,
+
+          tipo_programacion:
+            "preventivo",
+
+          horas_planificadas:
+            horasNumero > 0
+              ? horasNumero
+              : null,
+
+          hh_planificadas:
+            hh > 0
+              ? hh
+              : null,
+
+          porcentaje_avance: 0,
+        });
+
+      const mantenimientoId =
+        mantenimiento?.id ??
+        mantenimiento?.data?.id;
+
+      if (!mantenimientoId) {
+        throw new Error(
+          "El mantenimiento fue creado, pero no se recibió su ID."
+        );
+      }
+
+      /*
+       * Luego registramos la programación semanal
+       * asociada al mantenimiento recién creado.
+       */
+      await crearProgramacion(
+        mantenimientoId,
+        {
+          tipo_programacion:
+            "preventivo",
+
+          fecha_programada:
+            fechaProgramada,
+
+          ot:
+            ot.trim() || null,
+
+          horas_planificadas:
+            horasNumero > 0
+              ? horasNumero
+              : null,
+
+          hh_planificadas:
+            hh > 0
+              ? hh
+              : null,
+
+          comentario:
+            comentario.trim() || null,
+
+          instrucciones:
+            actividad.trim(),
+
+          prioridad:
+            "Media",
+        }
+      );
+
+      /*
+       * Por ahora no guardamos repuestos/materiales.
+       * Esa parte se implementará posteriormente
+       * cuando exista un catálogo real y confiable.
+       */
+
+      console.log(
+        "PROGRAMACIÓN SEMANAL REGISTRADA:",
+        {
+          mantenimientoId,
+          equipo,
+          componente,
+          fechaProgramada,
+          actividad,
+          ot,
+          numeroPersonal: personal,
+          horas: horasNumero,
+          hh,
+          responsable,
+          turno,
+          comentario,
+        }
+      );
+
+      onCerrar();
+    } catch (error) {
+      console.error(
+        "Error registrando programación:",
+        error
+      );
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar la programación."
+      );
+    } finally {
+      setGuardando(false);
+    }
   }
 
   const fechaTexto = fechaProgramada
@@ -154,9 +369,13 @@ export default function ProgramarTrabajo({
 
         <div className="prog-form-header">
           <div>
-            <span>PROGRAMACIÓN SEMANAL</span>
+            <span>
+              PROGRAMACIÓN SEMANAL
+            </span>
 
-            <h3>Programar mantenimiento</h3>
+            <h3>
+              Programar mantenimiento
+            </h3>
           </div>
 
           <button
@@ -168,6 +387,14 @@ export default function ProgramarTrabajo({
           </button>
         </div>
 
+        {/* ERROR */}
+
+        {error && (
+          <div className="prog-error">
+            {error}
+          </div>
+        )}
+
         {/* FECHA */}
 
         <section className="prog-section">
@@ -176,7 +403,9 @@ export default function ProgramarTrabajo({
           </div>
 
           <div className="prog-program-date">
-            <strong>{fechaTexto}</strong>
+            <strong>
+              {fechaTexto}
+            </strong>
           </div>
         </section>
 
@@ -188,71 +417,88 @@ export default function ProgramarTrabajo({
           </div>
 
           {!equipo ? (
-            <div className="prog-equipment-search">
+          <div className="prog-equipment-search">
+            <div className="prog-equipment-searchbox">
+              <span className="prog-search-icon">⌕</span>
+
               <input
                 value={equipoBusqueda}
                 onChange={(e) => {
                   setEquipoBusqueda(e.target.value);
                   setEquipo(null);
                 }}
-                placeholder="Buscar equipo por código o nombre..."
+                placeholder="Buscar equipo..."
                 autoFocus
               />
 
               {equipoBusqueda && (
-                <div className="prog-results">
-                  {cargando && (
+                <button
+                  type="button"
+                  className="prog-search-clear"
+                  onClick={() => setEquipoBusqueda("")}
+                  aria-label="Limpiar búsqueda"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {equipoBusqueda && (
+              <div className="prog-results">
+                {cargando && (
+                  <div className="prog-no-results">
+                    Buscando equipos...
+                  </div>
+                )}
+
+                {!cargando &&
+                  resultados.slice(0, 8).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="prog-result"
+                      onClick={() => seleccionarEquipo(item)}
+                    >
+                      <span className="prog-result-code">
+                        {item.codigo}
+                      </span>
+
+                      <span className="prog-result-name">
+                        {item.nombre}
+                      </span>
+                    </button>
+                  ))}
+
+                {!cargando &&
+                  resultados.length === 0 && (
                     <div className="prog-no-results">
-                      Cargando equipos...
+                      No se encontraron equipos
                     </div>
                   )}
 
-                  {!cargando &&
-                    resultados.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="prog-result"
-                        onClick={() => {
-                          setEquipo(item);
-                          setEquipoBusqueda("");
-                        }}
-                      >
-                        <span className="obj-equipo">
-                          EQUIPO
-                        </span>
-
-                        <div>
-                          <strong>{item.nombre}</strong>
-
-                          <small>{item.codigo}</small>
-                        </div>
-                      </button>
-                    ))}
-
-                  {!cargando &&
-                    resultados.length === 0 && (
-                      <div className="prog-no-results">
-                        No se encontraron equipos
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
+                {!cargando && resultados.length > 8 && (
+                  <div className="prog-results-more">
+                    Mostrando 8 de {resultados.length} equipos
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           ) : (
             <div className="prog-equipment-selected">
               <div>
-                <strong>{equipo.nombre}</strong>
+                <strong>
+                  {equipo.nombre}
+                </strong>
 
-                <span>{equipo.codigo}</span>
+                <span>
+                  {equipo.codigo}
+                </span>
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setEquipo(null);
-                  setEquipoBusqueda("");
-                }}
+                onClick={cambiarEquipo}
               >
                 Cambiar
               </button>
@@ -264,7 +510,8 @@ export default function ProgramarTrabajo({
               <span>
                 Fase:{" "}
                 <strong>
-                  {equipo.fase || "Sin clasificar"}
+                  {equipo.fase ||
+                    "Sin clasificar"}
                 </strong>
               </span>
 
@@ -292,6 +539,100 @@ export default function ProgramarTrabajo({
           )}
         </section>
 
+        {/* COMPONENTE */}
+
+        {equipo && (
+          <section className="prog-section">
+            <div className="prog-section-title">
+              Componente
+            </div>
+
+            <label>
+              Componente
+              <select
+                value={
+                  componente?.id ?? ""
+                }
+                onChange={(e) =>
+                  cambiarComponente(
+                    e.target.value
+                  )
+                }
+                disabled={
+                  cargandoComponentes
+                }
+              >
+                <option value="">
+                  {cargandoComponentes
+                    ? "Cargando componentes..."
+                    : componentes.length === 0
+                    ? "Sin componentes registrados"
+                    : "Mantenimiento a nivel de equipo"}
+                </option>
+
+                {componentes.map(
+                  (item) => (
+                    <option
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.tag
+                        ? `${item.tag} - `
+                        : ""}
+                      {item.nombre}
+                      {item.codigo_sap
+                        ? ` (${item.codigo_sap})`
+                        : ""}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+
+            {componente && (
+              <div className="prog-equipment-meta">
+                {componente.tag && (
+                  <span>
+                    TAG:{" "}
+                    <strong>
+                      {componente.tag}
+                    </strong>
+                  </span>
+                )}
+
+                {componente.tipo_componente && (
+                  <span>
+                    Tipo:{" "}
+                    <strong>
+                      {
+                        componente.tipo_componente
+                      }
+                    </strong>
+                  </span>
+                )}
+
+                {componente.marca && (
+                  <span>
+                    Marca:{" "}
+                    <strong>
+                      {componente.marca}
+                    </strong>
+                  </span>
+                )}
+
+                {componente.modelo && (
+                  <span>
+                    Modelo:{" "}
+                    <strong>
+                      {componente.modelo}
+                    </strong>
+                  </span>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* TRABAJO */}
 
         <section className="prog-section">
@@ -301,11 +642,13 @@ export default function ProgramarTrabajo({
 
           <div className="prog-grid prog-grid--two">
             <label>
-              Actividad
+              Actividad *
               <input
                 value={actividad}
                 onChange={(e) =>
-                  setActividad(e.target.value)
+                  setActividad(
+                    e.target.value
+                  )
                 }
                 placeholder="¿Qué trabajo se realizará?"
               />
@@ -328,7 +671,9 @@ export default function ProgramarTrabajo({
             <textarea
               value={comentario}
               onChange={(e) =>
-                setComentario(e.target.value)
+                setComentario(
+                  e.target.value
+                )
               }
               placeholder="Detalle, alcance o justificación del trabajo..."
               rows={3}
@@ -349,9 +694,13 @@ export default function ProgramarTrabajo({
               <input
                 type="number"
                 min="1"
-                value={numeroPersonal}
+                value={
+                  numeroPersonal
+                }
                 onChange={(e) =>
-                  setNumeroPersonal(e.target.value)
+                  setNumeroPersonal(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -364,7 +713,9 @@ export default function ProgramarTrabajo({
                 step="0.5"
                 value={horas}
                 onChange={(e) =>
-                  setHoras(e.target.value)
+                  setHoras(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -372,7 +723,11 @@ export default function ProgramarTrabajo({
             <label>
               H-H
               <input
-                value={hh ? hh.toFixed(2) : ""}
+                value={
+                  hh
+                    ? hh.toFixed(2)
+                    : ""
+                }
                 readOnly
                 className="prog-calculated"
               />
@@ -383,7 +738,9 @@ export default function ProgramarTrabajo({
               <input
                 value={responsable}
                 onChange={(e) =>
-                  setResponsable(e.target.value)
+                  setResponsable(
+                    e.target.value
+                  )
                 }
               />
             </label>
@@ -393,7 +750,9 @@ export default function ProgramarTrabajo({
               <select
                 value={turno}
                 onChange={(e) =>
-                  setTurno(e.target.value)
+                  setTurno(
+                    e.target.value
+                  )
                 }
               >
                 <option value="">
@@ -419,143 +778,11 @@ export default function ProgramarTrabajo({
             Materiales
           </div>
 
-          <button
-            type="button"
-            className="prog-add-material"
-            onClick={() =>
-              setMostrarMaterial(!mostrarMaterial)
-            }
-          >
-            {mostrarMaterial
-              ? "− Ocultar materiales"
-              : "+ Añadir materiales"}
-          </button>
-
-          {mostrarMaterial && (
-            <div className="prog-material-grid">
-              <label>
-                COD SAP
-                <input
-                  value={material.codigoSap}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "codigoSap",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                DESCRIPCIÓN
-                <input
-                  value={material.descripcion}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "descripcion",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                CANT.
-                <input
-                  type="number"
-                  min="0"
-                  value={material.cantidad}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "cantidad",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                COSTO
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={material.costo}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "costo",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                STOCK
-                <input
-                  value={material.stock}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "stock",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                UND.
-                <input
-                  value={material.unidad}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "unidad",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                TIPO MATERIAL
-                <input
-                  value={material.tipoMaterial}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "tipoMaterial",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                MPV
-                <input
-                  value={material.mpv}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "mpv",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                MCP
-                <input
-                  value={material.mcp}
-                  onChange={(e) =>
-                    cambiarMaterial(
-                      "mcp",
-                      e.target.value
-                    )
-                  }
-                />
-              </label>
-            </div>
-          )}
+          <div className="prog-material-placeholder">
+            Los repuestos y materiales se
+            incorporarán posteriormente
+            cuando esté disponible el catálogo.
+          </div>
         </section>
 
         {/* ACCIONES */}
@@ -565,6 +792,7 @@ export default function ProgramarTrabajo({
             type="button"
             className="prog-cancel"
             onClick={onCerrar}
+            disabled={guardando}
           >
             Cancelar
           </button>
@@ -573,9 +801,15 @@ export default function ProgramarTrabajo({
             type="button"
             className="prog-save"
             onClick={registrar}
-            disabled={!equipo || !actividad}
+            disabled={
+              guardando ||
+              !equipo ||
+              !actividad.trim()
+            }
           >
-            Programar mantenimiento
+            {guardando
+              ? "Guardando..."
+              : "Programar mantenimiento"}
           </button>
         </div>
       </div>

@@ -177,3 +177,11 @@ export async function relacionarComponentesConEquipo(
     }
   );
 }
+
+export async function getRepuestosPorComponente(
+  componenteId: number
+): Promise<any[]> {
+  return request<any[]>(
+    `/planta/componentes/${componenteId}/repuestos`
+  );
+}
