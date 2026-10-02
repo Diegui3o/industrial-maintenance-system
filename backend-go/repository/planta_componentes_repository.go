@@ -348,7 +348,8 @@ func (r *EstructuraPlantaRepository) ListarTodosComponentes(
 			return nil, err
 		}
 
-		if motor.ComponenteID != 0 {
+		if motorID.Valid {
+			motor.ComponenteID = int(motorID.Int64)
 			c.MotorElectrico = &motor
 		}
 

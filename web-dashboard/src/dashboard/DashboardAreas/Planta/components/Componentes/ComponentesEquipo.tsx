@@ -6,37 +6,26 @@ import { ComponentePanel } from './ComponentePanel';
 import './Componentes.css';
 
 export function ComponentesEquipo() {
-  const [panelAbierto, setPanelAbierto] =
-    useState(false);
-
-  const [catalogoVersion, setCatalogoVersion] =
-    useState(0);
+  const [panelAbierto, setPanelAbierto] = useState(false);
+  const [catalogoVersion, setCatalogoVersion] = useState(0);
 
   function componenteGuardado() {
     setPanelAbierto(false);
-
-    setCatalogoVersion(
-      (actual) => actual + 1
-    );
+    setCatalogoVersion((actual) => actual + 1);
   }
 
   return (
     <section className="componentes-seccion">
-
       <div className="componentes-header">
-
         <div>
           <span className="componentes-kicker">
             CATÁLOGO TÉCNICO
           </span>
 
-          <h2>
-            Componentes
-          </h2>
+          <h2>Componentes</h2>
 
           <p>
-            Administración y consulta de componentes
-            asociados a los equipos de planta.
+            Administración y consulta de componentes asociados a los equipos de planta.
           </p>
         </div>
 
@@ -47,26 +36,19 @@ export function ComponentesEquipo() {
         >
           + Crear componente
         </button>
-
       </div>
 
       <div className="componentes-card">
+        <ComponentesCatalogo
+          key={catalogoVersion}
+          onCrear={() => setPanelAbierto(true)}
+        />
 
-      <ComponentesCatalogo
-        key={catalogoVersion}
-        onCrear={() =>
-          setPanelAbierto(true)
-        }
-      />
-
-      <ComponentePanel
-        abierto={panelAbierto}
-        onCerrar={() =>
-          setPanelAbierto(false)
-        }
-        onGuardado={componenteGuardado}
-      />
-
+        <ComponentePanel
+          abierto={panelAbierto}
+          onCerrar={() => setPanelAbierto(false)}
+          onGuardado={componenteGuardado}
+        />
       </div>
     </section>
   );

@@ -12,10 +12,12 @@ import {
 
 interface Props {
   onCrear: () => void;
+  onEditar?: (componente: Componente) => void;
 }
 
 export function ComponentesCatalogo({
   onCrear,
+  onEditar,
 }: Props) {
   const [componentes, setComponentes] =
     useState<Componente[]>([]);
@@ -256,12 +258,14 @@ export function ComponentesCatalogo({
           <span>Componente</span>
           <span>Tipo</span>
           <span>Equipo</span>
+          <span>Fecha de actualización</span>
           <span>Estado</span>
           <span></span>
         </div>
 
         {loading && (
           <div className="componentes-empty">
+
             <div className="componentes-empty-icon">
               …
             </div>
@@ -273,6 +277,7 @@ export function ComponentesCatalogo({
             <span>
               Consultando el catálogo registrado.
             </span>
+
           </div>
         )}
 
@@ -325,14 +330,13 @@ export function ComponentesCatalogo({
                   key={componente.id}
                   className="componentes-tabla-row"
                 >
+
                   <span>
-                    {componente.codigo_sap ||
-                      '—'}
+                    {componente.codigo_sap || '—'}
                   </span>
 
                   <span>
-                    {componente.tag ||
-                      '—'}
+                    {componente.tag || '—'}
                   </span>
 
                   <span>
@@ -340,8 +344,7 @@ export function ComponentesCatalogo({
                       {componente.nombre}
                     </strong>
 
-                    {(componente.marca ||
-                      componente.modelo) && (
+                    {(componente.marca || componente.modelo) && (
                       <small>
                         {[
                           componente.marca,
@@ -354,16 +357,14 @@ export function ComponentesCatalogo({
                   </span>
 
                   <span>
-                    {componente.tipo_componente ||
-                      '—'}
+                    {componente.tipo_componente || '—'}
                   </span>
 
                   <span>
                     {equipo ? (
                       <>
                         <strong>
-                          {equipo.codigo ||
-                            equipo.nombre}
+                          {equipo.codigo || equipo.nombre}
                         </strong>
 
                         {equipo.codigo && (
@@ -375,6 +376,20 @@ export function ComponentesCatalogo({
                     ) : (
                       'Sin equipo'
                     )}
+                  </span>
+
+                  <span>
+                    {componente.fecha_actualizacion
+                      ? new Date(
+                          componente.fecha_actualizacion
+                        ).toLocaleString('es-PE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '—'}
                   </span>
 
                   <span>
@@ -395,11 +410,13 @@ export function ComponentesCatalogo({
                     <button
                       type="button"
                       className="componente-row-action"
-                      title="Ver componente"
+                      title="Editar componente"
+                      onClick={() => onEditar?.(componente)}
                     >
                       ›
                     </button>
                   </span>
+
                 </div>
               );
             }
