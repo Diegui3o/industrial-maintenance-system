@@ -19,12 +19,6 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.mantenimiento-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .mantenimiento-brand strong {
   font-size: 15px;
   font-weight: 800;
@@ -60,37 +54,11 @@
 /* =========================
    TOOLBAR CENTRADO
    ========================= */
-
-.mantenimiento-toolbar {
-  width: min(1400px, calc(100% - 40px));
-  min-height: 70px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 10px 0;
-  background: #ffffff;
-}
-
 .mantenimiento-title {
   margin: 0;
   font-size: 21px;
   line-height: 1.2;
   font-weight: 750;
-}
-
-.mantenimiento-subtitle {
-  display: block;
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 11px;
-}
-
-.mantenimiento-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .mantenimiento-toolbar-actions select {
@@ -120,39 +88,9 @@
   background: #ea580c;
 }
 
-/* =========================
-   CONTENIDO CENTRAL
-   ========================= */
-
-.mantenimiento-layout {
-  width: min(1400px, calc(100% - 40px));
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  min-height: calc(100vh - 128px);
-}
-
-.mantenimiento-sidebar {
-  min-width: 0;
-  background: #ffffff;
-}
-
 .mantenimiento-main {
   min-width: 0;
   padding: 16px 18px 30px;
-}
-/* =========================
-   HEADER GLOBAL
-   ========================= */
-
-.mantenimiento-header {
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .mantenimiento-brand {
@@ -209,13 +147,6 @@
   gap: 20px;
   padding: 10px 0;
   background: #ffffff;
-}
-
-.mantenimiento-title {
-  margin: 0;
-  font-size: 21px;
-  line-height: 1.2;
-  font-weight: 750;
 }
 
 .mantenimiento-subtitle {
@@ -277,6 +208,8 @@
    ========================= */
 
 .mantenimiento-layout {
+  width: min(1400px, calc(100% - 40px));
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 245px minmax(0, 1fr);
   min-height: calc(100vh - 128px);
@@ -284,8 +217,10 @@
 
 .mantenimiento-sidebar {
   min-width: 0;
+  width: 245px;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
 }
 
 .mantenimiento-sidebar-header {
@@ -352,15 +287,6 @@
   font-weight: 700;
 }
 
-/* =========================
-   MAIN
-   ========================= */
-
-.mantenimiento-main {
-  min-width: 0;
-  padding: 16px 18px 30px;
-}
-
 .mantenimiento-main-empty {
   display: flex;
   flex-direction: column;
@@ -395,13 +321,6 @@
 
 .mantenimiento-empty p {
   margin: 0;
-}
-.mantenimiento-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 18px;
 }
 
 .mantenimiento-header h1 {

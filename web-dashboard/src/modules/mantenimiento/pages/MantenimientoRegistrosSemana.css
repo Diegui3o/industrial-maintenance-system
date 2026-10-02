@@ -1,0 +1,295 @@
+.registros-semana {
+  width: 100%;
+  min-width: 0;
+  background: #ffffff;
+}
+
+/* =========================
+   HEADER
+   ========================= */
+
+.registros-semana-header {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.registros-semana-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.registros-semana-title strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.registros-semana-title span {
+  min-width: 19px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.registros-semana-refresh {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.registros-semana-refresh:hover {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #ea580c;
+}
+
+/* =========================
+   FILTROS
+   ========================= */
+
+.registros-semana-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 9px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.registros-semana-filtros select {
+  width: 100%;
+  height: 28px;
+  min-width: 0;
+  padding: 0 7px;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  outline: none;
+  background: #ffffff;
+  color: #374151;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.registros-semana-filtros select:focus {
+  border-color: #fdba74;
+}
+
+/* =========================
+   LISTA
+   ========================= */
+
+.registros-semana-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   ITEM
+   ========================= */
+
+.registro-semana-item {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  border-left: 3px solid transparent;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.registro-semana-item:hover {
+  background: #f8fafc;
+}
+
+.registro-semana-item.selected {
+  border-left-color: #f97316;
+  background: #fff7ed;
+}
+
+.registro-semana-item.completed {
+  border-left-color: #22c55e;
+}
+
+.registro-semana-item.selected.completed {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* =========================
+   EQUIPO + PORCENTAJE
+   ========================= */
+
+.registro-semana-top {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.registro-semana-equipo {
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registro-semana-percent {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ea580c;
+}
+
+.registro-semana-percent.proceso {
+  color: #d97706;
+}
+
+.registro-semana-percent.completado {
+  color: #16a34a;
+}
+
+.registro-semana-percent.pendiente {
+  color: #6b7280;
+}
+
+/* =========================
+   ACTIVIDAD
+   ========================= */
+
+.registro-semana-actividad {
+  overflow: hidden;
+  color: #4b5563;
+  font-size: 9px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   META
+   ========================= */
+
+.registro-semana-meta {
+  min-width: 0;
+  display: flex;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.registro-semana-meta span {
+  max-width: 50%;
+  overflow: hidden;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 8px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   PROGRESO
+   ========================= */
+
+.registro-semana-progress {
+  width: 100%;
+}
+
+.registro-semana-progress > div {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.registro-semana-progress > div > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: #f97316;
+  transition: width 0.2s ease;
+}
+
+.registro-semana-item.completed
+.registro-semana-progress > div > span {
+  background: #22c55e;
+}
+
+/* =========================
+   FOOTER
+   ========================= */
+
+.registro-semana-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  color: #9ca3af;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.registro-semana-footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registro-semana-footer .espera-ok {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+/* =========================
+   VACÍO
+   ========================= */
+
+.registros-semana-vacio {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px 10px;
+  color: #9ca3af;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.registros-semana-vacio strong {
+  color: #4b5563;
+  font-size: 10px;
+}

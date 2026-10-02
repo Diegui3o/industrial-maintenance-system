@@ -15,6 +15,11 @@ type TipoProgramacion =
   | "correctivo_programado"
   | "correctivo_no_programado";
 
+type Taller =
+  | "Mecánico"
+  | "Eléctrico"
+  | "Instrumentación";
+
 const TIPOS_PROGRAMACION = [
   {
     codigo: "preventivo" as const,
@@ -33,6 +38,24 @@ const TIPOS_PROGRAMACION = [
   },
 ];
 
+const TALLERES: {
+  codigo: Taller;
+  nombre: string;
+}[] = [
+  {
+    codigo: "Mecánico",
+    nombre: "Mecánico",
+  },
+  {
+    codigo: "Eléctrico",
+    nombre: "Eléctrico",
+  },
+  {
+    codigo: "Instrumentación",
+    nombre: "Instrumentación",
+  },
+];
+
 export default function ProgramarTrabajo({
   onCerrar,
   fechaProgramada,
@@ -43,11 +66,16 @@ export default function ProgramarTrabajo({
   const [cargando, setCargando] = useState(false);
 
   const [componentes, setComponentes] = useState<Componente[]>([]);
-  const [componente, setComponente] = useState<Componente | null>(null);
-  const [cargandoComponentes, setCargandoComponentes] = useState(false);
+  const [componente, setComponente] =
+    useState<Componente | null>(null);
+  const [cargandoComponentes, setCargandoComponentes] =
+    useState(false);
 
   const [tipoProgramacion, setTipoProgramacion] =
     useState<TipoProgramacion>("preventivo");
+
+  const [taller, setTaller] =
+    useState<Taller>("Eléctrico");
 
   const [actividad, setActividad] = useState("");
   const [ot, setOt] = useState("");
@@ -73,38 +101,54 @@ export default function ProgramarTrabajo({
       const respuesta = await fetch("/api/equipos");
 
       if (!respuesta.ok) {
-        throw new Error("No se pudieron cargar los equipos");
+        throw new Error(
+          "No se pudieron cargar los equipos"
+        );
       }
 
       const data = await respuesta.json();
 
-      setEquipos(Array.isArray(data) ? data : []);
+      setEquipos(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error("Error cargando equipos:", error);
+      console.error(
+        "Error cargando equipos:",
+        error
+      );
+
       setEquipos([]);
     } finally {
       setCargando(false);
     }
   }
 
-  async function cargarComponentes(equipoId: number) {
+  async function cargarComponentes(
+    equipoId: number
+  ) {
     try {
       setCargandoComponentes(true);
       setComponentes([]);
       setComponente(null);
 
-      const data = await getComponentes(equipoId);
+      const data =
+        await getComponentes(equipoId);
 
       setComponentes(
         Array.isArray(data)
           ? data.filter(
               (item) =>
-                item.activo === undefined || item.activo === true
+                item.activo === undefined ||
+                item.activo === true
             )
           : []
       );
     } catch (error) {
-      console.error("Error cargando componentes:", error);
+      console.error(
+        "Error cargando componentes:",
+        error
+      );
+
       setComponentes([]);
       setComponente(null);
     } finally {
@@ -112,8 +156,12 @@ export default function ProgramarTrabajo({
     }
   }
 
-  const personal = Number(numeroPersonal) || 0;
-  const horasNumero = Number(horas) || 0;
+  const personal =
+    Number(numeroPersonal) || 0;
+
+  const horasNumero =
+    Number(horas) || 0;
+
   const hh = personal * horasNumero;
 
   function seleccionarEquipo(item: Equipo) {
@@ -131,17 +179,23 @@ export default function ProgramarTrabajo({
     setError("");
   }
 
-  function cambiarComponente(valor: string) {
+  function cambiarComponente(
+    valor: string
+  ) {
     if (!valor) {
       setComponente(null);
       return;
     }
 
-    const componenteSeleccionado = componentes.find(
-      (item) => item.id === Number(valor)
-    );
+    const componenteSeleccionado =
+      componentes.find(
+        (item) =>
+          item.id === Number(valor)
+      );
 
-    setComponente(componenteSeleccionado || null);
+    setComponente(
+      componenteSeleccionado || null
+    );
   }
 
   async function registrar() {
@@ -151,12 +205,21 @@ export default function ProgramarTrabajo({
     }
 
     if (!actividad.trim()) {
-      setError("Ingresa la actividad a realizar.");
+      setError(
+        "Ingresa la actividad a realizar."
+      );
       return;
     }
 
     if (!fechaProgramada) {
-      setError("No se encontró la fecha programada.");
+      setError(
+        "No se encontró la fecha programada."
+      );
+      return;
+    }
+
+    if (!taller) {
+      setError("Selecciona un taller.");
       return;
     }
 
@@ -168,48 +231,70 @@ export default function ProgramarTrabajo({
        * mantenimiento usa time.Time.
        * La programación usa DATE.
        */
-      const fechaISO = `${fechaProgramada}T00:00:00Z`;
+      const fechaISO =
+        `${fechaProgramada}T00:00:00Z`;
 
-      const mantenimiento = await crearMantenimiento({
-        equipo_id: equipo.id,
-        componente_id: componente?.id ?? null,
+      const mantenimiento =
+        await crearMantenimiento({
+          equipo_id: equipo.id,
 
-        fecha_reporte: fechaISO,
-        fecha_programada: fechaISO,
+          componente_id:
+            componente?.id ?? null,
 
-        fase: equipo.fase?.trim() || "Sin clasificar",
-        taller: "Mantenimiento Eléctrico",
+          fecha_reporte: fechaISO,
 
-        tipo_intervencion:
-          tipoProgramacion === "preventivo"
-            ? "Preventivo"
-            : "Correctivo",
+          fecha_programada: fechaISO,
 
-        estado_falla: "abierta",
-        prioridad: "Media",
+          fase:
+            equipo.fase?.trim() ||
+            "Sin clasificar",
 
-        sistema: equipo.tipo?.trim() || null,
+          taller,
 
-        descripcion_evento: actividad.trim(),
-        descripcion_tecnica: comentario.trim() || null,
+          tipo_intervencion:
+            tipoProgramacion ===
+            "preventivo"
+              ? "Preventivo"
+              : "Correctivo",
 
-        causa: null,
-        accion_realizada: null,
-        consecuencia: null,
+          estado_falla: "abierta",
 
-        tipo_programacion: tipoProgramacion,
+          prioridad: "Media",
 
-        horas_planificadas:
-          horasNumero > 0 ? horasNumero : null,
+          sistema:
+            equipo.tipo?.trim() || null,
 
-        hh_planificadas:
-          hh > 0 ? hh : null,
+          descripcion_evento:
+            actividad.trim(),
 
-        porcentaje_avance: 0,
-      });
+          descripcion_tecnica:
+            comentario.trim() || null,
+
+          causa: null,
+
+          accion_realizada: null,
+
+          consecuencia: null,
+
+          tipo_programacion:
+            tipoProgramacion,
+
+          horas_planificadas:
+            horasNumero > 0
+              ? horasNumero
+              : null,
+
+          hh_planificadas:
+            hh > 0
+              ? hh
+              : null,
+
+          porcentaje_avance: 0,
+        });
 
       const mantenimientoId =
-        mantenimiento?.id ?? mantenimiento?.data?.id;
+        mantenimiento?.id ??
+        mantenimiento?.data?.id;
 
       if (!mantenimientoId) {
         throw new Error(
@@ -217,40 +302,55 @@ export default function ProgramarTrabajo({
         );
       }
 
-      await crearProgramacion(mantenimientoId, {
-        tipo_programacion: tipoProgramacion,
+      await crearProgramacion(
+        mantenimientoId,
+        {
+          tipo_programacion:
+            tipoProgramacion,
 
-        fecha_programada: fechaProgramada,
+          fecha_programada:
+            fechaProgramada,
 
-        ot: ot.trim() || null,
+          ot:
+            ot.trim() || null,
 
-        horas_planificadas:
-          horasNumero > 0 ? horasNumero : null,
+          horas_planificadas:
+            horasNumero > 0
+              ? horasNumero
+              : null,
 
-        hh_planificadas:
-          hh > 0 ? hh : null,
+          hh_planificadas:
+            hh > 0
+              ? hh
+              : null,
 
-        personal_planificado:
-          personal > 0 ? personal : null,
+          personal_planificado:
+            personal > 0
+              ? personal
+              : null,
 
-        responsable_planificado:
-          responsable.trim() || null,
+          responsable_planificado:
+            responsable.trim() || null,
 
-        turno_planificado:
-          turno || null,
+          turno_planificado:
+            turno || null,
 
-        comentario:
-          comentario.trim() || null,
+          comentario:
+            comentario.trim() || null,
 
-        instrucciones:
-          actividad.trim(),
+          instrucciones:
+            actividad.trim(),
 
-        prioridad: "Media",
-      });
+          prioridad: "Media",
+        }
+      );
 
       onCerrar();
     } catch (error) {
-      console.error("Error registrando programación:", error);
+      console.error(
+        "Error registrando programación:",
+        error
+      );
 
       setError(
         error instanceof Error
@@ -263,7 +363,9 @@ export default function ProgramarTrabajo({
   }
 
   const fechaTexto = fechaProgramada
-    ? new Date(`${fechaProgramada}T00:00:00`).toLocaleDateString(
+    ? new Date(
+        `${fechaProgramada}T00:00:00`
+      ).toLocaleDateString(
         "es-PE",
         {
           weekday: "long",
@@ -276,12 +378,21 @@ export default function ProgramarTrabajo({
 
   return (
     <div className="prog-modal">
+
       <div className="prog-form">
+
         {/* CABECERA */}
+
         <div className="prog-form-header">
+
           <div>
-            <span>PROGRAMACIÓN SEMANAL</span>
-            <h3>Programar mantenimiento</h3>
+            <span>
+              PROGRAMACIÓN SEMANAL
+            </span>
+
+            <h3>
+              Programar mantenimiento
+            </h3>
           </div>
 
           <button
@@ -291,72 +402,165 @@ export default function ProgramarTrabajo({
           >
             ×
           </button>
+
         </div>
 
         {/* ERROR */}
-        {error && <div className="prog-error">{error}</div>}
+
+        {error && (
+          <div className="prog-error">
+            {error}
+          </div>
+        )}
 
         {/* FECHA */}
+
         <section className="prog-section">
+
           <div className="prog-section-title">
             Día programado
           </div>
 
           <div className="prog-program-date">
-            <strong>{fechaTexto}</strong>
+            <strong>
+              {fechaTexto}
+            </strong>
           </div>
+
         </section>
 
         {/* TIPO */}
+
         <section className="prog-section">
+
           <div className="prog-section-title">
             Tipo de mantenimiento
           </div>
 
           <div className="prog-type-selector">
-            {TIPOS_PROGRAMACION.map((tipo) => (
-              <button
-                key={tipo.codigo}
-                type="button"
-                className={`prog-type-option ${
-                  tipoProgramacion === tipo.codigo
-                    ? "prog-type-option--active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setTipoProgramacion(tipo.codigo);
-                  setError("");
-                }}
-                title={tipo.nombre}
-              >
-                <strong>{tipo.abreviatura}</strong>
-                <span>{tipo.nombre}</span>
-              </button>
-            ))}
+
+            {TIPOS_PROGRAMACION.map(
+              (tipo) => (
+                <button
+                  key={tipo.codigo}
+                  type="button"
+                  className={`prog-type-option ${
+                    tipoProgramacion ===
+                    tipo.codigo
+                      ? "prog-type-option--active"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setTipoProgramacion(
+                      tipo.codigo
+                    );
+
+                    setError("");
+                  }}
+                  title={tipo.nombre}
+                >
+                  <strong>
+                    {tipo.abreviatura}
+                  </strong>
+
+                  <span>
+                    {tipo.nombre}
+                  </span>
+                </button>
+              )
+            )}
+
           </div>
+
+        </section>
+
+        {/* TALLER */}
+
+        <section className="prog-section">
+
+          <div className="prog-section-title">
+            Taller
+          </div>
+
+          <div className="prog-type-selector prog-workshop-selector">
+
+            {TALLERES.map(
+              (item) => (
+                <button
+                  key={item.codigo}
+                  type="button"
+                  className={`prog-type-option ${
+                    taller === item.codigo
+                      ? "prog-type-option--active"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setTaller(
+                      item.codigo
+                    );
+
+                    setError("");
+                  }}
+                  title={
+                    `Taller ${item.nombre}`
+                  }
+                >
+                  <strong>
+                    {item.nombre ===
+                    "Instrumentación"
+                      ? "INST."
+                      : item.nombre
+                          .substring(0, 3)
+                          .toUpperCase()}
+                  </strong>
+
+                  <span>
+                    {item.nombre}
+                  </span>
+                </button>
+              )
+            )}
+
+          </div>
+
         </section>
 
         {/* EQUIPO */}
+
         <BuscadorEquipo
           equipo={equipo}
-          equipoBusqueda={equipoBusqueda}
-          setEquipoBusqueda={setEquipoBusqueda}
+          equipoBusqueda={
+            equipoBusqueda
+          }
+          setEquipoBusqueda={
+            setEquipoBusqueda
+          }
           equipos={equipos}
           cargando={cargando}
-          seleccionarEquipo={seleccionarEquipo}
-          cambiarEquipo={cambiarEquipo}
+          seleccionarEquipo={
+            seleccionarEquipo
+          }
+          cambiarEquipo={
+            cambiarEquipo
+          }
         />
 
         {/* COMPONENTE */}
+
         <SelectorComponente
           equipo={equipo}
           componentes={componentes}
           componente={componente}
-          cargandoComponentes={cargandoComponentes}
-          cambiarComponente={cambiarComponente}
+          cargandoComponentes={
+            cargandoComponentes
+          }
+          cambiarComponente={
+            cambiarComponente
+          }
         />
 
         {/* TRABAJO Y RECURSOS */}
+
         <FormularioTrabajoRecursos
           actividad={actividad}
           setActividad={setActividad}
@@ -365,30 +569,41 @@ export default function ProgramarTrabajo({
           comentario={comentario}
           setComentario={setComentario}
           numeroPersonal={numeroPersonal}
-          setNumeroPersonal={setNumeroPersonal}
+          setNumeroPersonal={
+            setNumeroPersonal
+          }
           horas={horas}
           setHoras={setHoras}
           hh={hh}
           responsable={responsable}
-          setResponsable={setResponsable}
+          setResponsable={
+            setResponsable
+          }
           turno={turno}
           setTurno={setTurno}
         />
 
         {/* MATERIALES */}
+
         <section className="prog-section">
+
           <div className="prog-section-title">
             Materiales
           </div>
 
           <div className="prog-material-placeholder">
-            Los repuestos y materiales se incorporarán
-            posteriormente cuando esté disponible el catálogo.
+            Los repuestos y materiales se
+            incorporarán posteriormente
+            cuando esté disponible el
+            catálogo.
           </div>
+
         </section>
 
         {/* ACCIONES */}
+
         <div className="prog-bottom">
+
           <button
             type="button"
             className="prog-cancel"
@@ -412,8 +627,11 @@ export default function ProgramarTrabajo({
               ? "Guardando..."
               : "Programar mantenimiento"}
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }

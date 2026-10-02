@@ -26,6 +26,10 @@ type Trabajo = {
   componente?: string;
 
   programacionId: number;
+
+  personalPlanificado?: number;
+  responsablePlanificado?: string;
+  turnoPlanificado?: string;
 };
 
 type Mantenimiento = {
@@ -68,17 +72,26 @@ export default function ProgramacionSemana() {
 
   const [semana, setSemana] = useState(inicioSemana);
 
-  const [diaSeleccionado, setDiaSeleccionado] = useState(
-    hoy.getDay() === 0 ? 6 : hoy.getDay() - 1
-  );
+  const [diaSeleccionado, setDiaSeleccionado] =
+    useState(
+      hoy.getDay() === 0
+        ? 6
+        : hoy.getDay() - 1
+    );
 
-  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
-  const [cargando, setCargando] = useState(false);
+  const [trabajos, setTrabajos] =
+    useState<Trabajo[]>([]);
 
-  const [programar, setProgramar] = useState(false);
+  const [cargando, setCargando] =
+    useState(false);
 
-  const [actividadSeleccionada, setActividadSeleccionada] =
-    useState<Trabajo | null>(null);
+  const [programar, setProgramar] =
+    useState(false);
+
+  const [
+    actividadSeleccionada,
+    setActividadSeleccionada,
+  ] = useState<Trabajo | null>(null);
 
   async function cargarTrabajos() {
     try {
@@ -92,37 +105,48 @@ export default function ProgramacionSemana() {
         return;
       }
 
-      const equiposResponse = await fetch("/api/equipos");
+      const equiposResponse =
+        await fetch("/api/equipos");
 
-      const equiposData = equiposResponse.ok
-        ? await equiposResponse.json()
-        : [];
+      const equiposData =
+        equiposResponse.ok
+          ? await equiposResponse.json()
+          : [];
 
-      const equipos: Equipo[] = Array.isArray(equiposData)
-        ? equiposData
-        : [];
+      const equipos: Equipo[] =
+        Array.isArray(equiposData)
+          ? equiposData
+          : [];
 
       const resultado: Trabajo[] = [];
 
       await Promise.all(
         mantenimientos.map(
-          async (mantenimiento: Mantenimiento) => {
+          async (
+            mantenimiento: Mantenimiento
+          ) => {
             try {
               const programaciones =
                 await listarProgramacion(
                   mantenimiento.id
                 );
 
-              if (!Array.isArray(programaciones)) {
+              if (
+                !Array.isArray(programaciones)
+              ) {
                 return;
               }
 
-              const equipo = equipos.find(
-                (item) =>
-                  item.id === mantenimiento.equipo_id
-              );
+              const equipo =
+                equipos.find(
+                  (item) =>
+                    item.id ===
+                    mantenimiento.equipo_id
+                );
 
-              for (const programacion of programaciones) {
+              for (
+                const programacion of programaciones
+              ) {
                 const fecha =
                   programacion.fecha_programada;
 
@@ -146,7 +170,8 @@ export default function ProgramacionSemana() {
 
                 const avance =
                   Number(
-                    mantenimiento.porcentaje_avance ?? 0
+                    mantenimiento.porcentaje_avance ??
+                      0
                   ) || 0;
 
                 resultado.push({
@@ -158,7 +183,8 @@ export default function ProgramacionSemana() {
                   programacionId:
                     programacion.id,
 
-                  fecha: String(fecha).slice(0, 10),
+                  fecha:
+                    String(fecha).slice(0, 10),
 
                   programado: true,
 
@@ -176,7 +202,9 @@ export default function ProgramacionSemana() {
                     mantenimiento.descripcion_tecnica ||
                     "Mantenimiento",
 
-                  ot: programacion.ot || undefined,
+                  ot:
+                    programacion.ot ||
+                    undefined,
 
                   horas,
 
@@ -188,6 +216,22 @@ export default function ProgramacionSemana() {
                     mantenimiento.componente_id
                       ? `Componente ${mantenimiento.componente_id}`
                       : undefined,
+
+                  personalPlanificado:
+                    programacion.personal_planificado !=
+                    null
+                      ? Number(
+                          programacion.personal_planificado
+                        )
+                      : undefined,
+
+                  responsablePlanificado:
+                    programacion.responsable_planificado ||
+                    undefined,
+
+                  turnoPlanificado:
+                    programacion.turno_planificado ||
+                    undefined,
                 });
               }
             } catch (error) {
@@ -217,73 +261,98 @@ export default function ProgramacionSemana() {
     cargarTrabajos();
   }, []);
 
-  const trabajosSemana = trabajos.filter(
-    (trabajo) => {
+  const trabajosSemana =
+    trabajos.filter((trabajo) => {
       const fecha = new Date(
         `${trabajo.fecha}T00:00:00`
       );
 
       const fin = new Date(semana);
-      fin.setDate(fin.getDate() + 6);
-
-      return fecha >= semana && fecha <= fin;
-    }
-  );
-
-  const trabajosDelDia = trabajosSemana.filter(
-    (trabajo) => {
-      const fecha = new Date(
-        `${trabajo.fecha}T00:00:00`
-      );
-
-      const dia = new Date(semana);
-
-      dia.setDate(
-        dia.getDate() + diaSeleccionado
+      fin.setDate(
+        fin.getDate() + 6
       );
 
       return (
-        fecha.getFullYear() ===
-          dia.getFullYear() &&
-        fecha.getMonth() ===
-          dia.getMonth() &&
-        fecha.getDate() ===
-          dia.getDate()
+        fecha >= semana &&
+        fecha <= fin
       );
-    }
-  );
+    });
 
-  const programados = trabajosDelDia.filter(
-    (trabajo) => trabajo.programado
-  );
+  const trabajosDelDia =
+    trabajosSemana.filter(
+      (trabajo) => {
+        const fecha = new Date(
+          `${trabajo.fecha}T00:00:00`
+        );
 
-  const noProgramados = trabajosDelDia.filter(
-    (trabajo) => !trabajo.programado
-  );
+        const dia = new Date(semana);
 
-  const fechaSeleccionada = useMemo(() => {
-    const fecha = new Date(semana);
+        dia.setDate(
+          dia.getDate() +
+            diaSeleccionado
+        );
 
-    fecha.setDate(
-      fecha.getDate() + diaSeleccionado
+        return (
+          fecha.getFullYear() ===
+            dia.getFullYear() &&
+          fecha.getMonth() ===
+            dia.getMonth() &&
+          fecha.getDate() ===
+            dia.getDate()
+        );
+      }
     );
 
-    const year = fecha.getFullYear();
-    const month = String(
-      fecha.getMonth() + 1
-    ).padStart(2, "0");
-    const day = String(
-      fecha.getDate()
-    ).padStart(2, "0");
+  const programados =
+    trabajosDelDia.filter(
+      (trabajo) =>
+        trabajo.programado
+    );
 
-    return `${year}-${month}-${day}`;
-  }, [semana, diaSeleccionado]);
+  const noProgramados =
+    trabajosDelDia.filter(
+      (trabajo) =>
+        !trabajo.programado
+    );
 
-  function cambiarSemana(valor: number) {
-    const nueva = new Date(semana);
+  const fechaSeleccionada =
+    useMemo(() => {
+      const fecha = new Date(
+        semana
+      );
+
+      fecha.setDate(
+        fecha.getDate() +
+          diaSeleccionado
+      );
+
+      const year =
+        fecha.getFullYear();
+
+      const month = String(
+        fecha.getMonth() + 1
+      ).padStart(2, "0");
+
+      const day = String(
+        fecha.getDate()
+      ).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }, [
+      semana,
+      diaSeleccionado,
+    ]);
+
+  function cambiarSemana(
+    valor: number
+  ) {
+    const nueva = new Date(
+      semana
+    );
 
     nueva.setDate(
-      nueva.getDate() + valor * 7
+      nueva.getDate() +
+        valor * 7
     );
 
     setSemana(nueva);
@@ -321,6 +390,16 @@ export default function ProgramacionSemana() {
     cargarTrabajos();
   }
 
+  function formatearHoras(
+    valor: number
+  ) {
+    if (Number.isInteger(valor)) {
+      return String(valor);
+    }
+
+    return valor.toFixed(1);
+  }
+
   return (
     <section className="prog">
       <SemanaHeader
@@ -337,7 +416,9 @@ export default function ProgramacionSemana() {
       <SemanaDias
         semana={semana}
         trabajos={trabajosSemana}
-        diaSeleccionado={diaSeleccionado}
+        diaSeleccionado={
+          diaSeleccionado
+        }
         onSeleccionar={
           setDiaSeleccionado
         }
@@ -354,7 +435,9 @@ export default function ProgramacionSemana() {
         <div className="prog-column">
           <div className="prog-column-header">
             <div>
-              <h3>PROGRAMADO</h3>
+              <h3>
+                PROGRAMADO
+              </h3>
 
               <span>
                 {programados.length}{" "}
@@ -366,68 +449,180 @@ export default function ProgramacionSemana() {
           </div>
 
           <div className="prog-list">
-            {programados.length === 0 ? (
+            {programados.length ===
+            0 ? (
               <p className="prog-empty">
-                No hay trabajos programados
-                para este día.
+                No hay trabajos
+                programados para
+                este día.
               </p>
             ) : (
               programados.map(
-                (trabajo) => (
-                  <div
-                    key={
-                      trabajo.programacionId
-                    }
-                    className="prog-card"
-                  >
-                    <strong>
-                      {trabajo.equipo}
-                    </strong>
+                (trabajo) => {
+                  const avance =
+                    Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        trabajo.avance
+                      )
+                    );
 
-                    {trabajo.componente && (
-                      <span>
-                        {trabajo.componente}
-                      </span>
-                    )}
+                  const terminado =
+                    avance >= 100;
 
-                    <span>
-                      {trabajo.actividad}
-                    </span>
-
-                    {trabajo.ot && (
-                      <span>
-                        OT: {trabajo.ot}
-                      </span>
-                    )}
-
-                    <div className="prog-card-meta">
-                      <span>
-                        {trabajo.horas} h
-                      </span>
-
-                      <span>
-                        {trabajo.hh} HH
-                      </span>
-
-                      <span>
-                        Avance:{" "}
-                        {trabajo.avance}%
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="prog-btn prog-btn--main"
-                      onClick={() =>
-                        setActividadSeleccionada(
-                          trabajo
-                        )
+                  return (
+                    <div
+                      key={
+                        trabajo.programacionId
                       }
+                      className={`prog-card ${
+                        terminado
+                          ? "prog-card--completed"
+                          : ""
+                      }`}
                     >
-                      Registrar actividad
-                    </button>
-                  </div>
-                )
+                      <div className="prog-card-top">
+                        <strong>
+                          {trabajo.equipo}
+                        </strong>
+
+                        <span
+                          className={`prog-status ${
+                            terminado
+                              ? "prog-status--ok"
+                              : "prog-status--pending"
+                          }`}
+                        >
+                          {terminado
+                            ? "COMPLETADO"
+                            : "PENDIENTE"}
+                        </span>
+                      </div>
+
+                      <div className="prog-card-info">
+                        {trabajo.componente && (
+                          <div className="prog-card-detail">
+                            <small>
+                              COMPONENTE
+                            </small>
+
+                            <span>
+                              {
+                                trabajo.componente
+                              }
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="prog-card-detail">
+                          <small>
+                            ACTIVIDAD
+                          </small>
+
+                          <span>
+                            {
+                              trabajo.actividad
+                            }
+                          </span>
+                        </div>
+
+                        {trabajo.ot && (
+                          <div className="prog-card-detail">
+                            <small>
+                              OT
+                            </small>
+
+                            <span>
+                              {
+                                trabajo.ot
+                              }
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="prog-card-resources">
+                        <small>
+                          RECURSOS PLANIFICADOS
+                        </small>
+
+                        <div>
+                          {trabajo.personalPlanificado !=
+                            null && (
+                            <span>
+                              {
+                                trabajo.personalPlanificado
+                              }{" "}
+                              {trabajo.personalPlanificado ===
+                              1
+                                ? "persona"
+                                : "personas"}
+                            </span>
+                          )}
+
+                          <span>
+                            {
+                              formatearHoras(
+                                trabajo.horas
+                              )
+                            }{" "}
+                            h
+                          </span>
+
+                          <span>
+                            {
+                              formatearHoras(
+                                trabajo.hh
+                              )
+                            }{" "}
+                            HH
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="prog-progress">
+                        <div className="prog-progress-head">
+                          <span>
+                            AVANCE
+                          </span>
+
+                          <strong>
+                            {avance}%
+                          </strong>
+                        </div>
+
+                        <div className="prog-progress-bar">
+                          <div
+                            style={{
+                              width: `${avance}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {terminado && (
+                        <div className="prog-completed-message">
+                          ✓ Trabajo completado
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        className="prog-btn prog-btn--main prog-btn--activity"
+                        onClick={() =>
+                          setActividadSeleccionada(
+                            trabajo
+                          )
+                        }
+                      >
+                        {terminado
+                          ? "Ver actividad"
+                          : "Registrar actividad"}
+                      </button>
+                    </div>
+                  );
+                }
               )
             )}
           </div>
@@ -449,7 +644,9 @@ export default function ProgramacionSemana() {
         <div className="prog-column">
           <div className="prog-column-header">
             <div>
-              <h3>NO PROGRAMADO</h3>
+              <h3>
+                NO PROGRAMADO
+              </h3>
 
               <span>
                 {noProgramados.length}{" "}
@@ -461,42 +658,103 @@ export default function ProgramacionSemana() {
           </div>
 
           <div className="prog-list">
-            {noProgramados.length === 0 ? (
+            {noProgramados.length ===
+            0 ? (
               <p className="prog-empty">
                 No hay trabajos no
                 programados.
               </p>
             ) : (
               noProgramados.map(
-                (trabajo) => (
-                  <div
-                    key={trabajo.id}
-                    className="prog-card"
-                  >
-                    <strong>
-                      {trabajo.equipo}
-                    </strong>
+                (trabajo) => {
+                  const avance =
+                    Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        trabajo.avance
+                      )
+                    );
 
-                    <span>
-                      {trabajo.actividad}
-                    </span>
+                  return (
+                    <div
+                      key={
+                        trabajo.id
+                      }
+                      className="prog-card prog-card--unplanned"
+                    >
+                      <div className="prog-card-top">
+                        <strong>
+                          {trabajo.equipo}
+                        </strong>
 
-                    <div className="prog-card-meta">
-                      <span>
-                        {trabajo.horas} h
-                      </span>
+                        <span className="prog-status prog-status--unplanned">
+                          NO PROGRAMADO
+                        </span>
+                      </div>
 
-                      <span>
-                        {trabajo.hh} HH
-                      </span>
+                      <div className="prog-card-info">
+                        <div className="prog-card-detail">
+                          <small>
+                            ACTIVIDAD
+                          </small>
 
-                      <span>
-                        Avance:{" "}
-                        {trabajo.avance}%
-                      </span>
+                          <span>
+                            {
+                              trabajo.actividad
+                            }
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="prog-card-resources">
+                        <small>
+                          RECURSOS
+                        </small>
+
+                        <div>
+                          <span>
+                            {
+                              formatearHoras(
+                                trabajo.horas
+                              )
+                            }{" "}
+                            h
+                          </span>
+
+                          <span>
+                            {
+                              formatearHoras(
+                                trabajo.hh
+                              )
+                            }{" "}
+                            HH
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="prog-progress">
+                        <div className="prog-progress-head">
+                          <span>
+                            AVANCE
+                          </span>
+
+                          <strong>
+                            {avance}%
+                          </strong>
+                        </div>
+
+                        <div className="prog-progress-bar">
+                          <div
+                            style={{
+                              width: `${avance}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )
+                  );
+                }
               )
             )}
           </div>
@@ -519,7 +777,9 @@ export default function ProgramacionSemana() {
           trabajo={
             actividadSeleccionada
           }
-          onCerrar={cerrarActividad}
+          onCerrar={
+            cerrarActividad
+          }
         />
       )}
     </section>

@@ -22,17 +22,15 @@ export default function RegistrarActividad({
   trabajo,
   onCerrar,
 }: Props) {
-  const [porcentaje, setPorcentaje] =
-    useState(
-      trabajo.avance >= 100
-        ? "100"
-        : trabajo.avance >= 80
-        ? "80"
-        : "40"
-    );
+  const [porcentaje, setPorcentaje] = useState(
+    trabajo.avance > 0
+      ? String(trabajo.avance)
+      : ""
+  );
 
-  const [fecha, setFecha] =
-    useState(trabajo.fecha);
+  const [fecha, setFecha] = useState(
+    trabajo.fecha
+  );
 
   const [numeroPersonal, setNumeroPersonal] =
     useState("");
@@ -43,14 +41,14 @@ export default function RegistrarActividad({
   const [responsable, setResponsable] =
     useState("");
 
-  const [turno, setTurno] =
-    useState("");
-
   const [guardando, setGuardando] =
     useState(false);
 
   const [error, setError] =
     useState("");
+
+  const avanceActual =
+    Number(porcentaje) || 0;
 
   const personal =
     Number(numeroPersonal) || 0;
@@ -61,13 +59,34 @@ export default function RegistrarActividad({
   const hh =
     personal * horasNumero;
 
+  const esCierre =
+    avanceActual === 100;
+
   async function registrar() {
     const avance =
       Number(porcentaje);
 
+    if (!porcentaje.trim()) {
+      setError(
+        "Ingresa el porcentaje de avance."
+      );
+      return;
+    }
+
     if (!fecha) {
       setError(
         "Selecciona la fecha realizada."
+      );
+      return;
+    }
+
+    if (
+      Number.isNaN(avance) ||
+      avance < 0 ||
+      avance > 100
+    ) {
+      setError(
+        "El porcentaje debe estar entre 0 y 100."
       );
       return;
     }
@@ -82,17 +101,51 @@ export default function RegistrarActividad({
       return;
     }
 
-    if (avance < 0 || avance > 100) {
-      setError(
-        "El porcentaje debe estar entre 0 y 100."
-      );
-      return;
+    if (esCierre) {
+      if (!numeroPersonal.trim()) {
+        setError(
+          "Ingresa el número de personal."
+        );
+        return;
+      }
+
+      if (personal <= 0) {
+        setError(
+          "El número de personal debe ser mayor a 0."
+        );
+        return;
+      }
+
+      if (!horas.trim()) {
+        setError(
+          "Ingresa el total de horas."
+        );
+        return;
+      }
+
+      if (horasNumero <= 0) {
+        setError(
+          "El total de horas debe ser mayor a 0."
+        );
+        return;
+      }
+
+      if (!responsable.trim()) {
+        setError(
+          "Ingresa el responsable."
+        );
+        return;
+      }
     }
 
     try {
       setGuardando(true);
       setError("");
 
+      /*
+       * 1. Guardamos siempre el avance.
+       * Cada registro queda almacenado con su fecha.
+       */
       await crearAvance(
         trabajo.mantenimientoId,
         {
@@ -103,33 +156,26 @@ export default function RegistrarActividad({
         }
       );
 
-      if (
-        numeroPersonal.trim() ||
-        horas.trim() ||
-        responsable.trim() ||
-        turno
-      ) {
+      /*
+       * 2. Los recursos reales solamente se registran
+       * cuando el trabajo llega al 100%.
+       */
+      if (esCierre) {
         await crearPersonal(
           trabajo.mantenimientoId,
           {
             nombre:
-              responsable.trim() ||
-              "Personal de mantenimiento",
+              responsable.trim(),
 
             cargo: null,
 
-            turno:
-              turno || null,
+            turno: null,
 
             horas:
-              horasNumero > 0
-                ? horasNumero
-                : null,
+              horasNumero,
 
             hh:
-              hh > 0
-                ? hh
-                : null,
+              hh,
 
             fecha,
           }
@@ -204,27 +250,30 @@ export default function RegistrarActividad({
             Avance
           </div>
 
-          <select
-            value={porcentaje}
-            onChange={(e) =>
-              setPorcentaje(
-                e.target.value
-              )
-            }
-            disabled={guardando}
-          >
-            <option value="40">
-              40%
-            </option>
+          <div className="prog-field">
+            <label>
+              Porcentaje de avance
+            </label>
 
-            <option value="80">
-              80%
-            </option>
+            <div className="prog-percent-input">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={porcentaje}
+                onChange={(e) =>
+                  setPorcentaje(
+                    e.target.value
+                  )
+                }
+                disabled={guardando}
+                placeholder="Ej. 65"
+              />
 
-            <option value="100">
-              100%
-            </option>
-          </select>
+              <span>%</span>
+            </div>
+          </div>
         </section>
 
         <section className="prog-section">
@@ -242,107 +291,84 @@ export default function RegistrarActividad({
           />
         </section>
 
-        <section className="prog-section">
-          <div className="prog-section-title">
-            Recursos reales
-          </div>
-
-          <div className="prog-grid">
-            <div className="prog-field">
-              <label>
-                N° personal
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                value={numeroPersonal}
-                onChange={(e) =>
-                  setNumeroPersonal(
-                    e.target.value
-                  )
-                }
-                disabled={guardando}
-              />
+        {esCierre && (
+          <section className="prog-section">
+            <div className="prog-section-title">
+              Recursos reales
             </div>
 
-            <div className="prog-field">
-              <label>
-                Total horas
-              </label>
+            <div className="prog-grid">
+              <div className="prog-field">
+                <label>
+                  N° personal
+                </label>
 
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={horas}
-                onChange={(e) =>
-                  setHoras(
-                    e.target.value
-                  )
-                }
-                disabled={guardando}
-              />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={numeroPersonal}
+                  onChange={(e) =>
+                    setNumeroPersonal(
+                      e.target.value
+                    )
+                  }
+                  disabled={guardando}
+                />
+              </div>
+
+              <div className="prog-field">
+                <label>
+                  Total horas
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={horas}
+                  onChange={(e) =>
+                    setHoras(
+                      e.target.value
+                    )
+                  }
+                  disabled={guardando}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="prog-grid">
-            <div className="prog-field">
-              <label>
-                H-H
-              </label>
+            <div className="prog-grid">
+              <div className="prog-field">
+                <label>
+                  H-H
+                </label>
 
-              <input
-                type="text"
-                value={hh.toFixed(2)}
-                readOnly
-              />
+                <input
+                  type="text"
+                  value={hh.toFixed(2)}
+                  readOnly
+                />
+              </div>
+
+              <div className="prog-field">
+                <label>
+                  Responsable
+                </label>
+
+                <input
+                  type="text"
+                  value={responsable}
+                  onChange={(e) =>
+                    setResponsable(
+                      e.target.value
+                    )
+                  }
+                  disabled={guardando}
+                />
+              </div>
             </div>
-
-            <div className="prog-field">
-              <label>
-                Responsable
-              </label>
-
-              <input
-                type="text"
-                value={responsable}
-                onChange={(e) =>
-                  setResponsable(
-                    e.target.value
-                  )
-                }
-                disabled={guardando}
-              />
-            </div>
-          </div>
-
-          <div className="prog-field">
-            <label>
-              Turno
-            </label>
-
-            <select
-              value={turno}
-              onChange={(e) =>
-                setTurno(e.target.value)
-              }
-              disabled={guardando}
-            >
-              <option value="">
-                Seleccionar turno
-              </option>
-
-              <option value="Día">
-                Día
-              </option>
-
-              <option value="Noche">
-                Noche
-              </option>
-            </select>
-          </div>
-        </section>
+          </section>
+        )}
 
         <div className="prog-bottom">
           <button
