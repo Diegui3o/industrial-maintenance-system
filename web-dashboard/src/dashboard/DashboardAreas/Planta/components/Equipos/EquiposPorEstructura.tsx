@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   getProcesos,
@@ -26,6 +27,8 @@ interface Props {
 export function EquiposPorEstructura({
   onSelectEquipo,
 }: Props) {
+  const navigate = useNavigate();
+
   const [tipo, setTipo] =
     useState<TipoEstructura>('');
 
@@ -178,6 +181,14 @@ export function EquiposPorEstructura({
             luego su subproceso padre.
           </p>
         </div>
+
+        <button
+          type="button"
+          className="planta-add-btn"
+          onClick={() => navigate('/equipos/nuevo')}
+        >
+          ➕ Nuevo Equipo
+        </button>
       </div>
 
       <div className="planta-form">

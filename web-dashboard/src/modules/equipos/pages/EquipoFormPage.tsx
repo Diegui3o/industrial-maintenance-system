@@ -287,7 +287,10 @@ const handleSubmit = () => {
 }
 
   return (
-    <Layout title="Nuevo Equipo" subtitle={`Paso ${step + 1}: ${STEPS[step]}`} onBack={() => onNavigate('equipos')}>
+    <Layout
+      title="Nuevo Equipo"
+      subtitle={`Paso ${step + 1}: ${STEPS[step]}`}
+    >
       <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
         {STEPS.map((s, i) => (
           <div key={s} style={{
