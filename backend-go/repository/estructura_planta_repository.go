@@ -127,7 +127,7 @@ func (r *EstructuraPlantaRepository) ListarMaestrosMotoresElectricos() ([]models
 
 			-- Potencia
 			m.output,
-			NULL::double precision,
+			m.horsepower,
 
 			-- Datos eléctricos
 			m.rated_voltage,
