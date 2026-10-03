@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   getTodosComponentes,
+  cambiarEstadoComponente,
   type Componente,
+  type EstadoComponente,
 } from '../../services/plantaComponentesApi';
 
 import {
@@ -39,7 +41,69 @@ export function ComponentesCatalogo({
 
   const [error, setError] =
     useState('');
+  async function cambiarEstado(
+    componente: Componente
+  ) {
+    const estados: EstadoComponente[] = [
+      'activo',
+      'inactivo',
+      'fallo',
+      'mantenimiento',
+    ];
 
+    const estado = window.prompt(
+      'Nuevo estado:\nactivo\ninactivo\nfallo\nmantenimiento',
+      componente.estado_componente ?? 'activo'
+    );
+
+    if (
+      !estado ||
+      !estados.includes(estado as EstadoComponente)
+    ) {
+      return;
+    }
+
+    let motivo = '';
+
+    if (estado === 'fallo') {
+      motivo =
+        window.prompt(
+          'Motivo del fallo:'
+        )?.trim() ?? '';
+
+      if (!motivo) {
+        return;
+      }
+    }
+
+    const confirmado = window.confirm(
+      `¿Cambiar "${componente.nombre}" de ` +
+      `"${componente.estado_componente ?? 'activo'}" a "${estado}"?`
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      await cambiarEstadoComponente(
+        componente.id,
+        estado as EstadoComponente,
+        motivo
+      );
+
+      const actualizados =
+        await getTodosComponentes();
+
+      setComponentes(actualizados);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Error cambiando estado del componente'
+      );
+    }
+  }
   useEffect(() => {
     let activo = true;
 
@@ -389,27 +453,38 @@ export function ComponentesCatalogo({
 
                   <span>
                     <span
-                      className={
-                        componente.activo
-                          ? 'componente-estado activo'
-                          : 'componente-estado inactivo'
-                      }
+                      className={`componente-estado ${componente.estado_componente ?? 'activo'}`}
                     >
-                      {componente.activo
-                        ? 'Activo'
-                        : 'Inactivo'}
+                      {componente.estado_componente === 'fallo'
+                        ? 'Falla'
+                        : componente.estado_componente === 'mantenimiento'
+                          ? 'Mantenimiento'
+                          : componente.estado_componente === 'inactivo'
+                            ? 'Inactivo'
+                            : 'Activo'}
                     </span>
                   </span>
 
                   <span>
-                    <button
-                      type="button"
-                      className="componente-row-action"
-                      title="Ver información completa"
-                      onClick={() => onVer?.(componente)}
-                    >
-                      ›
-                    </button>
+                    <div className="componente-row-actions">
+                      <button
+                        type="button"
+                        className="componente-row-action"
+                        title="Ver información completa"
+                        onClick={() => onVer?.(componente)}
+                      >
+                        ›
+                      </button>
+
+                      <button
+                        type="button"
+                        className="componente-row-action"
+                        title="Cambiar estado"
+                        onClick={() => cambiarEstado(componente)}
+                      >
+                        ⚙
+                      </button>
+                    </div>
                   </span>
                 </div>
               );

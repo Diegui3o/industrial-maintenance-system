@@ -92,6 +92,83 @@ func (h *EstructuraPlantaHandler) PutComponente(w http.ResponseWriter, r *http.R
 	})
 }
 
+func (h *EstructuraPlantaHandler) CambiarEstadoComponente(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"id invalido",
+		)
+		return
+	}
+
+	var req struct {
+		Estado string `json:"estado"`
+		Motivo string `json:"motivo"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"JSON invalido",
+		)
+		return
+	}
+
+	estadosValidos := map[string]bool{
+		"activo":        true,
+		"inactivo":      true,
+		"fallo":         true,
+		"mantenimiento": true,
+	}
+
+	if !estadosValidos[req.Estado] {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"estado de componente no valido",
+		)
+		return
+	}
+
+	if req.Estado == "fallo" && req.Motivo == "" {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"el motivo es obligatorio cuando el estado es fallo",
+		)
+		return
+	}
+
+	if err := h.Service.CambiarEstadoComponente(
+		id,
+		req.Estado,
+		req.Motivo,
+	); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	utils.SuccessJSON(
+		w,
+		http.StatusOK,
+		map[string]interface{}{
+			"mensaje": "Estado del componente actualizado correctamente",
+			"id":      id,
+			"estado":  req.Estado,
+		},
+	)
+}
+
 func (h *EstructuraPlantaHandler) GetRepuestosPorComponente(
 	w http.ResponseWriter,
 	r *http.Request,

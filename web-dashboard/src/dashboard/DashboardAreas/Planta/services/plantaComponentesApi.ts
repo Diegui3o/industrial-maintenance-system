@@ -73,6 +73,7 @@ export interface Componente {
   numero_serie?: string | null;
   descripcion?: string | null;
   activo: boolean;
+  estado_componente?: string;
   creado_en?: string | null;
   fecha_creacion?: string | null;
   fecha_actualizacion?: string | null;
@@ -91,6 +92,7 @@ export interface CrearComponenteData {
   numero_serie?: string | null;
   descripcion?: string | null;
   activo?: boolean;
+  estado_componente?: string;
 
   motor_electrico?: Omit<
     ComponenteMotorElectrico,
@@ -101,6 +103,7 @@ export interface CrearComponenteData {
 export interface ActualizarComponenteData
   extends CrearComponenteData {
   activo: boolean;
+  estado_componente?: string;
 }
 
 export async function getTodosComponentes(): Promise<Componente[]> {
@@ -136,6 +139,29 @@ export async function actualizarComponente(
     {
       method: 'PUT',
       body: JSON.stringify(data),
+    }
+  );
+}
+
+export type EstadoComponente =
+  | 'activo'
+  | 'inactivo'
+  | 'fallo'
+  | 'mantenimiento';
+
+export async function cambiarEstadoComponente(
+  id: number,
+  estado: EstadoComponente,
+  motivo: string = ''
+): Promise<void> {
+  await request<void>(
+    `/planta/componentes/${id}/estado`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        estado,
+        motivo,
+      }),
     }
   );
 }

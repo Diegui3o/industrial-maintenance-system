@@ -29,7 +29,7 @@ interface FormularioGeneral {
   modelo: string;
   numero_serie: string;
   descripcion: string;
-  activo: boolean;
+  estado_componente: string;
 }
 
 function texto(valor: unknown): string {
@@ -62,7 +62,9 @@ function crearFormulario(
     descripcion: texto(
       componente.descripcion
     ),
-    activo: componente.activo,
+    estado_componente:
+    componente.estado_componente ??
+    (componente.activo ? 'activo' : 'inactivo'),
   };
 }
 
@@ -192,9 +194,11 @@ export function ComponenteEditor({
           textoOpcional(
             formulario.descripcion
           ),
+      estado_componente:
+        formulario.estado_componente,
 
-        activo:
-          formulario.activo,
+      activo:
+        formulario.estado_componente !== 'inactivo',
       };
 
       /*
@@ -462,29 +466,20 @@ export function ComponenteEditor({
             <span>Estado</span>
 
             <select
-              value={
-                formulario.activo
-                  ? 'activo'
-                  : 'inactivo'
-              }
+              value={formulario.estado_componente}
               onChange={(event) =>
                 cambiarGeneral(
-                  'activo',
-                  event.target.value ===
-                    'activo'
+                  'estado_componente',
+                  event.target.value
                 )
               }
             >
-              <option value="activo">
-                Activo
-              </option>
-
-              <option value="inactivo">
-                Inactivo
-              </option>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+              <option value="fallo">Falla</option>
+              <option value="mantenimiento">Mantenimiento</option>
             </select>
           </label>
-
         </div>
       </section>
 

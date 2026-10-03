@@ -203,6 +203,7 @@ func (r *EstructuraPlantaRepository) ListarTodosComponentes(
 			c.numero_serie,
 			c.descripcion,
 			c.activo,
+			c.estado_componente,
 			c.creado_en,
 			c.fecha_creacion,
 			c.fecha_actualizacion,
@@ -293,6 +294,7 @@ func (r *EstructuraPlantaRepository) ListarTodosComponentes(
 			&c.NumeroSerie,
 			&c.Descripcion,
 			&c.Activo,
+			&c.EstadoComponente,
 			&c.CreadoEn,
 			&c.FechaCreacion,
 			&c.FechaActualizacion,
@@ -384,26 +386,28 @@ func (r *EstructuraPlantaRepository) CrearComponente(
 
 	err = tx.QueryRow(`
 		INSERT INTO componentes_equipo (
-			equipo_id,
-			codigo,
-			codigo_sap,
-			tag,
-			nombre,
-			tipo_componente,
-			marca,
-			modelo,
-			numero_serie,
-			descripcion,
-			activo,
-			fecha_creacion,
-			fecha_actualizacion
+				equipo_id,
+				codigo,
+				codigo_sap,
+				tag,
+				nombre,
+				tipo_componente,
+				marca,
+				modelo,
+				numero_serie,
+				descripcion,
+				activo,
+				estado_componente,
+				fecha_creacion,
+				fecha_actualizacion
 		)
 		VALUES (
-			$1, $2, $3, $4, $5,
-			$6, $7, $8, $9, $10,
-			TRUE,
-			NOW(),
-			NOW()
+				$1, $2, $3, $4, $5,
+				$6, $7, $8, $9, $10,
+				TRUE,
+				'activo',
+				NOW(),
+				NOW()
 		)
 		RETURNING
 			id,
@@ -653,6 +657,7 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 			numero_serie,
 			descripcion,
 			activo,
+			estado_componente,
 			creado_en,
 			fecha_creacion,
 			fecha_actualizacion
@@ -671,6 +676,7 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 		&actual.NumeroSerie,
 		&actual.Descripcion,
 		&actual.Activo,
+		&actual.EstadoComponente,
 		&actual.CreadoEn,
 		&actual.FechaCreacion,
 		&actual.FechaActualizacion,
@@ -792,6 +798,16 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 				"activo: %t → %t",
 				actual.Activo,
 				c.Activo,
+			),
+		)
+	}
+
+	if actual.EstadoComponente != c.EstadoComponente {
+		cambios = append(cambios,
+			fmt.Sprintf(
+				"estado_componente: %q → %q",
+				actual.EstadoComponente,
+				c.EstadoComponente,
 			),
 		)
 	}
@@ -937,8 +953,9 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 			numero_serie = $9,
 			descripcion = $10,
 			activo = $11,
+			estado_componente = $12,
 			actualizado_en = NOW()
-		WHERE id = $12
+		WHERE id = $13
 	`,
 		c.EquipoID,
 		c.Codigo,
@@ -951,11 +968,44 @@ func (r *EstructuraPlantaRepository) ActualizarComponente(
 		c.NumeroSerie,
 		c.Descripcion,
 		c.Activo,
+		c.EstadoComponente,
 		id,
 	)
 
 	if err != nil {
 		return fmt.Errorf("error actualizando componente: %w", err)
+	}
+
+	if actual.EstadoComponente != c.EstadoComponente {
+		_, err = tx.Exec(`
+			INSERT INTO historial_estados_planta (
+				entidad_tipo,
+				entidad_id,
+				estado_anterior,
+				estado_nuevo,
+				usuario_id,
+				motivo
+			)
+			VALUES (
+				'componente',
+				$1,
+				$2,
+				$3,
+				NULL,
+				NULL
+			)
+		`,
+			id,
+			actual.EstadoComponente,
+			c.EstadoComponente,
+		)
+
+		if err != nil {
+			return fmt.Errorf(
+				"error registrando historial de estado del componente: %w",
+				err,
+			)
+		}
 	}
 
 	// ============================================================
@@ -1239,6 +1289,128 @@ func pointerString(v *string) string {
 	}
 
 	return *v
+}
+
+func (r *EstructuraPlantaRepository) CambiarEstadoComponente(
+	id int,
+	estado string,
+	motivo string,
+) error {
+	if estado != "activo" &&
+		estado != "inactivo" &&
+		estado != "fallo" &&
+		estado != "mantenimiento" {
+		return fmt.Errorf("estado de componente no valido")
+	}
+
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var estadoAnterior string
+
+	err = tx.QueryRow(`
+		SELECT estado_componente
+		FROM componentes_equipo
+		WHERE id = $1
+		FOR UPDATE
+	`, id).Scan(&estadoAnterior)
+
+	if err != nil {
+		return err
+	}
+
+	if estadoAnterior == estado {
+		return tx.Commit()
+	}
+
+	activo := estado != "inactivo"
+
+	_, err = tx.Exec(`
+		UPDATE componentes_equipo
+		SET
+			estado_componente = $1,
+			activo = $2,
+			actualizado_en = NOW(),
+			fecha_actualizacion = NOW()
+		WHERE id = $3
+	`,
+		estado,
+		activo,
+		id,
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"error actualizando estado del componente: %w",
+			err,
+		)
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO historial_estados_planta (
+			entidad_tipo,
+			entidad_id,
+			estado_anterior,
+			estado_nuevo,
+			usuario_id,
+			motivo
+		)
+		VALUES (
+			'componente',
+			$1,
+			$2,
+			$3,
+			NULL,
+			$4
+		)
+	`,
+		id,
+		estadoAnterior,
+		estado,
+		motivo,
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"error registrando historial del componente: %w",
+			err,
+		)
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO auditoria (
+			usuario_id,
+			tabla,
+			accion,
+			detalle
+		)
+		VALUES (
+			NULL,
+			'componentes_equipo',
+			'CAMBIO_ESTADO',
+			$1
+		)
+	`,
+		fmt.Sprintf(
+			"Componente ID %d: estado cambió de '%s' a '%s'. Motivo: %s",
+			id,
+			estadoAnterior,
+			estado,
+			motivo,
+		),
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"error registrando auditoria del componente: %w",
+			err,
+		)
+	}
+
+	return tx.Commit()
 }
 
 func equalStringPtr(a, b *string) bool {

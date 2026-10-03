@@ -138,6 +138,11 @@ func registrarPlantaRoutes(
 	).Methods("PUT")
 
 	r.HandleFunc(
+		"/api/planta/componentes/{id}/estado",
+		estructuraPlantaHandler.CambiarEstadoComponente,
+	).Methods("PUT")
+
+	r.HandleFunc(
 		"/api/planta/repuestos/{id}",
 		estructuraPlantaHandler.PutRepuesto,
 	).Methods("PUT")
@@ -165,6 +170,11 @@ func registrarPlantaRoutes(
 		"/api/planta/componentes/{componente_id}/repuestos",
 		estructuraPlantaHandler.PutComponenteRepuestos,
 	).Methods("PUT")
+
+	r.HandleFunc(
+		"/api/planta/procesos/{id}",
+		estructuraPlantaHandler.DeleteProceso,
+	).Methods("DELETE")
 
 	r.HandleFunc(
 		"/api/planta/subprocesos/{subproceso_id}/equipos",

@@ -132,6 +132,22 @@ func (r *EventosRepository) CambiarEstadoEquipo(
 		return err
 	}
 
+	var estadoAnterior string
+
+	err = tx.QueryRow(`
+		SELECT estado_equipo
+		FROM equipos
+		WHERE id = $1
+		FOR UPDATE
+	`,
+		equipoID,
+	).Scan(&estadoAnterior)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	_, err = tx.Exec(`
 	UPDATE eventos_estado
 	SET fecha_fin = CURRENT_TIMESTAMP
@@ -181,7 +197,36 @@ func (r *EventosRepository) CambiarEstadoEquipo(
 		estado,
 		equipoID,
 	)
+	if estadoAnterior != estado {
+		_, err = tx.Exec(`
+			INSERT INTO historial_estados_planta (
+				entidad_tipo,
+				entidad_id,
+				estado_anterior,
+				estado_nuevo,
+				usuario_id,
+				motivo
+			)
+			VALUES (
+				'equipo',
+				$1,
+				$2,
+				$3,
+				NULL,
+				$4
+			)
+		`,
+			equipoID,
+			estadoAnterior,
+			estado,
+			motivo,
+		)
 
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 	if err != nil {
 		tx.Rollback()
 		return err

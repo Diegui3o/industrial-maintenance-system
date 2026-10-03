@@ -25,6 +25,14 @@ func (s *EstructuraPlantaService) ActualizarComponente(
         return s.Repo.ActualizarComponente(id, c)
 }
 
+func (s *EstructuraPlantaService) CambiarEstadoComponente(
+    id int,
+    estado string,
+    motivo string,
+) error {
+    return s.Repo.CambiarEstadoComponente(id, estado, motivo)
+}
+
 func (s *EstructuraPlantaService) ActualizarComponenteRepuestos(
         componenteID int,
         repuestos []int,

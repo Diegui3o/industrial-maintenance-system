@@ -76,3 +76,36 @@ func (h *EstructuraPlantaHandler) PutProceso(w http.ResponseWriter, r *http.Requ
 		"id":      id,
 	})
 }
+
+func (h *EstructuraPlantaHandler) DeleteProceso(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusBadRequest,
+			"id invalido",
+		)
+		return
+	}
+
+	if err := h.Service.EliminarProceso(id); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	utils.SuccessJSON(
+		w,
+		http.StatusOK,
+		map[string]interface{}{
+			"mensaje": "Proceso eliminado correctamente",
+			"id":      id,
+		},
+	)
+}

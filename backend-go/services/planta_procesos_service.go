@@ -16,3 +16,8 @@ func (s *EstructuraPlantaService) ActualizarProceso(
 ) error {
         return s.Repo.ActualizarProceso(id, p)
 }
+func (s *EstructuraPlantaService) EliminarProceso(
+	id int,
+) error {
+	return s.Repo.EliminarProceso(id)
+}

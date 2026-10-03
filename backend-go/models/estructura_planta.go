@@ -49,6 +49,7 @@ type ComponenteEquipo struct {
 	NumeroSerie         *string                  `json:"numero_serie,omitempty"`
 	Descripcion         *string                  `json:"descripcion,omitempty"`
 	Activo              bool                     `json:"activo"`
+	EstadoComponente string `json:"estado_componente"`
 	CreadoEn            *time.Time               `json:"creado_en,omitempty"`
 	FechaCreacion       *time.Time               `json:"fecha_creacion,omitempty"`
 	FechaActualizacion  *time.Time               `json:"fecha_actualizacion,omitempty"`

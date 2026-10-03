@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"backend/models"
 )
 
@@ -61,7 +63,7 @@ func (r *EstructuraPlantaRepository) CrearProceso(
 	return nil
 }
 
-// ==================== SUBPROCESOS ====================
+// ==================== PROCESOS ====================
 
 func (r *EstructuraPlantaRepository) ActualizarProceso(
 	id int,
@@ -70,9 +72,9 @@ func (r *EstructuraPlantaRepository) ActualizarProceso(
 	_, err := r.DB.Exec(`
 		UPDATE procesos_planta
 		SET nombre = $1,
-		    descripcion = $2,
-		    activo = $3,
-		    actualizado_en = NOW()
+			descripcion = $2,
+			activo = $3,
+			actualizado_en = NOW()
 		WHERE id = $4
 	`,
 		p.Nombre,
@@ -82,4 +84,28 @@ func (r *EstructuraPlantaRepository) ActualizarProceso(
 	)
 
 	return err
+}
+
+func (r *EstructuraPlantaRepository) EliminarProceso(
+	id int,
+) error {
+	result, err := r.DB.Exec(`
+		DELETE FROM procesos_planta
+		WHERE id = $1
+	`, id)
+
+	if err != nil {
+		return err
+	}
+
+	afectadas, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if afectadas == 0 {
+		return fmt.Errorf("proceso no encontrado")
+	}
+
+	return nil
 }

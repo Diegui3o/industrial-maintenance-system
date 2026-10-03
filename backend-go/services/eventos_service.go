@@ -59,13 +59,6 @@ func (s *EventosService) CambiarEstadoEquipo(
 
 	if nuevoEstado == "fallo" {
 		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
-
-		if s.whatsappNotificationService != nil {
-			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
-		}
-	}
-	if nuevoEstado == "fallo" {
-		s.alarmaService.GenerarAlarmaPorFallo(equipoID, motivo)
 		if s.whatsappNotificationService != nil {
 			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
 		}

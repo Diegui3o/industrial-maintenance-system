@@ -123,15 +123,17 @@ export function ComponenteFicha({
 
         <div className="componente-ficha-acciones">
           <span
-            className={
-              componente.activo
-                ? 'componente-ficha-estado activo'
-                : 'componente-ficha-estado inactivo'
-            }
+            className={`componente-ficha-estado ${
+              componente.estado_componente ?? 'activo'
+            }`}
           >
-            {componente.activo
-              ? 'Activo'
-              : 'Inactivo'}
+            {componente.estado_componente === 'fallo'
+              ? 'Falla'
+              : componente.estado_componente === 'mantenimiento'
+                ? 'Mantenimiento'
+                : componente.estado_componente === 'inactivo'
+                  ? 'Inactivo'
+                  : 'Activo'}
           </span>
 
           <button
