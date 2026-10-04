@@ -15,10 +15,8 @@ interface FilaEquipo {
   equipoId: number;
   codigo: string;
   nombre: string;
-  fase: string;
-  tipo: string;
-  proceso: string;
-  subproceso: string;
+  area: string;
+  activoPadre: string;
   componente: string;
   ip: string;
   estado: string;
@@ -26,11 +24,9 @@ interface FilaEquipo {
 
 const columnas = [
   { key: "codigo", label: "Código" },
-  { key: "nombre", label: "Equipo" },
-  { key: "fase", label: "Fase" },
-  { key: "tipo", label: "Tipo" },
-  { key: "proceso", label: "Proceso" },
-  { key: "subproceso", label: "Subproceso" },
+  { key: "nombre", label: "Nombre" },
+  { key: "area", label: "Área" },
+  { key: "activoPadre", label: "Activo Padre" },
   { key: "componente", label: "Componente" },
   { key: "ip", label: "IP" },
   { key: "estado", label: "Estado" },
@@ -65,9 +61,18 @@ function crearFilas(
       (item) => item.equipo.id === equipo.id
     );
 
+  const activoPadre = equipo.activo_padre_id
+    ? equipos.find(
+        (padre) => padre.id === equipo.activo_padre_id
+      )
+    : null;
+
+  const activoPadreTexto = activoPadre
+    ? `${texto(activoPadre.codigo)} - ${texto(activoPadre.nombre)}`
+    : "-";
+
   const componentesOriginales =
     detalle?.componentes ?? [];
-
 
   const componentes = componentesOriginales.filter(
     (componente) =>
@@ -76,21 +81,13 @@ function crearFilas(
       String(componente.nombre).trim() !== ""
   );
 
-    const proceso =
-      detalle?.proceso?.nombre ?? "-";
-
-    const subproceso =
-      detalle?.subproceso?.nombre ?? "-";
-
     if (componentes.length === 0) {
       filas.push({
         equipoId: equipo.id,
         codigo: texto(equipo.codigo),
         nombre: texto(equipo.nombre),
-        fase: texto(equipo.fase),
-        tipo: texto(equipo.tipo),
-        proceso,
-        subproceso,
+        area: texto(equipo.area),
+        activoPadre: activoPadreTexto,
         componente: "-",
         ip: texto(equipo.ip),
         estado: texto(equipo.estado_equipo),
@@ -104,10 +101,8 @@ function crearFilas(
         equipoId: equipo.id,
         codigo: texto(equipo.codigo),
         nombre: texto(equipo.nombre),
-        fase: texto(equipo.fase),
-        tipo: texto(equipo.tipo),
-        proceso,
-        subproceso,
+        area: texto(equipo.area),
+        activoPadre: activoPadreTexto,
         componente: texto(componente.nombre),
         ip: texto(equipo.ip),
         estado: texto(equipo.estado_equipo),
@@ -273,11 +268,17 @@ export function EquiposLista() {
 
         if (!activo) return;
 
-        setEquipos(lista);
+        const listaPlanta = lista.filter(
+          (equipo) =>
+            String(equipo.area ?? '').trim().toUpperCase() ===
+            'PLANTA'
+        );
+
+        setEquipos(listaPlanta);
 
         const resultados =
           await Promise.all(
-            lista.map(async (equipo) => {
+            listaPlanta.map(async (equipo) => {
               try {
                 return await getEquipoPlantaDetalle(
                   equipo.id
@@ -385,35 +386,31 @@ export function EquiposLista() {
     }, [filas, filtros]);
 
    function descargarExcel() {
-   const datos = filasFiltradas.map(
+    const datos = filasFiltradas.map(
       (fila) => [
-         fila.codigo,
-         fila.nombre,
-         fila.fase,
-         fila.tipo,
-         fila.proceso,
-         fila.subproceso,
-         fila.componente,
-         fila.ip,
-         fila.estado,
+        fila.codigo,
+        fila.nombre,
+        fila.area,
+        fila.activoPadre,
+        fila.componente,
+        fila.ip,
+        fila.estado,
       ]
-   );
+    );
 
-   exportarTablaExcel(
+    exportarTablaExcel(
       "equipos_planta",
       [
-         "Código",
-         "Equipo",
-         "Fase",
-         "Tipo",
-         "Proceso",
-         "Subproceso",
-         "Componente",
-         "IP",
-         "Estado",
+        "Código",
+        "Nombre",
+        "Área",
+        "Activo Padre",
+        "Componente",
+        "IP",
+        "Estado",
       ],
       datos
-   );
+    );
    }
    
    function abrirFiltro(
@@ -716,26 +713,18 @@ export function EquiposLista() {
                     </td>
 
                     <td>
-                      {fila.fase}
+                      {fila.area}
+                    </td>
+
+                    <td className="planta-equipo-padre">
+                      {fila.activoPadre}
                     </td>
 
                     <td>
-                      {fila.tipo}
-                    </td>
-
-                    <td>
-                      {fila.proceso}
-                    </td>
-
-                    <td>
-                      {fila.subproceso}
-                    </td>
-
-                    <td className="planta-equipo-componente">
                       {fila.componente}
                     </td>
 
-                    <td className="planta-equipo-ip">
+                    <td>
                       {fila.ip}
                     </td>
 

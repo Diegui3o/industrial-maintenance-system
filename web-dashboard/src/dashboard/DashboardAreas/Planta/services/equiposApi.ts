@@ -12,6 +12,7 @@ export interface Equipo {
   numero_serie?: string;
   critico?: boolean;
   estado_equipo?: string;
+  activo_padre_id?: number | null;
   fecha_instalacion?: string | null;
   fecha_creacion?: string;
   actualizado_en?: string | null;
