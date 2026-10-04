@@ -5,7 +5,6 @@ import { colors } from '../../../theme/colors';
 
 import { PlantaEstructuraPrincipal } from './components/PlantaEstructura/PlantaEstructuraPrincipal';
 import { MantenimientosLista } from './components/Mantenimientos/MantenimientosLista';
-import { EquiposLista } from './components/Equipos/EquiposLista';
 import { MaestroGeneral } from './components/MaestroGeneral/MaestroGeneral';
 import { MaestrosComponentes } from './components/MaestrosComponentes/MaestrosComponentes';
 
@@ -74,21 +73,6 @@ export function PlantaPanel() {
         '/planta/maestros-componentes',
     };
 
-    /*
-     * IMPORTANTE:
-     *
-     * Las pestañas pertenecen a la misma rama
-     * /planta.
-     *
-     * Por eso usamos replace=true.
-     *
-     * De esta forma:
-     *
-     * /planta/equipos
-     * -> /planta/maestros-componentes
-     *
-     * no deja "equipos" detrás en el historial.
-     */
     navigate(
       rutas[nuevoTab],
       {
@@ -180,20 +164,6 @@ export function PlantaPanel() {
             <button
               type="button"
               className={
-                tab === 'equipos'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() =>
-                cambiarTab('equipos')
-              }
-            >
-              Equipos
-            </button>
-
-            <button
-              type="button"
-              className={
                 tab === 'maestro-general'
                   ? 'active'
                   : ''
@@ -234,10 +204,6 @@ export function PlantaPanel() {
 
             {tab === 'mantenimientos' && (
               <MantenimientosLista />
-            )}
-
-            {tab === 'equipos' && (
-              <EquiposLista />
             )}
 
             {tab === 'maestro-general' && (

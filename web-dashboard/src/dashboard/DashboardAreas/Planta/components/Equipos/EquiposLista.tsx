@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { exportarTablaExcel } from "../../utils/exportarExcel";
 import {
   getEquipos,
@@ -144,6 +145,8 @@ export function EquiposLista() {
       top: 0,
       left: 0,
    });
+
+    const navigate = useNavigate();
 
   useEffect(() => {
     let activo = true;
@@ -390,12 +393,12 @@ export function EquiposLista() {
     <section className="planta-lista planta-equipos-lista">
       <div className="planta-lista-header">
       <div>
-         <h2>Equipos</h2>
+         <h2>Catálogo de equipos</h2>
 
-         <span>
-            {filasFiltradas.length} registros ·{" "}
-            {equipos.length} equipos
-         </span>
+        <span>
+          {filasFiltradas.length} registros ·{" "}
+          {equipos.length} equipos
+        </span>
       </div>
 
       <div className="planta-lista-acciones">
@@ -415,7 +418,7 @@ export function EquiposLista() {
             Limpiar filtros
          </button>
       </div>
-      </div>
+    </div>
 
       <div className="planta-table-wrapper planta-equipos-table-wrapper">
         <table className="planta-table planta-equipos-table">
@@ -423,9 +426,7 @@ export function EquiposLista() {
             <tr>
               {columnas.map((columna) => {
                 const valores =
-                  valoresPorColumna[
-                    columna.key
-                  ] ?? [];
+                  valoresPorColumna[columna.key] ?? [];
 
                 const valoresVisibles =
                   valores.filter((valor) =>
@@ -441,32 +442,28 @@ export function EquiposLista() {
 
                 return (
                   <th
-                  key={columna.key}
-                  className="planta-excel-th"
+                    key={columna.key}
+                    className="planta-excel-th"
                   >
                     <button
                       type="button"
                       className={`planta-excel-filtro ${
-                        estaFiltrado(
-                          columna.key
-                        )
+                        estaFiltrado(columna.key)
                           ? "filtrado"
                           : ""
                       }`}
-                     onClick={(e) =>
-                     abrirFiltro(
-                        columna.key,
-                        e
-                     )
-                     }
+                      onClick={(e) =>
+                        abrirFiltro(
+                          columna.key,
+                          e
+                        )
+                      }
                     >
                       <span>
                         {columna.label}
                       </span>
 
-                      <span>
-                        ▼
-                      </span>
+                      <span>▼</span>
                     </button>
 
                     {filtroAbierto ===
@@ -474,17 +471,15 @@ export function EquiposLista() {
                       <div
                         className="planta-excel-menu"
                         style={{
-                           top: posicionFiltro.top,
-                           left: posicionFiltro.left,
+                          top: posicionFiltro.top,
+                          left: posicionFiltro.left,
                         }}
-                        >
+                      >
                         <div className="planta-excel-menu-search">
                           <input
                             type="search"
                             autoFocus
-                            value={
-                              busquedaFiltro
-                            }
+                            value={busquedaFiltro}
                             onChange={(e) =>
                               setBusquedaFiltro(
                                 e.target.value
@@ -522,9 +517,7 @@ export function EquiposLista() {
                                 >
                                   <input
                                     type="checkbox"
-                                    checked={
-                                      marcado
-                                    }
+                                    checked={marcado}
                                     onChange={() =>
                                       seleccionarValor(
                                         columna.key,
@@ -546,9 +539,7 @@ export function EquiposLista() {
                           <button
                             type="button"
                             onClick={() =>
-                              setFiltroAbierto(
-                                null
-                              )
+                              setFiltroAbierto(null)
                             }
                           >
                             Aceptar
@@ -560,9 +551,7 @@ export function EquiposLista() {
                               seleccionarTodos(
                                 columna.key
                               );
-                              setFiltroAbierto(
-                                null
-                              );
+                              setFiltroAbierto(null);
                             }}
                           >
                             Borrar filtro
@@ -573,9 +562,14 @@ export function EquiposLista() {
                   </th>
                 );
               })}
+
+              <th className="planta-excel-th planta-equipos-opciones-th">
+                <span className="planta-equipos-opciones-titulo">
+                  Opciones
+                </span>
+              </th>
             </tr>
           </thead>
-
           <tbody>
             {filasFiltradas.length === 0 ? (
               <tr>
@@ -627,21 +621,44 @@ export function EquiposLista() {
                     </td>
 
                     <td>
-                      {fila.estado !==
-                      "-" ? (
+                      {fila.estado !== "-" ? (
                         <span
                           className={`planta-equipo-estado planta-equipo-estado-${fila.estado
                             .toLowerCase()
-                            .replace(
-                              /\s+/g,
-                              "_"
-                            )}`}
+                            .replace(/\s+/g, "_")}`}
                         >
                           {fila.estado}
                         </span>
                       ) : (
                         "-"
                       )}
+                    </td>
+                    <td className="planta-equipos-opciones">
+                      <div className="planta-equipos-opciones-grupo">
+                        <button
+                          type="button"
+                          className="planta-equipo-opcion planta-equipo-opcion-ver"
+                          onClick={() =>
+                            navigate(`/equipos/${fila.equipoId}`)
+                          }
+                          title="Ver equipo"
+                        >
+                          Ver
+                        </button>
+
+                        <button
+                          type="button"
+                          className="planta-equipo-opcion planta-equipo-opcion-editar"
+                          onClick={() =>
+                            navigate(
+                              `/equipos/${fila.equipoId}/editar`
+                            )
+                          }
+                          title="Editar equipo"
+                        >
+                          Editar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

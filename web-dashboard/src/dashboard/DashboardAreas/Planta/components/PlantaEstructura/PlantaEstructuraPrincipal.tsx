@@ -4,6 +4,7 @@ import { ProcesosEstructura } from '../Procesos/ProcesosEstructura';
 import { SistemasEstructura } from '../Sistemas/SistemasEstructura';
 import { SubprocesosPorEstructura } from '../Subprocesos/SubprocesosPorEstructura';
 import { EquiposPorEstructura } from '../Equipos/EquiposPorEstructura';
+import { EquiposLista } from '../Equipos/EquiposLista';
 import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
 
 type Seccion =
@@ -109,7 +110,11 @@ export function PlantaEstructuraPrincipal() {
         )}
 
         {seccion === 'equipos' && (
-          <EquiposPorEstructura />
+          <>
+            <EquiposPorEstructura />
+
+            <EquiposLista />
+          </>
         )}
 
         {seccion === 'componentes' && (
