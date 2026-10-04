@@ -112,6 +112,31 @@ func (h *EstructuraPlantaHandler) PutSistema(w http.ResponseWriter, r *http.Requ
 	})
 }
 
+func (h *EstructuraPlantaHandler) DeleteSistema(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, "id invalido")
+		return
+	}
+
+	if err := h.Service.EliminarSistema(id); err != nil {
+		utils.ErrorJSON(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		return
+	}
+
+	utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
+		"mensaje": "Sistema eliminado correctamente",
+		"id":      id,
+	})
+}
+
 func (h *EstructuraPlantaHandler) PutEquipoSistemas(
 	w http.ResponseWriter,
 	r *http.Request,

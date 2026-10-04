@@ -133,6 +133,11 @@ func registrarPlantaRoutes(
 	).Methods("PUT")
 
 	r.HandleFunc(
+		"/api/planta/sistemas/{id}",
+		estructuraPlantaHandler.DeleteSistema,
+	).Methods("DELETE")
+
+	r.HandleFunc(
 		"/api/planta/componentes/{id}",
 		estructuraPlantaHandler.PutComponente,
 	).Methods("PUT")

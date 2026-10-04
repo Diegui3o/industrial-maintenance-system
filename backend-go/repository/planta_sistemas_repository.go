@@ -81,6 +81,15 @@ func (r *EstructuraPlantaRepository) AsignarSistema(
 	return err
 }
 
+func (r *EstructuraPlantaRepository) EliminarSistema(id int) error {
+	_, err := r.DB.Exec(`
+		DELETE FROM sistemas_planta
+		WHERE id = $1
+	`, id)
+
+	return err
+}
+
 // ==================== COMPONENTES ====================
 
 func (r *EstructuraPlantaRepository) ActualizarSistema(

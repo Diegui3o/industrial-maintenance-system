@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import {
   getTodosComponentes,
@@ -38,6 +39,102 @@ export function ComponentesCatalogo({
 
   const [loading, setLoading] =
     useState(true);
+
+  const [menuPosicion, setMenuPosicion] = useState({
+    top: 0,
+    left: 0,
+  });
+
+  function abrirMenu(
+    evento: React.MouseEvent<HTMLButtonElement>,
+    componenteId: number
+  ) {
+    const rect =
+      evento.currentTarget.getBoundingClientRect();
+
+    const anchoMenu = 165;
+    const altoMenu = 115;
+    const margen = 8;
+
+    let left = rect.right - anchoMenu;
+    let top = rect.bottom + margen;
+
+    if (left < margen) {
+      left = margen;
+    }
+
+    if (
+      left + anchoMenu >
+      window.innerWidth - margen
+    ) {
+      left =
+        window.innerWidth -
+        anchoMenu -
+        margen;
+    }
+
+    if (
+      top + altoMenu >
+      window.innerHeight - margen
+    ) {
+      top =
+        rect.top -
+        altoMenu -
+        margen;
+    }
+
+    if (top < margen) {
+      top = margen;
+    }
+
+    setMenuPosicion({
+      top,
+      left,
+    });
+
+    setMenuAbierto(
+      menuAbierto === componenteId
+        ? null
+        : componenteId
+    );
+  }
+
+    const [menuAbierto, setMenuAbierto] =
+      useState<number | null>(null);
+      
+    async function eliminarComponente(
+      componente: Componente
+    ) {
+      const confirmado = window.confirm(
+        `¿Seguro que deseas eliminar el componente "${componente.nombre}"?\n\n` +
+        `El componente no será borrado físicamente. ` +
+        `Se marcará como Inactivo y conservará su historial.`
+      );
+
+      if (!confirmado) {
+        return;
+      }
+
+      try {
+        await cambiarEstadoComponente(
+          componente.id,
+          'inactivo',
+          'Desactivación desde el catálogo de componentes'
+        );
+
+        const actualizados =
+          await getTodosComponentes();
+
+        setComponentes(actualizados);
+        setMenuAbierto(null);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Error desactivando el componente'
+        );
+      }
+    }
 
   const [error, setError] =
     useState('');
@@ -467,23 +564,62 @@ export function ComponentesCatalogo({
 
                   <span>
                     <div className="componente-row-actions">
-                      <button
-                        type="button"
-                        className="componente-row-action"
-                        title="Ver información completa"
-                        onClick={() => onVer?.(componente)}
-                      >
-                        ›
-                      </button>
 
                       <button
                         type="button"
                         className="componente-row-action"
-                        title="Cambiar estado"
-                        onClick={() => cambiarEstado(componente)}
+                        onClick={(evento) =>
+                          abrirMenu(evento, componente.id)
+                        }
                       >
-                        ⚙
+                        Opciones ▾
                       </button>
+
+                        {menuAbierto === componente.id &&
+                          createPortal(
+                            <div
+                              className="componente-row-menu"
+                              style={{
+                                position: 'fixed',
+                                top: menuPosicion.top,
+                                left: menuPosicion.left,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onVer?.(componente);
+                                  setMenuAbierto(null);
+                                }}
+                              >
+                                Ver información
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  cambiarEstado(componente);
+                                  setMenuAbierto(null);
+                                }}
+                              >
+                                Cambiar estado
+                              </button>
+
+                              <div className="componente-row-menu-separador" />
+
+                              <button
+                                type="button"
+                                className="componente-row-menu-eliminar"
+                                onClick={() =>
+                                  eliminarComponente(componente)
+                                }
+                              >
+                                Eliminar componente
+                              </button>
+                            </div>,
+                            document.body
+                          )}
+
                     </div>
                   </span>
                 </div>

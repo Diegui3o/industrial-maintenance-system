@@ -26,6 +26,12 @@ func (s *EstructuraPlantaService) ActualizarSistema(
         return s.Repo.ActualizarSistema(id, sistema)
 }
 
+func (s *EstructuraPlantaService) EliminarSistema(
+        id int,
+) error {
+        return s.Repo.EliminarSistema(id)
+}
+
 func (s *EstructuraPlantaService) ActualizarEquipoSistemas(
         equipoID int,
         sistemas []int,

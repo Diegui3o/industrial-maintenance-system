@@ -1,5 +1,7 @@
+import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
+  eliminarSistema,
   type SistemaPlanta,
 } from '../../services/plantaApi';
 import { SistemaForm } from './SistemaForm';
@@ -13,21 +15,94 @@ export function SistemaList({
   sistemas,
   onReload,
 }: Props) {
-  const [mostrarForm, setMostrarForm] =
-    useState(false);
-
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [editar, setEditar] =
     useState<SistemaPlanta | null>(null);
+
+  const [menuAbierto, setMenuAbierto] =
+    useState<number | null>(null);
+
+  const [menuPosicion, setMenuPosicion] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const cerrarForm = () => {
     setMostrarForm(false);
     setEditar(null);
   };
 
-  const guardado = () => {
+  const guardado = async () => {
     cerrarForm();
     onReload();
   };
+
+  function abrirMenu(
+    evento: React.MouseEvent<HTMLButtonElement>,
+    sistemaId: number
+  ) {
+    const rect =
+      evento.currentTarget.getBoundingClientRect();
+
+    const ancho = 150;
+    const alto = 80;
+    const margen = 8;
+
+    let left = rect.right - ancho;
+    let top = rect.bottom + margen;
+
+    if (left < margen) {
+      left = margen;
+    }
+
+    if (left + ancho > window.innerWidth - margen) {
+      left = window.innerWidth - ancho - margen;
+    }
+
+    if (top + alto > window.innerHeight - margen) {
+      top = rect.top - alto - margen;
+    }
+
+    if (top < margen) {
+      top = margen;
+    }
+
+    setMenuPosicion({ top, left });
+
+    setMenuAbierto(
+      menuAbierto === sistemaId
+        ? null
+        : sistemaId
+    );
+  }
+
+  async function eliminar(
+    sistema: SistemaPlanta
+  ) {
+    const confirmado = window.confirm(
+      `¿Seguro que deseas eliminar el sistema "${sistema.nombre}"?\n\n` +
+      `Los subprocesos del sistema no serán eliminados. ` +
+      `Quedarán sin sistema padre y podrán reasignarse posteriormente.`
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      await eliminarSistema(sistema.id);
+
+      setMenuAbierto(null);
+
+      onReload();
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el sistema'
+      );
+    }
+  }
 
   return (
     <section className="planta-card">
@@ -90,16 +165,52 @@ export function SistemaList({
                 </span>
               </div>
 
-              <button
-                type="button"
-                className="planta-edit-btn"
-                onClick={() => {
-                  setEditar(sistema);
-                  setMostrarForm(false);
-                }}
-              >
-                ✎
-              </button>
+              <div className="planta-row-actions">
+                <button
+                  type="button"
+                  className="planta-options-btn"
+                  onClick={(evento) =>
+                    abrirMenu(evento, sistema.id)
+                  }
+                >
+                  Opciones ▾
+                </button>
+
+                {menuAbierto === sistema.id &&
+                  createPortal(
+                    <div
+                      className="planta-options-menu"
+                      style={{
+                        top: menuPosicion.top,
+                        left: menuPosicion.left,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditar(sistema);
+                          setMostrarForm(false);
+                          setMenuAbierto(null);
+                        }}
+                      >
+                        Editar
+                      </button>
+
+                      <div className="planta-options-divider" />
+
+                      <button
+                        type="button"
+                        className="planta-options-delete"
+                        onClick={() =>
+                          eliminar(sistema)
+                        }
+                      >
+                        Eliminar
+                      </button>
+                    </div>,
+                    document.body
+                  )}
+              </div>
             </div>
           ))}
         </div>

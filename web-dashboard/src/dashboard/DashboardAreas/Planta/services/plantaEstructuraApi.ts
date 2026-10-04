@@ -218,6 +218,14 @@ export async function relacionarSubprocesosConSistema(
   );
 }
 
+export async function eliminarSistema(
+  id: number
+): Promise<void> {
+  await request<void>(`/planta/sistemas/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 /* =========================================================
    CLASIFICACIONES
 ========================================================= */
@@ -286,6 +294,17 @@ export async function asignarClasificacionesEquipo(
       body: JSON.stringify({
         clasificacion_ids: clasificacionIds,
       }),
+    }
+  );
+}
+
+export async function eliminarProceso(
+  id: number
+): Promise<void> {
+  await request<void>(
+    `/planta/procesos/${id}`,
+    {
+      method: 'DELETE',
     }
   );
 }

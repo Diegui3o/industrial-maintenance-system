@@ -2374,3 +2374,62 @@ button.planta-list-item:hover {
     grid-template-columns: 1fr;
   }
 }
+.planta-row-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.planta-options-btn {
+  min-width: 82px;
+  padding: 6px 9px;
+  border: 1px solid #d9dde3;
+  border-radius: 7px;
+  background: #fff;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.planta-options-btn:hover {
+  background: #f7f8fa;
+}
+
+.planta-options-menu {
+  position: fixed;
+  z-index: 99999;
+  width: 150px;
+  padding: 4px;
+  border: 1px solid #e1e5ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+}
+
+.planta-options-menu button {
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #374151;
+  text-align: left;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.planta-options-menu button:hover {
+  background: #f4f6f8;
+}
+
+.planta-options-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: #eceff2;
+}
+
+.planta-options-delete {
+  color: #b42318 !important;
+  font-weight: 600;
+}

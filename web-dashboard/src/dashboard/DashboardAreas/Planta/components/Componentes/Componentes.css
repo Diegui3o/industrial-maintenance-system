@@ -2136,3 +2136,70 @@
   color: #9ca3af;
   font-size: 10px;
 }
+
+.componente-row-actions {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.componente-row-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.componente-row-action {
+  min-width: 82px;
+  padding: 6px 9px;
+  border: 1px solid #d9dde3;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.componente-row-action:hover {
+  background: #f7f8fa;
+}
+
+.componente-row-menu {
+  position: fixed;
+  z-index: 99999;
+  width: 165px;
+  padding: 4px;
+  border: 1px solid #e1e5ea;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+}
+
+.componente-row-menu button {
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #374151;
+  text-align: left;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.componente-row-menu button:hover {
+  background: #f4f6f8;
+}
+
+.componente-row-menu-separador {
+  height: 1px;
+  margin: 4px 2px;
+  background: #eceff2;
+}
+
+.componente-row-menu-eliminar {
+  color: #b42318 !important;
+  font-weight: 600;
+}
