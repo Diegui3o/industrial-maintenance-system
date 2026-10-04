@@ -25,7 +25,7 @@ func (h *EstructuraPlantaHandler) CrearSubprocesoSistema(
 		return
 	}
 
-	if item.SistemaID <= 0 || item.Nombre == "" {
+	if item.SistemaID == nil || *item.SistemaID <= 0 || item.Nombre == "" {
 		http.Error(
 			w,
 			"El sistema y nombre son obligatorios",

@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import {
   crearSubprocesoSistema,
@@ -9,7 +13,15 @@ import {
   type SubprocesoSistemaPlanta,
 } from '../../services/plantaApi';
 
-export function SubprocesosSistemaPanel() {
+import { SubprocesosSistemaTransferencia } from './SubprocesosSistemaTransferencia';
+
+interface Props {
+  subprocesoInicialId?: number | null;
+}
+
+export function SubprocesosSistemaPanel({
+  subprocesoInicialId = null,
+}: Props) {
   const [sistemas, setSistemas] =
     useState<SistemaPlanta[]>([]);
 
@@ -31,9 +43,6 @@ export function SubprocesosSistemaPanel() {
   const [mensaje, setMensaje] =
     useState('');
 
-  const [busqueda, setBusqueda] =
-    useState('');
-
   const [mostrarForm, setMostrarForm] =
     useState(false);
 
@@ -43,49 +52,93 @@ export function SubprocesosSistemaPanel() {
   const [descripcionNueva, setDescripcionNueva] =
     useState('');
 
-  const cargarDatos = useCallback(async () => {
-    setLoading(true);
+  const cargarDatos = useCallback(
+    async () => {
+      setLoading(true);
 
-    try {
-      const [
-        sistemasResultado,
-        subprocesosResultado,
-      ] = await Promise.all([
-        getSistemas(),
-        getTodosSubprocesosSistema(),
-      ]);
+      try {
+        const [
+          sistemasResultado,
+          subprocesosResultado,
+        ] = await Promise.all([
+          getSistemas(),
+          getTodosSubprocesosSistema(),
+        ]);
 
-      setSistemas(sistemasResultado);
-      setSubprocesos(subprocesosResultado);
-
-      if (sistemaId) {
-        setSeleccionados(
+        setSistemas(sistemasResultado);
+        setSubprocesos(
           subprocesosResultado
-            .filter(
-              (item) =>
-                item.sistema_id === sistemaId
-            )
-            .map((item) => item.id)
         );
-      }
-    } catch (error) {
-      console.error(
-        'Error cargando sistemas y subprocesos:',
-        error
-      );
 
-      setSistemas([]);
-      setSubprocesos([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [sistemaId]);
+        if (sistemaId) {
+          setSeleccionados(
+            subprocesosResultado
+              .filter(
+                (item) =>
+                  item.sistema_id ===
+                  sistemaId
+              )
+              .map(
+                (item) => item.id
+              )
+          );
+        }
+      } catch (error) {
+        console.error(
+          'Error cargando sistemas:',
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sistemaId]
+  );
 
   useEffect(() => {
     void cargarDatos();
   }, [cargarDatos]);
 
-  const cambiarSistema = (id: string) => {
+  useEffect(() => {
+    if (!subprocesoInicialId) {
+      return;
+    }
+
+    const subproceso =
+      subprocesos.find(
+        (item) =>
+          item.id ===
+          subprocesoInicialId
+      );
+
+    if (!subproceso) {
+      return;
+    }
+
+    if (subproceso.sistema_id) {
+      setSistemaId(
+        subproceso.sistema_id
+      );
+    }
+
+    setSeleccionados((actuales) =>
+      actuales.includes(
+        subproceso.id
+      )
+        ? actuales
+        : [
+            ...actuales,
+            subproceso.id,
+          ]
+    );
+  }, [
+    subprocesoInicialId,
+    subprocesos,
+  ]);
+
+  const cambiarSistema = (
+    id: string
+  ) => {
     const nuevoId = id
       ? Number(id)
       : null;
@@ -103,25 +156,18 @@ export function SubprocesosSistemaPanel() {
       subprocesos
         .filter(
           (item) =>
-            item.sistema_id === nuevoId
+            item.sistema_id ===
+            nuevoId
         )
         .map((item) => item.id)
     );
   };
 
-  const cambiarSeleccion = (id: number) => {
-    setSeleccionados((actuales) =>
-      actuales.includes(id)
-        ? actuales.filter(
-            (item) => item !== id
-          )
-        : [...actuales, id]
-    );
-  };
-
   const guardarNuevo = async () => {
     if (!sistemaId) {
-      setMensaje('Seleccione un sistema.');
+      setMensaje(
+        'Seleccione un sistema.'
+      );
       return;
     }
 
@@ -137,9 +183,11 @@ export function SubprocesosSistemaPanel() {
 
       await crearSubprocesoSistema({
         sistema_id: sistemaId,
-        nombre: nombreNuevo.trim(),
+        nombre:
+          nombreNuevo.trim(),
         descripcion:
-          descripcionNueva.trim() || undefined,
+          descripcionNueva.trim() ||
+          undefined,
       });
 
       setNombreNuevo('');
@@ -153,7 +201,7 @@ export function SubprocesosSistemaPanel() {
       );
     } catch (error) {
       console.error(
-        'Error creando subproceso de sistema:',
+        'Error creando subproceso:',
         error
       );
 
@@ -165,7 +213,9 @@ export function SubprocesosSistemaPanel() {
 
   const guardarRelacion = async () => {
     if (!sistemaId) {
-      setMensaje('Seleccione un sistema.');
+      setMensaje(
+        'Seleccione un sistema.'
+      );
       return;
     }
 
@@ -206,53 +256,39 @@ export function SubprocesosSistemaPanel() {
 
   const sistemaSeleccionado =
     sistemas.find(
-      (item) => item.id === sistemaId
+      (item) =>
+        item.id === sistemaId
     );
-
-  const normalizar = (texto: string) =>
-    texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-
-  const textoBusqueda =
-    normalizar(busqueda.trim());
-
-  const subprocesosFiltrados =
-    subprocesos.filter((subproceso) => {
-      const texto = normalizar(
-        [
-          subproceso.nombre,
-          subproceso.descripcion ?? '',
-        ].join(' ')
-      );
-
-      return texto.includes(textoBusqueda);
-    });
 
   return (
     <div>
       <div className="planta-form">
-        <label>Sistema padre</label>
+        <label>
+          Sistema padre
+        </label>
 
         <select
           value={sistemaId ?? ''}
           onChange={(e) =>
-            cambiarSistema(e.target.value)
+            cambiarSistema(
+              e.target.value
+            )
           }
         >
           <option value="">
             Seleccione un sistema
           </option>
 
-          {sistemas.map((sistema) => (
-            <option
-              key={sistema.id}
-              value={sistema.id}
-            >
-              {sistema.nombre}
-            </option>
-          ))}
+          {sistemas.map(
+            (sistema) => (
+              <option
+                key={sistema.id}
+                value={sistema.id}
+              >
+                {sistema.nombre}
+              </option>
+            )
+          )}
         </select>
       </div>
 
@@ -269,8 +305,9 @@ export function SubprocesosSistemaPanel() {
               </h3>
 
               <p>
-                Seleccione los subprocesos que
-                pertenecen a este sistema.
+                Seleccione los subprocesos
+                que pertenecen a este
+                sistema.
               </p>
             </div>
 
@@ -301,7 +338,6 @@ export function SubprocesosSistemaPanel() {
                     e.target.value
                   )
                 }
-                placeholder="Nombre"
               />
 
               <label>
@@ -316,149 +352,76 @@ export function SubprocesosSistemaPanel() {
                     e.target.value
                   )
                 }
-                placeholder="Descripción opcional"
+              />
+
+              <div className="planta-relation-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMostrarForm(false)
+                  }
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  className="planta-save-btn"
+                  onClick={() =>
+                    void guardarNuevo()
+                  }
+                >
+                  Guardar subproceso
+                </button>
+              </div>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="planta-empty">
+              Cargando subprocesos...
+            </div>
+          ) : (
+            <>
+              <div className="planta-relation-summary">
+                <span>
+                  Subprocesos asignados
+                </span>
+
+                <strong>
+                  {seleccionados.length}
+                </strong>
+              </div>
+
+              <SubprocesosSistemaTransferencia
+                subprocesos={
+                  subprocesos
+                }
+                seleccionados={
+                  seleccionados
+                }
+                onSeleccionadosChange={
+                  setSeleccionados
+                }
               />
 
               <div className="planta-relation-actions">
                 <button
                   type="button"
                   className="planta-save-btn"
-                  onClick={guardarNuevo}
-                >
-                  Guardar subproceso
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMostrarForm(false);
-                    setNombreNuevo('');
-                    setDescripcionNueva('');
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="planta-relation-summary">
-            <span>Subprocesos</span>
-
-            <strong>
-              {seleccionados.length}
-            </strong>
-
-            <span>seleccionados</span>
-          </div>
-
-          {!loading && (
-            <>
-              <div className="planta-relation-search">
-                <input
-                  type="search"
-                  value={busqueda}
-                  onChange={(e) =>
-                    setBusqueda(
-                      e.target.value
-                    )
+                  onClick={() =>
+                    void guardarRelacion()
                   }
-                  placeholder="Buscar subproceso..."
-                />
+                  disabled={
+                    guardando
+                  }
+                >
+                  {guardando
+                    ? 'Guardando...'
+                    : 'Guardar relación'}
+                </button>
               </div>
-
-              {subprocesosFiltrados.length > 0 ? (
-                <div className="planta-relation-grid">
-                  {subprocesosFiltrados.map(
-                    (subproceso) => {
-                      const seleccionado =
-                        seleccionados.includes(
-                          subproceso.id
-                        );
-
-                      const relacionado =
-                        subproceso.sistema_id ===
-                        sistemaId;
-
-                      return (
-                        <label
-                          key={subproceso.id}
-                          className={`planta-relation-item ${
-                            seleccionado
-                              ? 'selected'
-                              : ''
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={seleccionado}
-                            onChange={() =>
-                              cambiarSeleccion(
-                                subproceso.id
-                              )
-                            }
-                          />
-
-                          <div className="planta-relation-content">
-                            <strong>
-                              {
-                                subproceso.nombre
-                              }
-                            </strong>
-
-                            {subproceso.descripcion && (
-                              <small>
-                                {
-                                  subproceso.descripcion
-                                }
-                              </small>
-                            )}
-
-                            <span
-                              className={`planta-status ${
-                                relacionado
-                                  ? 'linked'
-                                  : 'available'
-                              }`}
-                            >
-                              {relacionado
-                                ? 'Relacionado'
-                                : 'Disponible'}
-                            </span>
-                          </div>
-                        </label>
-                      );
-                    }
-                  )}
-                </div>
-              ) : (
-                <div className="planta-empty">
-                  No hay subprocesos de sistema
-                  registrados.
-                </div>
-              )}
-
-              {subprocesos.length > 0 && (
-                <div className="planta-relation-actions">
-                  <button
-                    type="button"
-                    className="planta-save-btn"
-                    onClick={guardarRelacion}
-                    disabled={guardando}
-                  >
-                    {guardando
-                      ? 'Guardando...'
-                      : 'Guardar relación'}
-                  </button>
-                </div>
-              )}
             </>
-          )}
-
-          {loading && (
-            <div className="planta-empty">
-              Cargando subprocesos...
-            </div>
           )}
 
           {mensaje && (

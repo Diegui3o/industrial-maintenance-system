@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import {
@@ -9,7 +14,6 @@ import {
 } from '../../services/plantaComponentesApi';
 
 import {
-  getEquipos,
   type Equipo,
 } from '../../services/plantaEquiposApi';
 
@@ -25,7 +29,7 @@ export function ComponentesCatalogo({
   const [componentes, setComponentes] =
     useState<Componente[]>([]);
 
-  const [equipos, setEquipos] =
+  const [equipos] =
     useState<Equipo[]>([]);
 
   const [busqueda, setBusqueda] =
@@ -37,7 +41,7 @@ export function ComponentesCatalogo({
   const [equipoFiltro, setEquipoFiltro] =
     useState('');
 
-  const [loading, setLoading] =
+  const [loading] =
     useState(true);
 
   const [menuPosicion, setMenuPosicion] = useState({
@@ -45,18 +49,27 @@ export function ComponentesCatalogo({
     left: 0,
   });
 
-  function abrirMenu(
-    evento: React.MouseEvent<HTMLButtonElement>,
-    componenteId: number
-  ) {
-    const rect =
-      evento.currentTarget.getBoundingClientRect();
+  const menuBotonRef =
+    useRef<HTMLButtonElement | null>(null);
 
-    const anchoMenu = 165;
-    const altoMenu = 115;
+  const [menuAbierto, setMenuAbierto] =
+    useState<number | null>(null);
+
+  function actualizarPosicionMenu() {
+    const boton = menuBotonRef.current;
+
+    if (!boton) {
+      return;
+    }
+
+    const rect =
+      boton.getBoundingClientRect();
+
+    const ancho = 165;
+    const alto = 115;
     const margen = 8;
 
-    let left = rect.right - anchoMenu;
+    let left = rect.right - ancho;
     let top = rect.bottom + margen;
 
     if (left < margen) {
@@ -64,22 +77,22 @@ export function ComponentesCatalogo({
     }
 
     if (
-      left + anchoMenu >
+      left + ancho >
       window.innerWidth - margen
     ) {
       left =
         window.innerWidth -
-        anchoMenu -
+        ancho -
         margen;
     }
 
     if (
-      top + altoMenu >
+      top + alto >
       window.innerHeight - margen
     ) {
       top =
         rect.top -
-        altoMenu -
+        alto -
         margen;
     }
 
@@ -91,6 +104,14 @@ export function ComponentesCatalogo({
       top,
       left,
     });
+  }
+
+  function abrirMenu(
+    evento: React.MouseEvent<HTMLButtonElement>,
+    componenteId: number
+  ) {
+    menuBotonRef.current =
+      evento.currentTarget;
 
     setMenuAbierto(
       menuAbierto === componenteId
@@ -99,8 +120,48 @@ export function ComponentesCatalogo({
     );
   }
 
-    const [menuAbierto, setMenuAbierto] =
-      useState<number | null>(null);
+  useEffect(() => {
+    if (
+      menuAbierto === null ||
+      !menuBotonRef.current
+    ) {
+      return;
+    }
+
+    actualizarPosicionMenu();
+
+    const manejarScroll = () => {
+      actualizarPosicionMenu();
+    };
+
+    const manejarResize = () => {
+      actualizarPosicionMenu();
+    };
+
+    window.addEventListener(
+      'scroll',
+      manejarScroll,
+      true
+    );
+
+    window.addEventListener(
+      'resize',
+      manejarResize
+    );
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        manejarScroll,
+        true
+      );
+
+      window.removeEventListener(
+        'resize',
+        manejarResize
+      );
+    };
+  }, [menuAbierto]);
       
     async function eliminarComponente(
       componente: Componente
@@ -201,57 +262,6 @@ export function ComponentesCatalogo({
       );
     }
   }
-  useEffect(() => {
-    let activo = true;
-
-    Promise.all([
-      getTodosComponentes(),
-      getEquipos(),
-    ])
-      .then(
-        ([
-          componentesResultado,
-          equiposResultado,
-        ]) => {
-          if (!activo) {
-            return;
-          }
-
-          setComponentes(
-            componentesResultado
-          );
-
-          setEquipos(
-            equiposResultado
-          );
-        }
-      )
-      .catch((error) => {
-        if (!activo) {
-          return;
-        }
-
-        console.error(
-          'Error cargando catálogo de componentes:',
-          error
-        );
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo cargar el catálogo.'
-        );
-      })
-      .finally(() => {
-        if (activo) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      activo = false;
-    };
-  }, []);
 
   const equipoPorId = useMemo(() => {
     const mapa = new Map<number, Equipo>();

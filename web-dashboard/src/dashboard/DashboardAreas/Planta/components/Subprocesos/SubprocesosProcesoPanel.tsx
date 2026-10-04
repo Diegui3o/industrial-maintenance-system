@@ -9,9 +9,14 @@ import {
 } from '../../services/plantaApi';
 
 import { SubprocesoFormProceso } from './SubprocesoFormProceso';
-import { SubprocesoEditarPanel } from './SubprocesoEditarPanel';
 
-export function SubprocesosProcesoPanel() {
+interface Props {
+  subprocesoInicialId?: number | null;
+}
+
+export function SubprocesosProcesoPanel({
+  subprocesoInicialId = null,
+}: Props) {
   const [procesos, setProcesos] = useState<Proceso[]>([]);
   const [subprocesos, setSubprocesos] = useState<Subproceso[]>([]);
   const [procesoId, setProcesoId] = useState<number | null>(null);
@@ -35,8 +40,6 @@ export function SubprocesosProcesoPanel() {
   const [guardando, setGuardando] = useState(false);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [refrescarEditor, setRefrescarEditor] =
-    useState(0);
 
   const normalizar = (texto: string) =>
     texto
@@ -84,7 +87,6 @@ export function SubprocesosProcesoPanel() {
 
       setProcesos(procesosResultado);
       setSubprocesos(subprocesosResultado);
-      setRefrescarEditor((valor) => valor + 1);
 
       if (procesoId) {
         const {
@@ -127,6 +129,39 @@ export function SubprocesosProcesoPanel() {
   useEffect(() => {
     void cargarDatos();
   }, [cargarDatos]);
+
+  useEffect(() => {
+    if (!subprocesoInicialId) {
+      return;
+    }
+
+    const subproceso =
+      subprocesos.find(
+        (item) =>
+          item.id ===
+          subprocesoInicialId
+      );
+
+    if (!subproceso) {
+      return;
+    }
+
+    if (subproceso.proceso_id) {
+      setProcesoId(
+        subproceso.proceso_id
+      );
+    }
+
+    setSeleccionado(subproceso);
+    setOrigenSeleccionado(
+      subproceso.proceso_id
+        ? 'asignado'
+        : 'disponible'
+    );
+  }, [
+    subprocesoInicialId,
+    subprocesos,
+  ]);
 
   const cambiarProceso = (id: string) => {
     const nuevoId = id ? Number(id) : null;
@@ -659,9 +694,6 @@ export function SubprocesosProcesoPanel() {
         </div>
       )}
 
-      <SubprocesoEditarPanel
-        refrescar={refrescarEditor}
-      />
     </div>
   );
 }

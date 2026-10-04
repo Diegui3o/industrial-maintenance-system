@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ProcesoForm } from './ProcesoForm';
 import {
   eliminarProceso,
@@ -28,6 +28,9 @@ export function ProcesoList({
     left: 0,
   });
 
+  const menuBotonRef =
+    useRef<HTMLButtonElement | null>(null);
+
   const cerrarForm = () => {
     setMostrarForm(false);
     setEditar(null);
@@ -38,12 +41,14 @@ export function ProcesoList({
     onReload();
   };
 
-  function abrirMenu(
-    evento: React.MouseEvent<HTMLButtonElement>,
-    procesoId: number
-  ) {
-    const rect =
-      evento.currentTarget.getBoundingClientRect();
+  function actualizarPosicionMenu() {
+    const boton = menuBotonRef.current;
+
+    if (!boton) {
+      return;
+    }
+
+    const rect = boton.getBoundingClientRect();
 
     const ancho = 150;
     const alto = 80;
@@ -68,7 +73,18 @@ export function ProcesoList({
       top = margen;
     }
 
-    setMenuPosicion({ top, left });
+    setMenuPosicion({
+      top,
+      left,
+    });
+  }
+
+  function abrirMenu(
+    evento: React.MouseEvent<HTMLButtonElement>,
+    procesoId: number
+  ) {
+    menuBotonRef.current =
+      evento.currentTarget;
 
     setMenuAbierto(
       menuAbierto === procesoId
@@ -76,6 +92,49 @@ export function ProcesoList({
         : procesoId
     );
   }
+
+  useEffect(() => {
+    if (
+      menuAbierto === null ||
+      !menuBotonRef.current
+    ) {
+      return;
+    }
+
+    actualizarPosicionMenu();
+
+    const manejarScroll = () => {
+      actualizarPosicionMenu();
+    };
+
+    const manejarResize = () => {
+      actualizarPosicionMenu();
+    };
+
+    window.addEventListener(
+      'scroll',
+      manejarScroll,
+      true
+    );
+
+    window.addEventListener(
+      'resize',
+      manejarResize
+    );
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        manejarScroll,
+        true
+      );
+
+      window.removeEventListener(
+        'resize',
+        manejarResize
+      );
+    };
+  }, [menuAbierto]);
 
   async function eliminar(
     proceso: Proceso

@@ -57,13 +57,30 @@ func (r *EstructuraPlantaRepository) RelacionarSubprocesosConSistema(
 		return fmt.Errorf("sistema_id inválido")
 	}
 
-	if len(subprocesoIDs) == 0 {
-		return fmt.Errorf("debe seleccionar al menos un subproceso")
-	}
-
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
+	}
+
+	// Primero quitamos todos los subprocesos
+	// que actualmente pertenecen a este sistema.
+	_, err = tx.Exec(`
+		UPDATE subprocesos_sistema_planta
+		SET
+			sistema_id = NULL,
+			actualizado_en = NOW()
+		WHERE sistema_id = $1
+	`, sistemaID)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// Si no quedan seleccionados, simplemente
+	// dejamos todos los subprocesos desvinculados.
+	if len(subprocesoIDs) == 0 {
+		return tx.Commit()
 	}
 
 	placeholders := make([]string, len(subprocesoIDs))
@@ -74,7 +91,7 @@ func (r *EstructuraPlantaRepository) RelacionarSubprocesosConSistema(
 	for i, id := range subprocesoIDs {
 		if id <= 0 {
 			_ = tx.Rollback()
-			return fmt.Errorf("subproceso_id inválido")
+			return fmt.Errorf("subproceso_sistema_id inválido")
 		}
 
 		placeholders[i] = fmt.Sprintf("$%d", i+2)
@@ -90,14 +107,10 @@ func (r *EstructuraPlantaRepository) RelacionarSubprocesosConSistema(
 		  AND activo = TRUE
 	`, strings.Join(placeholders, ", "))
 
-	if _, err := tx.Exec(query, args...); err != nil {
+	if _, err = tx.Exec(query, args...); err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }

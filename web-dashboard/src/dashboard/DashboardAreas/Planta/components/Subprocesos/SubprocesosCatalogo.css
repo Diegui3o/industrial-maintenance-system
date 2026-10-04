@@ -1,0 +1,175 @@
+.subprocesos-catalogo {
+  margin-top: 18px;
+}
+
+.subprocesos-catalogo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.subprocesos-catalogo-header h3 {
+  margin: 2px 0 3px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.subprocesos-catalogo-header p {
+  margin: 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.subprocesos-catalogo-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+
+  background: #fff7ed;
+  color: #c2410c;
+
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.subprocesos-catalogo-search {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  box-sizing: border-box;
+
+  margin: 0 0 10px;
+  padding: 0 10px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.subprocesos-catalogo-search span {
+  flex: 0 0 auto;
+  margin-right: 8px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.subprocesos-catalogo-search input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font-size: 12px;
+  color: #374151;
+}
+
+.subprocesos-catalogo-search input::placeholder {
+  color: #9ca3af;
+}
+
+.subprocesos-catalogo-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.subprocesos-catalogo-table th {
+  padding: 8px 10px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.subprocesos-catalogo-table td {
+  padding: 8px 10px;
+  height: 42px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.subprocesos-catalogo-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.subprocesos-catalogo-table tbody tr:hover {
+  background: #fcfcfc;
+}
+
+.subprocesos-catalogo-table td:first-child strong {
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.subprocesos-catalogo-table td:first-child small {
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.subprocesos-catalogo-padre {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.subprocesos-catalogo-padre small {
+  color: #9ca3af;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.subprocesos-catalogo-padre strong {
+  color: #374151;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subprocesos-catalogo-options {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.subprocesos-catalogo-options .planta-options-btn {
+  padding: 6px 9px;
+  font-size: 10px;
+  border-radius: 6px;
+}
+
+@media (max-width: 850px) {
+  .subprocesos-catalogo-table th,
+  .subprocesos-catalogo-table td {
+    padding: 7px 8px;
+  }
+}

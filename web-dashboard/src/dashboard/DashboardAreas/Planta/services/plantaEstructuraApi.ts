@@ -110,7 +110,7 @@ export async function actualizarSubproceso(
 
 export interface SubprocesoSistemaPlanta {
   id: number;
-  sistema_id: number;
+  sistema_id: number | null;
   nombre: string;
   descripcion?: string;
   activo: boolean;

@@ -134,7 +134,7 @@ type ComponenteRepuestoDetalle struct {
 }
 type SubprocesoSistemaPlanta struct {
 	ID          int     `json:"id"`
-	SistemaID   int     `json:"sistema_id"`
+	SistemaID   *int    `json:"sistema_id,omitempty"`
 	Nombre      string  `json:"nombre"`
 	Descripcion *string `json:"descripcion,omitempty"`
 	Activo      bool    `json:"activo"`

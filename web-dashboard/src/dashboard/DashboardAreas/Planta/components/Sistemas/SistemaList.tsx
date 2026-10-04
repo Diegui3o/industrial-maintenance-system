@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   eliminarSistema,
   type SistemaPlanta,
@@ -15,7 +15,9 @@ export function SistemaList({
   sistemas,
   onReload,
 }: Props) {
-  const [mostrarForm, setMostrarForm] = useState(false);
+  const [mostrarForm, setMostrarForm] =
+    useState(false);
+
   const [editar, setEditar] =
     useState<SistemaPlanta | null>(null);
 
@@ -27,22 +29,28 @@ export function SistemaList({
     left: 0,
   });
 
+  const menuBotonRef =
+    useRef<HTMLButtonElement | null>(null);
+
   const cerrarForm = () => {
     setMostrarForm(false);
     setEditar(null);
   };
 
-  const guardado = async () => {
+  const guardado = () => {
     cerrarForm();
     onReload();
   };
 
-  function abrirMenu(
-    evento: React.MouseEvent<HTMLButtonElement>,
-    sistemaId: number
-  ) {
+  function actualizarPosicionMenu() {
+    const boton = menuBotonRef.current;
+
+    if (!boton) {
+      return;
+    }
+
     const rect =
-      evento.currentTarget.getBoundingClientRect();
+      boton.getBoundingClientRect();
 
     const ancho = 150;
     const alto = 80;
@@ -55,19 +63,42 @@ export function SistemaList({
       left = margen;
     }
 
-    if (left + ancho > window.innerWidth - margen) {
-      left = window.innerWidth - ancho - margen;
+    if (
+      left + ancho >
+      window.innerWidth - margen
+    ) {
+      left =
+        window.innerWidth -
+        ancho -
+        margen;
     }
 
-    if (top + alto > window.innerHeight - margen) {
-      top = rect.top - alto - margen;
+    if (
+      top + alto >
+      window.innerHeight - margen
+    ) {
+      top =
+        rect.top -
+        alto -
+        margen;
     }
 
     if (top < margen) {
       top = margen;
     }
 
-    setMenuPosicion({ top, left });
+    setMenuPosicion({
+      top,
+      left,
+    });
+  }
+
+  function abrirMenu(
+    evento: React.MouseEvent<HTMLButtonElement>,
+    sistemaId: number
+  ) {
+    menuBotonRef.current =
+      evento.currentTarget;
 
     setMenuAbierto(
       menuAbierto === sistemaId
@@ -75,6 +106,49 @@ export function SistemaList({
         : sistemaId
     );
   }
+
+  useEffect(() => {
+    if (
+      menuAbierto === null ||
+      !menuBotonRef.current
+    ) {
+      return;
+    }
+
+    actualizarPosicionMenu();
+
+    const manejarScroll = () => {
+      actualizarPosicionMenu();
+    };
+
+    const manejarResize = () => {
+      actualizarPosicionMenu();
+    };
+
+    window.addEventListener(
+      'scroll',
+      manejarScroll,
+      true
+    );
+
+    window.addEventListener(
+      'resize',
+      manejarResize
+    );
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        manejarScroll,
+        true
+      );
+
+      window.removeEventListener(
+        'resize',
+        manejarResize
+      );
+    };
+  }, [menuAbierto]);
 
   async function eliminar(
     sistema: SistemaPlanta
@@ -119,7 +193,9 @@ export function SistemaList({
           <button
             type="button"
             className="planta-add-btn"
-            onClick={() => setMostrarForm(true)}
+            onClick={() =>
+              setMostrarForm(true)
+            }
           >
             + Nuevo
           </button>
@@ -170,7 +246,10 @@ export function SistemaList({
                   type="button"
                   className="planta-options-btn"
                   onClick={(evento) =>
-                    abrirMenu(evento, sistema.id)
+                    abrirMenu(
+                      evento,
+                      sistema.id
+                    )
                   }
                 >
                   Opciones ▾
@@ -181,6 +260,7 @@ export function SistemaList({
                     <div
                       className="planta-options-menu"
                       style={{
+                        position: 'fixed',
                         top: menuPosicion.top,
                         left: menuPosicion.left,
                       }}
