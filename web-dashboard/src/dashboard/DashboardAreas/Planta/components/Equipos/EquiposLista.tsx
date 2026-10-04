@@ -140,13 +140,126 @@ export function EquiposLista() {
   const [busquedaFiltro, setBusquedaFiltro] =
     useState("");
 
-   const [posicionFiltro, setPosicionFiltro] =
+  const [posicionFiltro, setPosicionFiltro] =
    useState({
       top: 0,
       left: 0,
    });
 
-    const navigate = useNavigate();
+  const [menuFilaClave, setMenuFilaClave] =
+    useState<string | null>(null);
+
+  const [equipoEstado, setEquipoEstado] =
+    useState<FilaEquipo | null>(null);
+
+  const [nuevoEstado, setNuevoEstado] =
+    useState('activo');
+
+  const [motivoEstado, setMotivoEstado] =
+    useState('');
+
+  const [guardandoEstado, setGuardandoEstado] =
+    useState(false);
+
+  const navigate = useNavigate();
+
+  const abrirCambioEstado = (
+    fila: FilaEquipo,
+    estadoInicial?: string
+  ) => {
+    setMenuFilaClave(null);
+
+    setEquipoEstado(fila);
+    setNuevoEstado(
+      estadoInicial ?? fila.estado
+    );
+    setMotivoEstado('');
+  };
+
+  const cambiarEstadoEquipo = async () => {
+    if (!equipoEstado) {
+      return;
+    }
+
+    if (!motivoEstado.trim()) {
+      return;
+    }
+
+    setGuardandoEstado(true);
+
+    try {
+      const res = await fetch(
+        `/api/equipos/${equipoEstado.equipoId}/estado`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            estado: nuevoEstado,
+            motivo: motivoEstado.trim(),
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const texto = await res.text();
+
+        throw new Error(
+          texto ||
+            'No se pudo cambiar el estado del equipo.'
+        );
+      }
+
+      setEquipos((actuales) =>
+        actuales.map((equipo) =>
+          equipo.id === equipoEstado.equipoId
+            ? {
+                ...equipo,
+                estado_equipo: nuevoEstado,
+              }
+            : equipo
+        )
+      );
+
+      setEquipoEstado(null);
+    } catch (error) {
+      console.error(
+        'Error cambiando estado:',
+        error
+      );
+
+      window.alert(
+        'No se pudo cambiar el estado del equipo.'
+      );
+    } finally {
+      setGuardandoEstado(false);
+    }
+  };
+
+  useEffect(() => {
+    const cerrarMenus = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      if (
+        !target.closest('.planta-equipos-opciones-wrap')
+      ) {
+        setMenuFilaClave(null);
+      }
+    };
+
+    document.addEventListener(
+      'mousedown',
+      cerrarMenus
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        cerrarMenus
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let activo = true;
@@ -391,39 +504,42 @@ export function EquiposLista() {
 
   return (
     <section className="planta-lista planta-equipos-lista">
+
       <div className="planta-lista-header">
-      <div>
-         <h2>Catálogo de equipos</h2>
+        <div>
+          <h2>Catálogo de equipos</h2>
 
-        <span>
-          {filasFiltradas.length} registros ·{" "}
-          {equipos.length} equipos
-        </span>
-      </div>
+          <span>
+            {filasFiltradas.length} registros ·{" "}
+            {equipos.length} equipos
+          </span>
+        </div>
 
-      <div className="planta-lista-acciones">
-         <button
+        <div className="planta-lista-acciones">
+          <button
             type="button"
             className="planta-btn-excel"
             onClick={descargarExcel}
-         >
+          >
             ↓ Excel
-         </button>
+          </button>
 
-         <button
+          <button
             type="button"
             className="planta-lista-limpiar"
             onClick={limpiarFiltros}
-         >
+          >
             Limpiar filtros
-         </button>
+          </button>
+        </div>
       </div>
-    </div>
 
       <div className="planta-table-wrapper planta-equipos-table-wrapper">
         <table className="planta-table planta-equipos-table">
+
           <thead>
             <tr>
+
               {columnas.map((columna) => {
                 const valores =
                   valoresPorColumna[columna.key] ?? [];
@@ -568,15 +684,15 @@ export function EquiposLista() {
                   Opciones
                 </span>
               </th>
+
             </tr>
           </thead>
+
           <tbody>
             {filasFiltradas.length === 0 ? (
               <tr>
                 <td
-                  colSpan={
-                    columnas.length
-                  }
+                  colSpan={columnas.length + 1}
                   className="planta-table-empty"
                 >
                   No se encontraron equipos.
@@ -584,10 +700,13 @@ export function EquiposLista() {
               </tr>
             ) : (
               filasFiltradas.map(
-                (fila, index) => (
-                  <tr
-                    key={`${fila.equipoId}-${fila.componente}-${index}`}
-                  >
+                (fila, index) => {
+                  const filaClave =
+                    `${fila.equipoId}-${fila.componente}-${index}`;
+
+                  return (
+                    <tr key={filaClave}>
+
                     <td className="planta-equipo-codigo">
                       {fila.codigo}
                     </td>
@@ -633,15 +752,16 @@ export function EquiposLista() {
                         "-"
                       )}
                     </td>
+
                     <td className="planta-equipos-opciones">
                       <div className="planta-equipos-opciones-grupo">
+
                         <button
                           type="button"
                           className="planta-equipo-opcion planta-equipo-opcion-ver"
                           onClick={() =>
                             navigate(`/equipos/${fila.equipoId}`)
                           }
-                          title="Ver equipo"
                         >
                           Ver
                         </button>
@@ -650,23 +770,307 @@ export function EquiposLista() {
                           type="button"
                           className="planta-equipo-opcion planta-equipo-opcion-editar"
                           onClick={() =>
-                            navigate(
-                              `/equipos/${fila.equipoId}/editar`
-                            )
+                            navigate(`/equipos/${fila.equipoId}/editar`)
                           }
-                          title="Editar equipo"
                         >
                           Editar
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
+
+                        <div className="planta-equipo-estado-wrap">
+
+                          <button
+                            type="button"
+                            className="planta-equipo-opcion planta-equipo-opcion-estado"
+                            onClick={() =>
+                              setMenuFilaClave((actual) =>
+                                actual === filaClave
+                                  ? null
+                                  : filaClave
+                              )
+                            }
+                          >
+                            Estado
+                            <span>▾</span>
+                          </button>
+
+                          {menuFilaClave === filaClave && (
+                            <div className="planta-equipo-estado-menu">
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirCambioEstado(fila, "activo")
+                                }
+                              >
+                                Activo
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirCambioEstado(fila, "inactivo")
+                                }
+                              >
+                                Inactivo
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirCambioEstado(fila, "fallo")
+                                }
+                              >
+                                Fallo
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirCambioEstado(
+                                    fila,
+                                    "mantenimiento"
+                                  )
+                                }
+                              >
+                                Mantenimiento
+                                </button>
+
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
               )
             )}
           </tbody>
+
         </table>
       </div>
+            
+      {equipoEstado && (
+        <div
+          className="planta-modal-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setEquipoEstado(null);
+            }
+          }}
+        >
+          <div className="planta-modal planta-estado-modal">
+
+            <div className="planta-modal-header">
+
+              <div>
+                <span className="planta-section-label">
+                  ESTADO DEL EQUIPO
+                </span>
+
+                <h3>
+                  {equipoEstado.codigo}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="planta-modal-close"
+                onClick={() =>
+                  setEquipoEstado(null)
+                }
+              >
+                ×
+              </button>
+
+            </div>
+
+            <div className="planta-estado-opciones">
+
+              <label
+                className={`planta-estado-opcion ${
+                  nuevoEstado === "activo"
+                    ? "selected"
+                    : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="estado-equipo"
+                  value="activo"
+                  checked={
+                    nuevoEstado === "activo"
+                  }
+                  onChange={() =>
+                    setNuevoEstado(
+                      "activo"
+                    )
+                  }
+                />
+
+                <span>
+                  <strong>Activo</strong>
+
+                  <small>
+                    El equipo está operativo.
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`planta-estado-opcion ${
+                  nuevoEstado === "inactivo"
+                    ? "selected"
+                    : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="estado-equipo"
+                  value="inactivo"
+                  checked={
+                    nuevoEstado === "inactivo"
+                  }
+                  onChange={() =>
+                    setNuevoEstado(
+                      "inactivo"
+                    )
+                  }
+                />
+
+                <span>
+                  <strong>Inactivo</strong>
+
+                  <small>
+                    Está fuera de operación.
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`planta-estado-opcion ${
+                  nuevoEstado === "fallo"
+                    ? "selected"
+                    : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="estado-equipo"
+                  value="fallo"
+                  checked={
+                    nuevoEstado === "fallo"
+                  }
+                  onChange={() =>
+                    setNuevoEstado(
+                      "fallo"
+                    )
+                  }
+                />
+
+                <span>
+                  <strong>Fallo</strong>
+
+                  <small>
+                    Presenta una avería o condición anormal.
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`planta-estado-opcion ${
+                  nuevoEstado ===
+                  "mantenimiento"
+                    ? "selected"
+                    : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="estado-equipo"
+                  value="mantenimiento"
+                  checked={
+                    nuevoEstado ===
+                    "mantenimiento"
+                  }
+                  onChange={() =>
+                    setNuevoEstado(
+                      "mantenimiento"
+                    )
+                  }
+                />
+
+                <span>
+                  <strong>
+                    Mantenimiento
+                  </strong>
+
+                  <small>
+                    Está siendo intervenido o inspeccionado.
+                  </small>
+                </span>
+              </label>
+
+            </div>
+
+            <div className="planta-modal-field">
+
+              <label>
+                Motivo del cambio
+              </label>
+
+              <textarea
+                value={motivoEstado}
+                onChange={(e) =>
+                  setMotivoEstado(
+                    e.target.value
+                  )
+                }
+                placeholder="Ingrese el motivo..."
+                rows={4}
+              />
+
+            </div>
+
+            <div className="planta-modal-actions">
+
+              <button
+                type="button"
+                className="planta-modal-btn-secondary"
+                onClick={() =>
+                  setEquipoEstado(null)
+                }
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="planta-modal-btn-primary"
+                disabled={
+                  guardandoEstado ||
+                  !motivoEstado.trim()
+                }
+                onClick={
+                  cambiarEstadoEquipo
+                }
+              >
+                {guardandoEstado
+                  ? "Guardando..."
+                  : "Guardar estado"}
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }
