@@ -14,6 +14,7 @@ import {
 } from '../../services/plantaComponentesApi';
 
 import {
+  getEquipos,
   type Equipo,
 } from '../../services/plantaEquiposApi';
 
@@ -29,7 +30,7 @@ export function ComponentesCatalogo({
   const [componentes, setComponentes] =
     useState<Componente[]>([]);
 
-  const [equipos] =
+  const [equipos, setEquipos] =
     useState<Equipo[]>([]);
 
   const [busqueda, setBusqueda] =
@@ -41,7 +42,7 @@ export function ComponentesCatalogo({
   const [equipoFiltro, setEquipoFiltro] =
     useState('');
 
-  const [loading] =
+  const [loading, setLoading] =
     useState(true);
 
   const [menuPosicion, setMenuPosicion] = useState({
@@ -119,6 +120,35 @@ export function ComponentesCatalogo({
         : componenteId
     );
   }
+  
+  useEffect(() => {
+    async function cargarCatalogo() {
+      setLoading(true);
+
+      try {
+        const [componentesResultado, equiposResultado] =
+          await Promise.all([
+            getTodosComponentes(),
+            getEquipos(),
+          ]);
+
+        setComponentes(componentesResultado);
+        setEquipos(equiposResultado);
+      } catch (error) {
+        console.error(
+          'Error cargando catálogo de componentes:',
+          error
+        );
+
+        setComponentes([]);
+        setEquipos([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void cargarCatalogo();
+  }, []);
 
   useEffect(() => {
     if (
