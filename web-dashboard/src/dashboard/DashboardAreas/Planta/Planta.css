@@ -2858,3 +2858,87 @@ button.planta-list-item:hover {
   top: auto;
   bottom: calc(100% + 4px);
 }
+.planta-equipos-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.planta-equipos-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.planta-equipos-table th,
+.planta-equipos-table td {
+  padding: 8px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.planta-equipos-table th {
+  font-weight: 700;
+}
+
+.planta-equipos-table td {
+  font-weight: 500;
+}
+
+.planta-equipos-table .planta-equipo-codigo {
+  font-weight: 700;
+}
+
+.planta-equipos-table .planta-equipo-nombre {
+  font-weight: 700;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planta-equipos-table .planta-equipo-padre {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planta-equipos-table th:nth-child(1),
+.planta-equipos-table td:nth-child(1) {
+  width: 1%;
+}
+
+.planta-equipos-table th:nth-child(2),
+.planta-equipos-table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.planta-equipos-table th:nth-child(3),
+.planta-equipos-table td:nth-child(3) {
+  width: 90px;
+}
+
+.planta-equipos-table th:nth-child(4),
+.planta-equipos-table td:nth-child(4) {
+  min-width: 150px;
+}
+
+.planta-equipos-table th:nth-child(5),
+.planta-equipos-table td:nth-child(5) {
+  min-width: 150px;
+}
+
+.planta-equipos-table th:nth-child(6),
+.planta-equipos-table td:nth-child(6) {
+  width: 105px;
+}
+
+.planta-equipos-table th:nth-child(7),
+.planta-equipos-table td:nth-child(7) {
+  width: 95px;
+}
+
+.planta-equipos-opciones-th {
+  width: 150px;
+  min-width: 150px;
+  text-align: center;
+}

@@ -16,7 +16,6 @@ import {
   type SubprocesoEditable,
 } from './SubprocesoEditorForm';
 
-import { SubprocesoOpcionesMenu } from './SubprocesoOpcionesMenu';
 import './SubprocesosCatalogo.css';
 
 import {
@@ -56,7 +55,7 @@ export function SubprocesosCatalogo({
   const [menuAbierto, setMenuAbierto] =
     useState<string | null>(null);
 
-  const [menuPosicion, setMenuPosicion] =
+  const [, setMenuPosicion] =
     useState({ top: 0, left: 0 });
 
   const menuBotonRef =
@@ -273,6 +272,59 @@ export function SubprocesosCatalogo({
       left,
     });
   }
+
+  useEffect(() => {
+    const cerrarMenu = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      const dentroDeOpciones =
+        target.closest(
+          '.subprocesos-catalogo-options'
+        );
+
+      const dentroDelMenu =
+        target.closest(
+          '.planta-options-menu'
+        );
+
+      if (
+        !dentroDeOpciones &&
+        !dentroDelMenu
+      ) {
+        setMenuAbierto(null);
+      }
+    };
+
+    const cerrarConEscape = (
+      event: KeyboardEvent
+    ) => {
+      if (event.key === 'Escape') {
+        setMenuAbierto(null);
+      }
+    };
+
+    document.addEventListener(
+      'mousedown',
+      cerrarMenu
+    );
+
+    document.addEventListener(
+      'keydown',
+      cerrarConEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        cerrarMenu
+      );
+
+      document.removeEventListener(
+        'keydown',
+        cerrarConEscape
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuAbierto) return;
@@ -620,46 +672,56 @@ export function SubprocesosCatalogo({
                     </td>
 
                     <td className="subprocesos-catalogo-options">
-                      <button
-                        type="button"
-                        className="planta-options-btn"
-                        onClick={(e) =>
-                          abrirMenu(
-                            e,
-                            subproceso.clave
-                          )
-                        }
-                      >
-                        Opciones ▾
-                      </button>
-
-                      {menuAbierto ===
-                        subproceso.clave && (
-                        <SubprocesoOpcionesMenu
-                          tipo={subproceso.tipo}
-                          top={menuPosicion.top}
-                          left={menuPosicion.left}
-                          onEditar={() =>
-                            editar(subproceso)
+                      <div className="subprocesos-catalogo-menu-wrap">
+                        <button
+                          type="button"
+                          className="planta-options-btn"
+                          onClick={(e) =>
+                            abrirMenu(e, subproceso.clave)
                           }
-                          onRelacionar={() => {
-                            setMenuAbierto(null);
+                        >
+                          Opciones ▾
+                        </button>
 
-                            if (subproceso.tipo === 'proceso') {
-                              onRelacionarProceso?.(
-                                subproceso
-                              );
-                            } else {
-                              onRelacionarSistema?.(
-                                subproceso
-                              );
-                            }
-                          }}
-                          onDesactivar={() =>
-                            void desactivar(subproceso)
-                          }
-                        />
-                      )}
+                        {menuAbierto === subproceso.clave && (
+                          <div className="subprocesos-catalogo-menu">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuAbierto(null);
+                                editar(subproceso);
+                              }}
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuAbierto(null);
+
+                                if (subproceso.tipo === 'proceso') {
+                                  onRelacionarProceso?.(subproceso);
+                                } else {
+                                  onRelacionarSistema?.(subproceso);
+                                }
+                              }}
+                            >
+                              Relacionar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuAbierto(null);
+                                void desactivar(subproceso);
+                              }}
+                            >
+                              Desactivar
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
