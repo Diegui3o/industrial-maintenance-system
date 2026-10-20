@@ -1,0 +1,40 @@
+﻿{
+    "PiSystem":  {
+                     "Server":  "PEELPWVPIAP01NX",
+                     "Username":  "svc_readonly",
+                     "Password":  "***",
+                     "Database":  "BD El Porvenir",
+                     "RootElement":  "7937 - El Porvenir",
+                     "AutoDiscover":  true,
+                     "Tags":  [
+                                  {
+                                      "EquipmentId":  0,
+                                      "ElementPath":  "\\\\PEELPWVPIAP01NX\\BD El Porvenir\\7937 - El Porvenir\\01- Mina\\1025_Bombeo_Mina\\LV-600_Pump2",
+                                      "AttributeName":  "I1",
+                                      "DisplayName":  "LV-600_Pump2 - I1",
+                                      "Unit":  "A"
+                                  },
+                                  {
+                                      "EquipmentId":  0,
+                                      "ElementPath":  "\\\\PEELPWVPIAP01NX\\BD El Porvenir\\7937 - El Porvenir\\02 - Planta\\01 - FASE I\\3. FAJA 1A\\Motor_F1A",
+                                      "AttributeName":  "Corriente",
+                                      "DisplayName":  "Motor_F1A - Corriente",
+                                      "Unit":  "A"
+                                  },
+                                  {
+                                      "EquipmentId":  0,
+                                      "ElementPath":  "\\\\PEELPWVPIAP01NX\\BD El Porvenir\\7937 - El Porvenir\\02 - Planta\\02 - FASE II\\8. FAJA 7\\Motor_F7",
+                                      "AttributeName":  "Corriente",
+                                      "DisplayName":  "Motor_F7 - Corriente",
+                                      "Unit":  "A"
+                                  }
+                              ]
+                 },
+    "GoBackend":  {
+                      "BaseUrl":  "http://10.30.37.165:1883",
+                      "ApiKey":  "mto_e169a8",
+                      "Endpoint":  "/api/v1/eventos/sensor",
+                      "BatchSize":  500,
+                      "SendIntervalMs":  1000
+                  }
+}
