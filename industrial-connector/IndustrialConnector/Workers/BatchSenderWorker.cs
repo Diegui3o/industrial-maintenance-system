@@ -39,8 +39,8 @@ namespace IndustrialConnector.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("📤 Batch Sender iniciado");
-            _logger.LogInformation("📦 Batch size: {BatchSize}, Intervalo: {Interval}ms",
+            _logger.LogInformation("­ƒôñ Batch Sender iniciado");
+            _logger.LogInformation("­ƒôª Batch size: {BatchSize}, Intervalo: {Interval}ms",
                 _batchSize, _config.SendIntervalMs);
 
             while (!stoppingToken.IsCancellationRequested)
@@ -55,12 +55,12 @@ namespace IndustrialConnector.Workers
                         var success = await SendBatchAsync(batch);
                         if (success)
                         {
-                            _logger.LogInformation("✅ Enviados {Count} eventos al backend | Buffer: {Buffer}",
+                            _logger.LogInformation("Ô£à Enviados {Count} eventos al backend | Buffer: {Buffer}",
                                 batch.Count, _buffer.Count);
                         }
                         else
                         {
-                            _logger.LogWarning("⚠️ Falló envío de {Count} eventos, reintentando", batch.Count);
+                            _logger.LogWarning("ÔÜá´©Å Fall├│ env├¡o de {Count} eventos, reintentando", batch.Count);
                             // Los eventos ya se devolvieron al buffer dentro de SendBatchAsync
                         }
                     }
@@ -73,12 +73,12 @@ namespace IndustrialConnector.Workers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ Error en ciclo de Batch Sender");
+                    _logger.LogError(ex, "ÔØî Error en ciclo de Batch Sender");
                     await Task.Delay(5000, stoppingToken);
                 }
             }
 
-            _logger.LogInformation("📤 Batch Sender detenido");
+            _logger.LogInformation("­ƒôñ Batch Sender detenido");
         }
 
         private async Task<bool> SendBatchAsync(List<SensorReading> batch)
@@ -97,14 +97,10 @@ namespace IndustrialConnector.Workers
                 if (json.Length > 0)
                 {
                     var preview = json.Length > 500 ? json.Substring(0, 500) + "..." : json;
-                    _logger.LogInformation($"📤 JSON a enviar: {preview}");
+                    _logger.LogInformation($"­ƒôñ JSON a enviar: {preview}");
                 }
 
-                var success = await _exporter.SendDataAsync(
-                    json,
-                    _config.ApiKey,
-                    _config.Endpoint
-                );
+                var success = await _exporter.SendDataAsync(json, _config.Endpoint);
 
                 if (success)
                 {
@@ -123,7 +119,7 @@ namespace IndustrialConnector.Workers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error enviando batch");
+                _logger.LogError(ex, "ÔØî Error enviando batch");
                 foreach (var item in batch)
                     _buffer.Store(item);
                 _health.UpdateBufferCount(_buffer.Count);

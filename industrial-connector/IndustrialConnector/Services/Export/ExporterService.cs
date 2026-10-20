@@ -19,8 +19,8 @@ namespace IndustrialConnector.Services
 
         public async Task<bool> SendDataAsync(
             string jsonData,
-            string apiKey,
-            string endpoint)
+            string endpoint
+        )
         {
             try
             {
@@ -31,12 +31,6 @@ namespace IndustrialConnector.Services
                 );
 
                 _httpClient.DefaultRequestHeaders.Clear();
-
-                _httpClient.DefaultRequestHeaders.Add(
-                    "X-API-Key",
-                    apiKey
-                );
-
                 _httpClient.DefaultRequestHeaders.Add(
                     "Accept",
                     "application/json"

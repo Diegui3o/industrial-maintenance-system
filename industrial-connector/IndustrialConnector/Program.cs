@@ -93,18 +93,23 @@ namespace IndustrialConnector
             // LOGGING - SERILOG
             // ============================================
 
+            var logDirectory = System.IO.Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "logs");
+
+            System.IO.Directory.CreateDirectory(logDirectory);
+
             builder.Logging.ClearProviders();
 
             builder.Logging.AddSerilog(
                 new LoggerConfiguration()
                     .WriteTo.Console()
                     .WriteTo.File(
-                        "logs/connector-.log",
+                        System.IO.Path.Combine(logDirectory, "connector-.log"),
                         rollingInterval: RollingInterval.Day,
                         retainedFileCountLimit: 7)
                     .MinimumLevel.Information()
                     .CreateLogger());
-
 
             // ============================================
             // WINDOWS SERVICE

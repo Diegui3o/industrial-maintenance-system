@@ -59,7 +59,7 @@ namespace IndustrialConnector.Workers
             _config = config.Value;
         }
 
-        protected override async Task ExecuteAsync(
+        private async Task RunCycleAsync(
             CancellationToken stoppingToken)
         {
             _logger.LogInformation(
@@ -490,6 +490,87 @@ namespace IndustrialConnector.Workers
                 result);
 
             return result;
+        }
+
+        protected override async Task ExecuteAsync(
+            CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await RunCycleAsync(stoppingToken);
+                }
+                catch (OperationCanceledException)
+                    when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Error en el ciclo de PI System. Se intentara recuperar.");
+                }
+                finally
+                {
+                    try
+                    {
+                        _dataPipe.Dispose();
+                    }
+                    catch (Exception cleanupException)
+                    {
+                        _logger.LogWarning(
+                            cleanupException,
+                            "Error al liberar AFDataPipe durante la recuperacion.");
+                    }
+
+                    try
+                    {
+                        _connection.Disconnect();
+                    }
+                    catch (Exception cleanupException)
+                    {
+                        _logger.LogWarning(
+                            cleanupException,
+                            "Error al desconectar PI System durante la recuperacion.");
+                    }
+
+                    try
+                    {
+                        _health.SetPiSystemConnected(false);
+                    }
+                    catch (Exception cleanupException)
+                    {
+                        _logger.LogWarning(
+                            cleanupException,
+                            "No se pudo actualizar el estado de conexion de PI System.");
+                    }
+                }
+
+                if (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                _logger.LogWarning(
+                    "Nuevo intento de inicializacion de PI en 15 segundos.");
+
+                try
+                {
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(15),
+                        stoppingToken);
+                }
+                catch (OperationCanceledException)
+                    when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+
+            _logger.LogInformation(
+                "PI System Worker detenido.");
         }
 
         private void AddElementRecursive(
