@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using OSIsoft.AF;
@@ -17,7 +17,7 @@ namespace IndustrialConnector.Services.PI
             new List<AFAttribute>();
 
         private bool _initialized;
-
+        private AFListResults<AFAttribute, AFDataPipeEvent>? _initialEvents;
         public PiDataPipeService(
             ILogger<PiDataPipeService> logger)
         {
@@ -71,6 +71,8 @@ namespace IndustrialConnector.Services.PI
                 {
                     result =
                         _pipe.AddSignupsWithInitEvents(candidates);
+                    _initialEvents = new AFListResults<AFAttribute, AFDataPipeEvent>();
+                    _initialEvents.AddResults(result.Results);
                 }
                 catch (Exception ex)
                 {
@@ -92,7 +94,7 @@ namespace IndustrialConnector.Services.PI
 
                         _logger.LogWarning(
                             error.Value,
-                            "⚠️ Atributo omitido de AFDataPipe: {Attribute}",
+                            "âš ï¸ Atributo omitido de AFDataPipe: {Attribute}",
                             error.Key.Name);
                     }
                 }
@@ -115,7 +117,7 @@ namespace IndustrialConnector.Services.PI
                     requestedCount - registeredCount;
 
                 _logger.LogInformation(
-                    "📊 AFDataPipe | Solicitados: {Requested} | Registrados: {Registered} | Omitidos: {Omitted}",
+                    "ðŸ“Š AFDataPipe | Solicitados: {Requested} | Registrados: {Registered} | Omitidos: {Omitted}",
                     requestedCount,
                     registeredCount,
                     omittedCount);
@@ -127,14 +129,14 @@ namespace IndustrialConnector.Services.PI
                     if (omittedCount > 0)
                     {
                         _logger.LogWarning(
-                            "⚠️ AFDataPipe inicializado parcialmente. " +
+                            "âš ï¸ AFDataPipe inicializado parcialmente. " +
                             "Se omitieron {Omitted} atributos incompatibles.",
                             omittedCount);
                     }
                     else
                     {
                         _logger.LogInformation(
-                            "✅ AFDataPipe inicializado correctamente.");
+                            "âœ… AFDataPipe inicializado correctamente.");
                     }
 
                     return true;
@@ -143,7 +145,7 @@ namespace IndustrialConnector.Services.PI
                 _initialized = false;
 
                 _logger.LogError(
-                    "❌ Ningún atributo pudo registrarse en AFDataPipe.");
+                    "âŒ NingÃºn atributo pudo registrarse en AFDataPipe.");
 
                 return false;
             }
@@ -168,6 +170,13 @@ namespace IndustrialConnector.Services.PI
 
             try
             {
+                if (_initialEvents != null)
+                {
+                    var initial = _initialEvents;
+                    _initialEvents = null;
+                    return initial;
+                }
+
                 return _pipe.GetUpdateEvents();
             }
             catch (Exception ex)
@@ -221,6 +230,8 @@ namespace IndustrialConnector.Services.PI
             }
 
             _initialized = false;
+
+            _initialEvents = null;
         }
 
         public void Dispose()

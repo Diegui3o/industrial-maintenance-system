@@ -143,6 +143,50 @@ namespace IndustrialConnector.Workers
             var classified =
                 _classifier.ClassifyAll(attributeInfos);
 
+            // Exportar el catálogo completo, sin filtrar por prioridad.
+            try
+            {
+                var catalog = classified
+                    .SelectMany(group => group.Value.Select(attribute => new
+                    {
+                        attribute.PiServer,
+                        attribute.Database,
+                        attribute.ElementName,
+                        attribute.ElementPath,
+                        attribute.AttributeName,
+                        attribute.FullPath,
+                        attribute.Unit,
+                        attribute.DataType,
+                        attribute.IsDataReference,
+                        Priority = group.Key.ToString()
+                    }))
+                    .ToList();
+
+                var catalogPath = System.IO.Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "catalogo_atributos_pi.json");
+
+                var json = System.Text.Json.JsonSerializer.Serialize(
+                    catalog,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+
+                System.IO.File.WriteAllText(catalogPath, json);
+
+                _logger.LogInformation(
+                    "Catálogo PI exportado: {Count} atributos. Archivo: {Path}",
+                    catalog.Count,
+                    catalogPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "No se pudo exportar el catálogo de atributos PI.");
+            }
+
             var criticalCount =
                 classified[PiAttributePriority.Critical].Count;
 
@@ -163,24 +207,105 @@ namespace IndustrialConnector.Workers
                 normalCount,
                 ignoreCount);
 
+
             // =====================================================
             // 7. SELECCIONAR ATRIBUTOS MONITOREABLES
             // =====================================================
 
-            var monitoredInfos =
-                classified[PiAttributePriority.Critical]
-                    .Concat(
-                        classified[PiAttributePriority.Important])
+            var hasConfiguredTags =
+                _config.Tags != null && _config.Tags.Count > 0;
+
+            var configuredTags = _config.Tags?
+                .Where(tag =>
+                    tag != null &&
+                    !string.IsNullOrWhiteSpace(tag.ElementPath) &&
+                    !string.IsNullOrWhiteSpace(tag.AttributeName))
+                .ToList() ?? new List<TagConfig>();
+
+            List<PiAttributeInfo> monitoredInfos;
+
+            if (hasConfiguredTags)
+            {
+                // La selección manual tiene prioridad sobre la clasificación.
+                monitoredInfos = attributeInfos
+                    .Where(info => configuredTags.Any(tag =>
+                        string.Equals(
+                            info.ElementPath?.Trim(),
+                            tag.ElementPath.Trim(),
+                            StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(
+                            info.AttributeName?.Trim(),
+                            tag.AttributeName.Trim(),
+                            StringComparison.OrdinalIgnoreCase)))
+                    .GroupBy(
+                        info => info.FullPath,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
                     .ToList();
 
+                _logger.LogInformation(
+                    "Selección manual PI: {Configured} configurados, " +
+                    "{Matched} encontrados.",
+                    configuredTags.Count,
+                    monitoredInfos.Count);
+
+                foreach (var tag in configuredTags)
+                {
+                    var found = attributeInfos.Any(info =>
+                        string.Equals(
+                            info.ElementPath?.Trim(),
+                            tag.ElementPath.Trim(),
+                            StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(
+                            info.AttributeName?.Trim(),
+                            tag.AttributeName.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
+
+                    if (!found)
+                    {
+                        _logger.LogWarning(
+                            "Tag PI no encontrado: elemento '{ElementPath}', " +
+                            "atributo '{AttributeName}'.",
+                            tag.ElementPath,
+                            tag.AttributeName);
+                    }
+                }
+
+                if (configuredTags.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "Hay tags configurados, pero sus rutas o nombres " +
+                        "están vacíos o son inválidos.");
+                }
+            }
+            else if (_config.AutoDiscover)
+            {
+                // Mantener el comportamiento automático existente.
+                monitoredInfos =
+                    classified[PiAttributePriority.Critical]
+                        .Concat(
+                            classified[PiAttributePriority.Important])
+                        .ToList();
+
+                _logger.LogInformation(
+                    "Selección automática PI activada.");
+            }
+            else
+            {
+                monitoredInfos = new List<PiAttributeInfo>();
+
+                _logger.LogWarning(
+                    "No hay tags configurados y AutoDiscover está desactivado.");
+            }
+
             _logger.LogInformation(
-                "🎯 Atributos seleccionados para monitoreo: {Count}",
+                "Atributos seleccionados para monitoreo: {Count}",
                 monitoredInfos.Count);
 
             if (monitoredInfos.Count == 0)
             {
                 _logger.LogWarning(
-                    "⚠️ El clasificador no encontró atributos Critical/Important.");
+                    "No hay atributos PI válidos para monitorear.");
 
                 return;
             }
