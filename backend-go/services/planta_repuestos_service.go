@@ -1,36 +1,36 @@
-﻿package services
+package services
 
 import "backend/models"
 
 func (s *EstructuraPlantaService) ListarRepuestos() ([]models.Repuesto, error) {
-        return s.Repo.ListarRepuestos()
+	return s.Repo.ListarRepuestos()
 }
 
 func (s *EstructuraPlantaService) CrearRepuesto(
-        r *models.Repuesto,
+	r *models.Repuesto,
 ) error {
-        return s.Repo.CrearRepuesto(r)
+	return s.Repo.CrearRepuesto(r)
 }
 
 func (s *EstructuraPlantaService) AsignarRepuestoComponente(
-        componenteID int,
-        repuestoID int,
-        cantidad float64,
-        posicion *string,
-        notas *string,
+	componenteID int,
+	repuestoID int,
+	cantidad float64,
+	posicion *string,
+	notas *string,
 ) error {
-        return s.Repo.AsignarRepuestoComponente(
-                componenteID,
-                repuestoID,
-                cantidad,
-                posicion,
-                notas,
-        )
+	return s.Repo.AsignarRepuestoComponente(
+		componenteID,
+		repuestoID,
+		cantidad,
+		posicion,
+		notas,
+	)
 }
 
 func (s *EstructuraPlantaService) ActualizarRepuesto(
-        id int,
-        rep models.Repuesto,
+	id int,
+	rep models.RepuestoActualizacion,
 ) error {
-        return s.Repo.ActualizarRepuesto(id, rep)
+	return s.Repo.ActualizarRepuesto(id, rep)
 }

@@ -7,32 +7,55 @@ import (
 
 func (r *EstructuraPlantaRepository) ListarRepuestos() ([]models.Repuesto, error) {
 	rows, err := r.DB.Query(`
-		SELECT id, codigo, nombre, descripcion, activo
-		FROM repuestos
-		WHERE activo = TRUE
-		ORDER BY nombre
-	`)
+        SELECT
+            id,
+            codigo,
+            nombre,
+            descripcion,
+            activo,
+            codigo_sap,
+            categoria,
+            criticidad,
+            stock_actual,
+            stock_minimo,
+            unidad_medida,
+            marca,
+            modelo,
+            especificaciones_tecnicas
+        FROM repuestos
+        WHERE activo = TRUE
+        ORDER BY nombre
+    `)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var resultado []models.Repuesto
+	resultado := make([]models.Repuesto, 0)
 
 	for rows.Next() {
-		var r models.Repuesto
+		var rep models.Repuesto
 
 		if err := rows.Scan(
-			&r.ID,
-			&r.Codigo,
-			&r.Nombre,
-			&r.Descripcion,
-			&r.Activo,
+			&rep.ID,
+			&rep.Codigo,
+			&rep.Nombre,
+			&rep.Descripcion,
+			&rep.Activo,
+			&rep.CodigoSAP,
+			&rep.Categoria,
+			&rep.Criticidad,
+			&rep.StockActual,
+			&rep.StockMinimo,
+			&rep.UnidadMedida,
+			&rep.Marca,
+			&rep.Modelo,
+			&rep.EspecificacionesTecnicas,
 		); err != nil {
 			return nil, err
 		}
 
-		resultado = append(resultado, r)
+		resultado = append(resultado, rep)
 	}
 
 	return resultado, rows.Err()
@@ -42,18 +65,39 @@ func (r *EstructuraPlantaRepository) CrearRepuesto(
 	rep *models.Repuesto,
 ) error {
 	err := r.DB.QueryRow(`
-		INSERT INTO repuestos (
-			codigo,
-			nombre,
-			descripcion,
-			activo
-		)
-		VALUES ($1, $2, $3, TRUE)
-		RETURNING id
-	`,
+        INSERT INTO repuestos (
+            codigo,
+            nombre,
+            descripcion,
+            activo,
+            codigo_sap,
+            categoria,
+            criticidad,
+            stock_actual,
+            stock_minimo,
+            unidad_medida,
+            marca,
+            modelo,
+            especificaciones_tecnicas
+        )
+        VALUES (
+            $1, $2, $3, TRUE,
+            $4, $5, $6, $7, $8, $9, $10, $11, $12
+        )
+        RETURNING id
+    `,
 		rep.Codigo,
 		rep.Nombre,
 		rep.Descripcion,
+		rep.CodigoSAP,
+		rep.Categoria,
+		rep.Criticidad,
+		rep.StockActual,
+		rep.StockMinimo,
+		rep.UnidadMedida,
+		rep.Marca,
+		rep.Modelo,
+		rep.EspecificacionesTecnicas,
 	).Scan(&rep.ID)
 
 	if err != nil {
@@ -61,7 +105,6 @@ func (r *EstructuraPlantaRepository) CrearRepuesto(
 	}
 
 	rep.Activo = true
-
 	return nil
 }
 
@@ -102,21 +145,39 @@ func (r *EstructuraPlantaRepository) AsignarRepuestoComponente(
 
 func (r *EstructuraPlantaRepository) ActualizarRepuesto(
 	id int,
-	rep models.Repuesto,
+	rep models.RepuestoActualizacion,
 ) error {
 	_, err := r.DB.Exec(`
 		UPDATE repuestos
-		SET codigo = $1,
-		    nombre = $2,
-		    descripcion = $3,
-		    activo = $4,
+		SET codigo = COALESCE($1, codigo),
+		    nombre = COALESCE($2, nombre),
+		    descripcion = COALESCE($3, descripcion),
+		    activo = COALESCE($4, activo),
+		    codigo_sap = COALESCE($5, codigo_sap),
+		    categoria = COALESCE($6, categoria),
+		    criticidad = COALESCE($7, criticidad),
+		    stock_actual = COALESCE($8, stock_actual),
+		    stock_minimo = COALESCE($9, stock_minimo),
+		    unidad_medida = COALESCE($10, unidad_medida),
+		    marca = COALESCE($11, marca),
+		    modelo = COALESCE($12, modelo),
+		    especificaciones_tecnicas = COALESCE($13, especificaciones_tecnicas),
 		    actualizado_en = NOW()
-		WHERE id = $5
+		WHERE id = $14
 	`,
 		rep.Codigo,
 		rep.Nombre,
 		rep.Descripcion,
 		rep.Activo,
+		rep.CodigoSAP,
+		rep.Categoria,
+		rep.Criticidad,
+		rep.StockActual,
+		rep.StockMinimo,
+		rep.UnidadMedida,
+		rep.Marca,
+		rep.Modelo,
+		rep.EspecificacionesTecnicas,
 		id,
 	)
 

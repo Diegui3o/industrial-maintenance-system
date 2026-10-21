@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"backend/models"
 	"backend/utils"
@@ -33,8 +34,8 @@ func (h *EstructuraPlantaHandler) PostRepuesto(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if rep.Nombre == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, "nombre requerido")
+	if strings.TrimSpace(rep.Nombre) == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "nombre no puede estar vacio")
 		return
 	}
 
@@ -53,14 +54,24 @@ func (h *EstructuraPlantaHandler) PutRepuesto(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var rep models.Repuesto
+	var rep models.RepuestoActualizacion
 	if err := json.NewDecoder(r.Body).Decode(&rep); err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, "JSON invalido")
 		return
 	}
 
-	if rep.Nombre == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, "nombre requerido")
+	if rep.Nombre != nil && strings.TrimSpace(*rep.Nombre) == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "nombre no puede estar vacio")
+		return
+	}
+
+	if rep.StockActual != nil && *rep.StockActual < 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "stock_actual no puede ser negativo")
+		return
+	}
+
+	if rep.StockMinimo != nil && *rep.StockMinimo < 0 {
+		utils.ErrorJSON(w, http.StatusBadRequest, "stock_minimo no puede ser negativo")
 		return
 	}
 
@@ -74,5 +85,3 @@ func (h *EstructuraPlantaHandler) PutRepuesto(w http.ResponseWriter, r *http.Req
 		"id":      id,
 	})
 }
-
-// ==================== ACTUALIZAR RELACIONES ====================
