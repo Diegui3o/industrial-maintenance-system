@@ -121,7 +121,6 @@ export function MotorElectricoTabla({
           item.tipo_componente,
           item.nombre_componente,
           item.tag,
-          item.placa_motor,
           item.numero_serie,
           item.marca,
           item.modelo,
@@ -238,11 +237,10 @@ export function MotorElectricoTabla({
             <tr>
               <th>Código interno</th>
               <th>Código SAP</th>
+              <th>Zona</th>
               <th>Nombre de componente</th>
               <th>TAG</th>
-              <th>Placa de motor</th>
               <th>Fecha de actualización</th>
-              <th>Zona</th>
               <th>Marca</th>
               <th>Modelo</th>
               <th>N° / Serie</th>
@@ -280,6 +278,10 @@ export function MotorElectricoTabla({
                 </td>
 
                 <td>
+                  {motor.zona || '—'}
+                </td>
+
+                <td>
                   {motor.tipo_componente &&
                   motor.nombre_componente
                     ? `${motor.tipo_componente} - ${motor.nombre_componente}`
@@ -293,19 +295,11 @@ export function MotorElectricoTabla({
                 </td>
 
                 <td>
-                  {motor.placa_motor || '—'}
-                </td>
-
-                <td>
                   {motor.fecha_actualizacion
                     ? new Date(
                         motor.fecha_actualizacion,
                       ).toLocaleDateString()
                     : '—'}
-                </td>
-
-                <td>
-                  {motor.zona || '—'}
                 </td>
 
                 <td>
@@ -329,11 +323,11 @@ export function MotorElectricoTabla({
                 </td>
 
                 <td>
-                  {motor.volt || '—'}
+                  {motor.volt ?? '—'}
                 </td>
 
                 <td>
-                  {motor.amp || '—'}
+                  {motor.amp ?? '—'}
                 </td>
 
                 <td>
@@ -341,7 +335,7 @@ export function MotorElectricoTabla({
                 </td>
 
                 <td>
-                  {motor.frame || '—'}
+                  {motor.frame ?? '—'}
                 </td>
 
                 <td>
