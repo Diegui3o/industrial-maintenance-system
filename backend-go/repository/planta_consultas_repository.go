@@ -23,6 +23,8 @@ func (r *EstructuraPlantaRepository) ObtenerEquipoPlantaDetalle(
 	equipo := &models.Equipo{}
 
 	var (
+		area             sql.NullString
+		tipo             sql.NullString
 		fase             sql.NullString
 		fabricante       sql.NullString
 		modelo           sql.NullString
@@ -59,8 +61,8 @@ func (r *EstructuraPlantaRepository) ObtenerEquipoPlantaDetalle(
 		&equipo.ID,
 		&equipo.Codigo,
 		&equipo.Nombre,
-		&equipo.Area,
-		&equipo.Tipo,
+		&area,
+		&tipo,
 		&fase,
 		&fabricante,
 		&modelo,
@@ -82,6 +84,8 @@ func (r *EstructuraPlantaRepository) ObtenerEquipoPlantaDetalle(
 		return nil, err
 	}
 
+	equipo.Area = area.String
+	equipo.Tipo = tipo.String
 	equipo.Fase = fase.String
 	equipo.Fabricante = fabricante.String
 	equipo.Modelo = modelo.String

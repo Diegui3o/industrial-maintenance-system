@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"backend/models"
 	"backend/repository"
@@ -64,27 +65,44 @@ func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *EquipoHandler) PostEquipos(w http.ResponseWriter, r *http.Request) {
-	var e models.Equipo
-	err := json.NewDecoder(r.Body).Decode(&e)
-	if err != nil {
-		log.Printf("❌ Error decodificando JSON: %v", err)
-		utils.ErrorJSON(w, 400, "JSON inválido")
-		return
-	}
+    var e models.Equipo
 
-	log.Printf("📥 Creando equipo: %s", e.Codigo)
+    // 1. Decodificar JSON
+    err := json.NewDecoder(r.Body).Decode(&e)
+    if err != nil {
+        log.Printf("❌ Error decodificando JSON: %v", err)
+        utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
+        return
+    }
 
-	err = h.Service.CrearEquipos(&e)
-	if err != nil {
-		log.Printf("❌ Error creando equipo: %v", err)
-		utils.ErrorJSON(w, 500, err.Error())
-		return
-	}
+    // 2. Limpiar espacios
+    e.Codigo = strings.TrimSpace(e.Codigo)
+    e.Nombre = strings.TrimSpace(e.Nombre)
 
-	log.Printf("📤 Enviando respuesta: ID=%d, Código=%s", e.ID, e.Codigo)
+    // 3. Validar campos obligatorios ANTES de llamar al service
+    if e.Codigo == "" {
+        utils.ErrorJSON(w, http.StatusBadRequest, "el código es obligatorio")
+        return
+    }
+    if e.Nombre == "" {
+        utils.ErrorJSON(w, http.StatusBadRequest, "el nombre es obligatorio")
+        return
+    }
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(e)
+    log.Printf("📥 Creando equipo: codigo=%q nombre=%q", e.Codigo, e.Nombre)
+
+    // 4. Crear UNA SOLA VEZ
+    err = h.Service.CrearEquipos(&e)
+    if err != nil {
+        log.Printf("❌ Error creando equipo: %v", err)
+        utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+        return
+    }
+
+    log.Printf("📤 Equipo creado: ID=%d, Código=%s", e.ID, e.Codigo)
+
+    // 5. Responder
+    utils.SuccessJSON(w, http.StatusCreated, e)
 }
 
 func (h *EquipoHandler) GetEquipoPorID(w http.ResponseWriter, r *http.Request) {
