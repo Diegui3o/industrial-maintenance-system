@@ -22,3 +22,17 @@ secrets/
 **/bin/
 .vs/
 *.user
+# backups y dumps de BD (nunca al repo)
+*.sql
+!db/migrations/*.sql
+*.dump
+*.backup
+
+# archivos temporales de diagnóstico
+equipos.json
+listado.json
+*.json.tmp
+
+# .NET (por si acaso)
+**/obj/
+**/bin/

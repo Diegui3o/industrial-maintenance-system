@@ -43,12 +43,11 @@ func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := 1
-	limit := 50
-	if r.URL.Query().Get("page") != "" {
-		page, _ = strconv.Atoi(r.URL.Query().Get("page"))
-	}
-	if r.URL.Query().Get("limit") != "" {
-		limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	limit := 1000
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 && n <= 5000 {
+			limit = n
+		}
 	}
 	sort := r.URL.Query().Get("sort")
 	order := r.URL.Query().Get("order")
@@ -65,44 +64,44 @@ func (h *EquipoHandler) GetEquipos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *EquipoHandler) PostEquipos(w http.ResponseWriter, r *http.Request) {
-    var e models.Equipo
+	var e models.Equipo
 
-    // 1. Decodificar JSON
-    err := json.NewDecoder(r.Body).Decode(&e)
-    if err != nil {
-        log.Printf("❌ Error decodificando JSON: %v", err)
-        utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
-        return
-    }
+	// 1. Decodificar JSON
+	err := json.NewDecoder(r.Body).Decode(&e)
+	if err != nil {
+		log.Printf("❌ Error decodificando JSON: %v", err)
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
+		return
+	}
 
-    // 2. Limpiar espacios
-    e.Codigo = strings.TrimSpace(e.Codigo)
-    e.Nombre = strings.TrimSpace(e.Nombre)
+	// 2. Limpiar espacios
+	e.Codigo = strings.TrimSpace(e.Codigo)
+	e.Nombre = strings.TrimSpace(e.Nombre)
 
-    // 3. Validar campos obligatorios ANTES de llamar al service
-    if e.Codigo == "" {
-        utils.ErrorJSON(w, http.StatusBadRequest, "el código es obligatorio")
-        return
-    }
-    if e.Nombre == "" {
-        utils.ErrorJSON(w, http.StatusBadRequest, "el nombre es obligatorio")
-        return
-    }
+	// 3. Validar campos obligatorios ANTES de llamar al service
+	if e.Codigo == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "el código es obligatorio")
+		return
+	}
+	if e.Nombre == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, "el nombre es obligatorio")
+		return
+	}
 
-    log.Printf("📥 Creando equipo: codigo=%q nombre=%q", e.Codigo, e.Nombre)
+	log.Printf("📥 Creando equipo: codigo=%q nombre=%q", e.Codigo, e.Nombre)
 
-    // 4. Crear UNA SOLA VEZ
-    err = h.Service.CrearEquipos(&e)
-    if err != nil {
-        log.Printf("❌ Error creando equipo: %v", err)
-        utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
-        return
-    }
+	// 4. Crear UNA SOLA VEZ
+	err = h.Service.CrearEquipos(&e)
+	if err != nil {
+		log.Printf("❌ Error creando equipo: %v", err)
+		utils.ErrorJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-    log.Printf("📤 Equipo creado: ID=%d, Código=%s", e.ID, e.Codigo)
+	log.Printf("📤 Equipo creado: ID=%d, Código=%s", e.ID, e.Codigo)
 
-    // 5. Responder
-    utils.SuccessJSON(w, http.StatusCreated, e)
+	// 5. Responder
+	utils.SuccessJSON(w, http.StatusCreated, e)
 }
 
 func (h *EquipoHandler) GetEquipoPorID(w http.ResponseWriter, r *http.Request) {
