@@ -2,3 +2,5 @@
 export * from './plantaEquiposApi';
 export * from './plantaComponentesApi';
 export * from './plantaSubcomponentesApi';
+
+export * from './plantaRepuestosApi';

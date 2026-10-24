@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   crearComponente,
@@ -18,9 +18,7 @@ const TIPOS_COMPONENTE = [
   'MOTOR ELECTRICO',
   'MODULO',
   'TABLERO',
-  'COMPONENTE MECANICO',
-  'COMPONENTE INSTRUMENTAL',
-  'COMPONENTE SISTEMAS',
+  'COMPONENTE',
   'ARRANCADOR',
   'TANQUE',
   'ACONDICIONADOR',
@@ -46,7 +44,7 @@ export function ComponentePanel({
   const [nombre, setNombre] =
     useState('');
 
-const [activo, setActivo] = useState(true);
+  const [activo, setActivo] = useState(true);
 
   const [tag, setTag] =
     useState('');
@@ -73,6 +71,28 @@ const [activo, setActivo] = useState(true);
 
   const [error, setError] =
     useState('');
+
+  const limpiarFormulario = () => {
+    setTipoComponente('');
+    setEquipoId(null);
+    setCodigo('');
+    setCodigoSAP('');
+    setNombre('');
+    setActivo(true);
+    setTag('');
+    setMarca('');
+    setModelo('');
+    setNumeroSerie('');
+    setDescripcion('');
+    setMotor({});
+    setError('');
+  };
+
+  useEffect(() => {
+    if (!abierto) {
+      limpiarFormulario();
+    }
+  }, [abierto]);
 
   if (!abierto) {
     return null;
@@ -122,62 +142,29 @@ const [activo, setActivo] = useState(true);
         tipoComponente === 'MOTOR ELECTRICO'
           ? {
               ...motor,
-
-              // El backend define estos campos como string.
-              rated_voltage:
-                motor.rated_voltage != null
-                  ? String(motor.rated_voltage)
-                  : null,
-
-              rated_current:
-                motor.rated_current != null
-                  ? String(motor.rated_current)
-                  : null,
-
-              l_r_amperes:
-                motor.l_r_amperes != null
-                  ? String(motor.l_r_amperes)
-                  : null,
-
-              lrc:
-                motor.lrc != null
-                  ? String(motor.lrc)
-                  : null,
-
-              no_load_current:
-                motor.no_load_current != null
-                  ? String(motor.no_load_current)
-                  : null,
-
-              locked_rotor_time:
-                motor.locked_rotor_time != null
-                  ? String(motor.locked_rotor_time)
-                  : null,
-
-              rotation:
-                motor.rotation != null
-                  ? String(motor.rotation)
-                  : null,
-
-              ambient_temperature:
-                motor.ambient_temperature != null
-                  ? String(motor.ambient_temperature)
-                  : null,
+              rated_voltage: motor.rated_voltage != null ? String(motor.rated_voltage) : null,
+              rated_current: motor.rated_current != null ? String(motor.rated_current) : null,
+              l_r_amperes: motor.l_r_amperes != null ? String(motor.l_r_amperes) : null,
+              lrc: motor.lrc != null ? String(motor.lrc) : null,
+              no_load_current: motor.no_load_current != null ? String(motor.no_load_current) : null,
+              locked_rotor_time: motor.locked_rotor_time != null ? String(motor.locked_rotor_time) : null,
+              rotation: motor.rotation != null ? String(motor.rotation) : null,
+              ambient_temperature: motor.ambient_temperature != null ? String(motor.ambient_temperature) : null,
             }
           : undefined;
 
       await crearComponente({
         equipo_id: equipoId,
-        codigo: codigo.trim() || null,
-        codigo_sap: codigoSAP.trim() || null,
-        tag: tag.trim() || null,
-        nombre: nombre.trim(),
+        codigo: codigo.trim() ? codigo.trim().toUpperCase() : null,
+        codigo_sap: codigoSAP.trim() ? codigoSAP.trim().toUpperCase() : null,
+        tag: tag.trim() ? tag.trim().toUpperCase() : null,
+        nombre: nombre.trim().toUpperCase(),
         tipo_componente: tipoComponente,
-        marca: marca.trim() || null,
-        modelo: modelo.trim() || null,
-        numero_serie: numeroSerie.trim() || null,
+        marca: marca.trim() ? marca.trim().toUpperCase() : null,
+        modelo: modelo.trim() ? modelo.trim().toUpperCase() : null,
+        numero_serie: numeroSerie.trim() ? numeroSerie.trim().toUpperCase() : null,
         activo,
-        descripcion: descripcion.trim() || null,
+        descripcion: descripcion.trim() || null, // 👈 Se mantiene libre (minúsculas permitidas)
 
         ...(motorNormalizado
           ? {
@@ -269,10 +256,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={codigo}
                   onChange={(event) =>
                     setCodigo(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Código interno"
@@ -284,10 +272,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={codigoSAP}
                   onChange={(event) =>
                     setCodigoSAP(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Ej. 10023456"
@@ -299,10 +288,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={tag}
                   onChange={(event) =>
                     setTag(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Ej. MOT-001"
@@ -314,10 +304,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={nombre}
                   onChange={(event) =>
                     setNombre(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Nombre del componente"
@@ -354,6 +345,7 @@ const [activo, setActivo] = useState(true);
                 </select>
               </label>
 
+              {/* 📝 DESCRIPCIÓN: Permite minúsculas y mayúsculas libremente */}
               <label className="componente-form-field full">
                 <span>
                   Descripción
@@ -366,7 +358,7 @@ const [activo, setActivo] = useState(true);
                       event.target.value
                     )
                   }
-                  placeholder="Descripción, función o información adicional"
+                  placeholder="Descripción, función o información adicional (admite minúsculas)"
                   rows={3}
                 />
               </label>
@@ -427,10 +419,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={marca}
                   onChange={(event) =>
                     setMarca(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Fabricante"
@@ -444,10 +437,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={modelo}
                   onChange={(event) =>
                     setModelo(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Modelo"
@@ -461,10 +455,11 @@ const [activo, setActivo] = useState(true);
 
                 <input
                   type="text"
+                  style={{ textTransform: 'uppercase' }}
                   value={numeroSerie}
                   onChange={(event) =>
                     setNumeroSerie(
-                      event.target.value
+                      event.target.value.toUpperCase()
                     )
                   }
                   placeholder="Número de serie"

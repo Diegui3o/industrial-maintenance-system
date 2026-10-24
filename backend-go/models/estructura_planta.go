@@ -1,4 +1,4 @@
-package models
+﻿package models
 
 import "time"
 
@@ -131,23 +131,25 @@ type Repuesto struct {
 	UnidadMedida             *string `json:"unidad_medida,omitempty"`
 	Marca                    *string `json:"marca,omitempty"`
 	Modelo                   *string `json:"modelo,omitempty"`
+	Estado string `json:"estado"`
 	EspecificacionesTecnicas *string `json:"especificaciones_tecnicas,omitempty"`
 }
 
 type RepuestoActualizacion struct {
-	Codigo                   *string  `json:"codigo"`
-	Nombre                   *string  `json:"nombre"`
-	Descripcion              *string  `json:"descripcion"`
-	Activo                   *bool    `json:"activo"`
-	CodigoSAP                *string  `json:"codigo_sap"`
-	Categoria                *string  `json:"categoria"`
-	Criticidad               *string  `json:"criticidad"`
-	StockActual              *float64 `json:"stock_actual"`
-	StockMinimo              *float64 `json:"stock_minimo"`
-	UnidadMedida             *string  `json:"unidad_medida"`
-	Marca                    *string  `json:"marca"`
-	Modelo                   *string  `json:"modelo"`
-	EspecificacionesTecnicas *string  `json:"especificaciones_tecnicas"`
+    Codigo                   *string  `json:"codigo"`
+    Nombre                   *string  `json:"nombre"`
+    Descripcion              *string  `json:"descripcion"`
+    Activo                   *bool    `json:"activo"`
+    CodigoSAP                *string  `json:"codigo_sap"`
+    Categoria                *string  `json:"categoria"`
+    Criticidad               *string  `json:"criticidad"`
+    StockActual              *float64 `json:"stock_actual"`
+    StockMinimo              *float64 `json:"stock_minimo"`
+    UnidadMedida             *string  `json:"unidad_medida"`
+    Marca                    *string  `json:"marca"`
+    Modelo                   *string  `json:"modelo"`
+    Estado                   *string  `json:"estado"`
+    EspecificacionesTecnicas *string  `json:"especificaciones_tecnicas"`
 }
 
 type ComponenteRepuestoDetalle struct {
@@ -211,6 +213,20 @@ type EquipoPlantaDetalle struct {
 	Componentes     []ComponenteEquipo    `json:"componentes"`
 }
 type RelacionComponente struct {
-	ComponenteID int
-	EquipoID     *int
+    ComponenteID int
+    EquipoID     *int
+}
+
+// RepuestoHistorial - auditoría de cambios
+type RepuestoHistorial struct {
+    ID              int       `json:"id"`
+    RepuestoID      int       `json:"repuesto_id"`
+    Campo           string    `json:"campo"`
+    ValorAnterior   *string   `json:"valor_anterior,omitempty"`
+    ValorNuevo      *string   `json:"valor_nuevo,omitempty"`
+    TipoOrigen      string    `json:"tipo_origen"` // MANUAL, PI_SYSTEM, OTRO
+    UsuarioID       *int      `json:"usuario_id,omitempty"`
+    ConectorID      *string   `json:"conector_id,omitempty"`
+    Comentario      *string   `json:"comentario,omitempty"`
+    CreadoEn        time.Time `json:"creado_en"`
 }

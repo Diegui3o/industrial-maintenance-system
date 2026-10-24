@@ -1474,11 +1474,7 @@ button.planta-list-item:hover {
 
 .planta-table-wrapper {
   width: 100%;
-  overflow: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
 }
 
 .planta-table {
@@ -1604,14 +1600,6 @@ button.planta-list-item:hover {
 
   box-shadow:
     0 3px 14px rgba(15, 23, 42, 0.06);
-}
-
-.planta-equipos-table {
-  width: 100%;
-  min-width: 1700px;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 12px;
 }
 
 .planta-equipos-table th {
@@ -1933,22 +1921,18 @@ button.planta-list-item:hover {
    CELDAS
 ========================= */
 
+.planta-equipos-table th,
 .planta-equipos-table td {
-  height: 34px;
-
-  padding: 6px 10px;
-
-  border-right: 1px solid #f1f3f5;
-  border-bottom: 1px solid #edf0f2;
-
-  color: #4b5563;
-
-  white-space: nowrap;
-
-  vertical-align: middle;
+  width: auto !important;
+  white-space: nowrap !important;
+  padding: 6px 12px !important;
 }
 
-/* Filas */
+/* Permitir que el nombre o componentes largos respiren si es necesario */
+.planta-equipos-table td.planta-equipo-nombre {
+  white-space: normal;
+  max-width: 220px;
+}
 
 .planta-equipos-table tbody tr {
   background: #ffffff;
@@ -2459,17 +2443,6 @@ button.planta-list-item:hover {
   overflow-x: auto;
 }
 
-.planta-equipos-table {
-  min-width: 1450px;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.planta-equipos-table th,
-.planta-equipos-table td {
-  white-space: nowrap;
-}
-
 .planta-equipos-table tbody tr {
   transition: background-color 0.15s ease;
 }
@@ -2494,14 +2467,13 @@ button.planta-list-item:hover {
 }
 
 .planta-equipos-opciones {
-  width: 170px;
-  text-align: center;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .planta-equipos-opciones-grupo {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
 }
 
@@ -2864,17 +2836,8 @@ button.planta-list-item:hover {
 }
 
 .planta-equipos-table {
-  width: 100%;
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-.planta-equipos-table th,
-.planta-equipos-table td {
-  padding: 8px 10px;
-  font-size: 11px;
-  white-space: nowrap;
-  vertical-align: middle;
+  width: 100% !important;
+  table-layout: auto !important;
 }
 
 .planta-equipos-table th {

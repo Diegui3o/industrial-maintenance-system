@@ -41,6 +41,13 @@ export function ComponenteForm({
       codigo: codigo.trim() || undefined,
       descripcion: descripcion.trim() || undefined,
     });
+
+    // Limpiar campos automáticamente si es un formulario de creación nueva
+    if (!componente) {
+      setNombre('');
+      setCodigo('');
+      setDescripcion('');
+    }
   };
 
   return (

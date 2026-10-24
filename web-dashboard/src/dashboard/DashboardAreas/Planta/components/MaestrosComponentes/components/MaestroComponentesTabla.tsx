@@ -1,4 +1,5 @@
 import { MotorElectricoTabla } from '../motores/MotorElectricoTabla';
+import { ComponenteGenericoTabla } from './ComponenteGenericoTabla';
 
 interface MaestroComponentesTablaProps {
   tipoSeleccionado: string;
@@ -12,17 +13,7 @@ export function MaestroComponentesTabla({
       return <MotorElectricoTabla />;
 
     default:
-      return (
-        <div className="maestro-componentes-tabla-vacia">
-          <h3>
-            Maestro de {tipoSeleccionado}
-          </h3>
-
-          <p>
-            La tabla para este tipo de componente
-            todavía no está configurada.
-          </p>
-        </div>
-      );
+      // Para MÓDULO, TABLERO, ARRANCADOR y los demás tipos
+      return <ComponenteGenericoTabla tipo={tipoSeleccionado} />;
   }
 }

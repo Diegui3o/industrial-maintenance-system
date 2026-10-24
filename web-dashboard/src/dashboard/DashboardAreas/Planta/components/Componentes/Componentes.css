@@ -2203,3 +2203,23 @@
   color: #b42318 !important;
   font-weight: 600;
 }
+.componente-row-equipo-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+}
+.componente-subproceso-text {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary, #5e6573);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  opacity: 0.75;
+}
+.componente-equipo-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2329);
+  letter-spacing: -0.1px;
+}

@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 
 import {
   getTodosComponentes,
@@ -17,6 +16,8 @@ import {
   getEquipos,
   type Equipo,
 } from '../../services/plantaEquiposApi';
+
+import { ComponenteMenuAcciones } from './ComponenteMenuAcciones';
 
 interface Props {
   onCrear: () => void;
@@ -547,26 +548,20 @@ export function ComponentesCatalogo({
                     </strong>
                   </span>
 
-                  <span className="componente-row-equipo">
+                  <span className="componente-row-equipo-wrapper">
                     {equipo ? (
-                      equipo.subproceso_nombre ? (
-                        <>
-                          <strong>
-                            {equipo.subproceso_nombre}
-                          </strong>
-
-                          <strong>
-                            {' - '}
-                            {equipo.nombre}
-                          </strong>
-                        </>
-                      ) : (
-                        <strong>
+                      <>
+                        <span className="componente-equipo-text">
                           {equipo.nombre}
-                        </strong>
-                      )
+                        </span>
+                        {equipo.subproceso_nombre && (
+                          <span className="componente-subproceso-text">
+                            {equipo.subproceso_nombre}
+                          </span>
+                        )}
+                      </>
                     ) : (
-                      'Sin equipo'
+                      <span className="componente-equipo-text">Sin equipo</span>
                     )}
                   </span>
 
@@ -615,50 +610,24 @@ export function ComponentesCatalogo({
                         Opciones ▾
                       </button>
 
-                        {menuAbierto === componente.id &&
-                          createPortal(
-                            <div
-                              className="componente-row-menu"
-                              style={{
-                                position: 'fixed',
-                                top: menuPosicion.top,
-                                left: menuPosicion.left,
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  onVer?.(componente);
-                                  setMenuAbierto(null);
-                                }}
-                              >
-                                Ver información
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  cambiarEstado(componente);
-                                  setMenuAbierto(null);
-                                }}
-                              >
-                                Cambiar estado
-                              </button>
-
-                              <div className="componente-row-menu-separador" />
-
-                              <button
-                                type="button"
-                                className="componente-row-menu-eliminar"
-                                onClick={() =>
-                                  eliminarComponente(componente)
-                                }
-                              >
-                                Eliminar componente
-                              </button>
-                            </div>,
-                            document.body
-                          )}
+                        {menuAbierto === componente.id && (
+                          <ComponenteMenuAcciones
+                            posicion={menuPosicion}
+                            onVer={() => {
+                              setMenuAbierto(null);
+                              onVer?.(componente);
+                            }}
+                            onCambiarEstado={() => {
+                              setMenuAbierto(null);
+                              cambiarEstado(componente);
+                            }}
+                            onEliminar={() => {
+                              setMenuAbierto(null);
+                              eliminarComponente(componente);
+                            }}
+                            onCerrar={() => setMenuAbierto(null)}
+                          />
+                        )}
 
                     </div>
                   </span>

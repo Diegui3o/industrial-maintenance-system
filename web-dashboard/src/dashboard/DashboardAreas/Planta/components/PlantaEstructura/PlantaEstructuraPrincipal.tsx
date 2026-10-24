@@ -6,13 +6,15 @@ import { SubprocesosPorEstructura } from '../Subprocesos/SubprocesosPorEstructur
 import { EquiposPorEstructura } from '../Equipos/EquiposPorEstructura';
 import { EquiposLista } from '../Equipos/EquiposLista';
 import { ComponentesEquipo } from '../Componentes/ComponentesEquipo';
+import { RepuestosPage } from '../Repuestos/RepuestosPage';
 
 type Seccion =
   | 'procesos'
   | 'sistemas'
   | 'subprocesos'
   | 'equipos'
-  | 'componentes';
+  | 'componentes'
+  | 'repuestos';
 
 export function PlantaEstructuraPrincipal() {
   const [seccion, setSeccion] =
@@ -93,6 +95,20 @@ export function PlantaEstructuraPrincipal() {
           Componentes
         </button>
 
+        <button
+          type="button"
+          className={`planta-estructura-btn ${
+            seccion === 'repuestos'
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setSeccion('repuestos')
+          }
+        >
+          Repuestos
+        </button>
+
       </div>
 
       <main className="planta-content">
@@ -119,6 +135,10 @@ export function PlantaEstructuraPrincipal() {
 
         {seccion === 'componentes' && (
           <ComponentesEquipo />
+        )}
+
+        {seccion === 'repuestos' && (
+          <RepuestosPage />
         )}
 
       </main>

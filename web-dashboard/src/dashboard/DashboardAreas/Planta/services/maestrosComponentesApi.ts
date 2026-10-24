@@ -47,3 +47,7 @@ export async function getMaestrosMotoresElectricos(): Promise<
     '/planta/maestros-componentes/motores-electricos',
   );
 }
+export async function getMaestrosComponentesPorTipo(tipo: string): Promise<any[]> {
+  // Ajusta la ruta del endpoint según el backend de tu API
+  return request<any[]>(`/planta/maestros-componentes/tipo?tipo=${encodeURIComponent(tipo)}`);
+}
