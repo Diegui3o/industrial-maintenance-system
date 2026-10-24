@@ -1,5 +1,4 @@
-import type { FilaEquipo } from '../types';
-import { exportarTablaExcel } from '../../../../utils/exportarExcel';
+﻿import type { FilaEquipo } from "../types";
 
 interface Props {
   filasFiltradas: FilaEquipo[];
@@ -12,43 +11,19 @@ export function EquiposListaHeader({
   totalEquipos,
   onLimpiarFiltros,
 }: Props) {
-  function descargarExcel() {
-    const datos = filasFiltradas.map((fila) => [
-      fila.codigo,
-      fila.nombre,
-      fila.area,
-      fila.componente,
-      fila.estado,
-    ]);
-
-    exportarTablaExcel(
-      "equipos_planta",
-      ["Código", "Nombre", "Área", "Componente", "Estado"],
-      datos
-    );
-  }
-
   return (
     <div className="planta-lista-header">
-      <div>
+      <div className="planta-lista-header-info">
         <h2>Catálogo de equipos</h2>
-        <span>
-          {filasFiltradas.length} registros · {totalEquipos} equipos
-        </span>
+        <p>
+          {filasFiltradas.length} registro{filasFiltradas.length === 1 ? '' : 's'} · {totalEquipos} equipo{totalEquipos === 1 ? '' : 's'}
+        </p>
       </div>
 
-      <div className="planta-lista-acciones">
+      <div className="planta-lista-header-actions">
         <button
           type="button"
-          className="planta-btn-excel"
-          onClick={descargarExcel}
-        >
-          ↓ Excel
-        </button>
-
-        <button
-          type="button"
-          className="planta-lista-limpiar"
+          className="planta-lista-btn-secundario"
           onClick={onLimpiarFiltros}
         >
           Limpiar filtros

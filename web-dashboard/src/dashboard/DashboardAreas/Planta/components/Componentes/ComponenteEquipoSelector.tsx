@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 
 import {
   getEquipos,
@@ -78,10 +78,9 @@ export function ComponenteEquipoSelector({
         equipo.area ?? '',
         equipo.tipo ?? '',
         equipo.fase ?? '',
+        equipo.subproceso_nombre ?? '',
         equipo.fabricante ?? '',
         equipo.modelo ?? '',
-        equipo.numero_serie ?? '',
-        equipo.ip ?? '',
       ]
         .join(' ')
         .toLowerCase()
@@ -106,17 +105,13 @@ export function ComponenteEquipoSelector({
 
           <strong>
             {equipoSeleccionado
-              ? `${
-                  equipoSeleccionado.codigo
-                    ? `${equipoSeleccionado.codigo} - `
-                    : ''
-                }${equipoSeleccionado.nombre}`
+              ? equipoSeleccionado.nombre
               : 'Seleccionar equipo'}
           </strong>
         </div>
 
         <span>
-          {abierto ? '⌃' : '›'}
+          {abierto ? '▴' : '›'}
         </span>
       </button>
 
@@ -147,42 +142,50 @@ export function ComponenteEquipoSelector({
             )}
 
           {!loading &&
-            equiposFiltrados.map((equipo) => (
-              <button
-                key={equipo.id}
-                type="button"
-                className={`componente-equipo-option ${
-                  equipo.id === equipoId
-                    ? 'selected'
-                    : ''
-                }`}
-                onClick={() => {
-                  onChange(equipo);
-                  setAbierto(false);
-                  setBusqueda('');
-                }}
-              >
-                <div>
-                  <strong>
-                    {equipo.codigo
-                      ? `${equipo.codigo} - `
-                      : ''}
-                    {equipo.nombre}
-                  </strong>
+            equiposFiltrados.map((equipo) => {
+              // 🏷️ Mostramos la fase limpia y el subproceso sin duplicar palabras
+              const faseTexto = equipo.fase ? equipo.fase.trim() : '';
+              const subprocesoTexto = equipo.subproceso_nombre ? equipo.subproceso_nombre.trim() : '';
+              
+              // Evitamos duplicar si el subproceso ya incluye la fase o viceversa
+              const subtitulo = [faseTexto, subprocesoTexto]
+                .filter(Boolean)
+                .filter((val, idx, arr) => arr.indexOf(val) === idx) // remueve duplicados exactos si los hubiera
+                .join(' - ') || 'Sin información';
 
-                  <span>
-                    {equipo.area ||
-                      'Sin área'}
-                  </span>
-                </div>
+              return (
+                <button
+                  key={equipo.id}
+                  type="button"
+                  className={`componente-equipo-option ${
+                    equipo.id === equipoId
+                      ? 'selected'
+                      : ''
+                  }`}
+                  onClick={() => {
+                    onChange(equipo);
+                    setAbierto(false);
+                    setBusqueda('');
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', gap: '2px' }}>
+                    <strong style={{ fontSize: '13px', color: '#2c3e50' }}>
+                      {equipo.nombre}
+                    </strong>
 
-                {equipo.id === equipoId && (
-                  <span className="componente-equipo-check">
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+                    <span style={{ fontSize: '11px', color: '#7f8c8d', fontWeight: 500 }}>
+                      {subtitulo}
+                    </span>
+                  </div>
+
+                  {equipo.id === equipoId && (
+                    <span className="componente-equipo-check">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
 
         </div>
       )}

@@ -5,8 +5,6 @@
   useState,
 } from 'react';
 
-import * as XLSX from 'xlsx';
-
 import {
   getTodosComponentes,
   cambiarEstadoComponente,
@@ -188,27 +186,6 @@ export function ComponentesCatalogo({
     });
   }, [componentes, busqueda, tipoFiltro, equipoFiltro, equipoPorId]);
 
-  const exportarAExcel = () => {
-    const datosExportar = componentesFiltrados.map((comp) => {
-      const equipo = comp.equipo_id ? equipoPorId.get(comp.equipo_id) : undefined;
-      return {
-        'Código SAP': comp.codigo_sap || '—',
-        'Tipo de Componente': comp.tipo_componente || '—',
-        'Nombre': comp.nombre || '—',
-        'Subproceso': equipo?.subproceso_nombre || '—',
-        'Equipo Asociado': equipo?.nombre || '—',
-        'Marca / Fabricante': comp.marca || '—',
-        'Modelo': comp.modelo || '—',
-        'Estado': comp.estado_componente || 'activo'
-      };
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(datosExportar);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Componentes de Planta');
-    XLSX.writeFile(workbook, 'Catalogo_Componentes_Planta.xlsx');
-  };
-
   return (
     <div className="componentes-catalogo">
       <div className="componentes-catalogo-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -238,28 +215,6 @@ export function ComponentesCatalogo({
             ))}
           </select>
         </div>
-
-        <button
-          type="button"
-          onClick={exportarAExcel}
-          style={{
-            background: '#217346',
-            color: '#fff',
-            border: 'none',
-            padding: '8px 14px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          📊 Descargar Excel (.xlsx)
-        </button>
       </div>
 
       {error && <div className="componente-form-error">{error}</div>}
@@ -309,7 +264,6 @@ export function ComponentesCatalogo({
                 <strong>{componente.nombre}</strong>
               </span>
 
-              {/* 🛡️ Columna controlada con elipsis y tooltip para nombres largos */}
               <span className="componente-row-equipo-wrapper" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 {equipo ? (
                   <>

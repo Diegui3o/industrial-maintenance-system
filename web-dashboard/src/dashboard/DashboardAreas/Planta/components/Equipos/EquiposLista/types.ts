@@ -1,16 +1,16 @@
-export interface FilaEquipo {
+﻿export interface FilaEquipo {
   equipoId: number;
-  codigo: string;
+  fase: string;
   nombre: string;
-  area: string;
+  subproceso: string;
   componente: string;
   estado: string;
 }
 
 export const COLUMNAS = [
-  { key: "codigo", label: "Código" },
+  { key: "fase", label: "Fase" },
   { key: "nombre", label: "Nombre" },
-  { key: "area", label: "Área" },
+  { key: "subproceso", label: "Subproceso" },
   { key: "componente", label: "Componente" },
   { key: "estado", label: "Estado" },
 ] as const;

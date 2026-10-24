@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import { COLUMNAS, type FilaEquipo, type ColumnaKey, type FiltrosState } from "../types";
 import { FiltroExcelMenu } from "./FiltroExcelMenu";
 
@@ -103,9 +103,9 @@ export function EquiposTabla({
 
               return (
                 <tr key={filaClave}>
-                  <td className="planta-equipo-codigo">{fila.codigo}</td>
+                  <td className="planta-equipo-fase">{fila.fase}</td>
                   <td className="planta-equipo-nombre">{fila.nombre}</td>
-                  <td>{fila.area}</td>
+                  <td>{fila.subproceso}</td>
                   <td>{fila.componente}</td>
                   <td>
                     {fila.estado !== "-" ? (
@@ -148,7 +148,7 @@ export function EquiposTabla({
                           }
                         >
                           Estado
-                          <span>▾</span>
+                          <span>▼</span>
                         </button>
 
                         {menuFilaClave === filaClave && (

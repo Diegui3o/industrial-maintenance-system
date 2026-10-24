@@ -1,10 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { getEquipos, type Equipo } from '../../../../services/equiposApi';
 import { getEquipoPlantaDetalle, type EquipoPlantaDetalle } from '../../../../services/plantaEquiposApi';
 import type { FilaEquipo } from '../types';
 
 function texto(valor: unknown): string {
-  if (valor === null || valor === undefined || valor === "") {
+  if (valor === null || valor === undefined || String(valor).trim() === "") {
     return "-";
   }
   return String(valor);
@@ -70,6 +70,13 @@ export function useEquiposPlanta() {
 
     equipos.forEach((equipo) => {
       const detalle = detalles.find((item) => item.equipo.id === equipo.id);
+      
+      const eqAny = equipo as any;
+      const detEqAny = detalle?.equipo as any;
+
+      const faseVal = texto(eqAny.fase || detEqAny?.fase);
+      const subprocesoVal = texto(eqAny.subproceso_nombre || detEqAny?.subproceso_nombre);
+
       const componentesOriginales = detalle?.componentes ?? [];
 
       const componentes = componentesOriginales.filter(
@@ -79,9 +86,9 @@ export function useEquiposPlanta() {
       if (componentes.length === 0) {
         resultado.push({
           equipoId: equipo.id,
-          codigo: texto(equipo.codigo),
+          fase: faseVal,
           nombre: texto(equipo.nombre),
-          area: texto(equipo.area),
+          subproceso: subprocesoVal,
           componente: "-",
           estado: texto(equipo.estado_equipo),
         });
@@ -91,9 +98,9 @@ export function useEquiposPlanta() {
       componentes.forEach((componente) => {
         resultado.push({
           equipoId: equipo.id,
-          codigo: texto(equipo.codigo),
+          fase: faseVal,
           nombre: texto(equipo.nombre),
-          area: texto(equipo.area),
+          subproceso: subprocesoVal,
           componente: texto(componente.nombre),
           estado: texto(equipo.estado_equipo),
         });
