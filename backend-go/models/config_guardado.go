@@ -33,6 +33,9 @@ type ConfigEventoEspecial struct {
 type DatoEvento struct {
 	ID              int       `json:"id"`
 	EquipoID        int       `json:"equipo_id"`
+	ComponenteID    *int      `json:"componente_id,omitempty"`
+	RepuestoID      *int      `json:"repuesto_id,omitempty"`
+	TagID           *int      `json:"tag_id,omitempty"`
 	TipoEvento      string    `json:"tipo_evento"`
 	Descripcion     string    `json:"descripcion"`
 	EstadoAnterior  string    `json:"estado_anterior"`

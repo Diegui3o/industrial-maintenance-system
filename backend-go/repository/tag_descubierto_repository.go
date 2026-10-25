@@ -466,3 +466,67 @@ func (r *TagDescubiertoRepository) ObtenerEquipoIDPorTag(
 
 	return nil, nil
 }
+// ObtenerTagPorEquipoYNombre busca el TagDescubierto que corresponde
+// a un equipo y un tag_name, respetando PI server y element_path
+// cuando estén disponibles.
+func (r *TagDescubiertoRepository) ObtenerTagPorEquipoYNombre(
+	equipoID int,
+	tagName string,
+) (*models.TagDescubierto, error) {
+	if equipoID <= 0 || tagName == "" {
+		return nil, nil
+	}
+
+	var t models.TagDescubierto
+	var equipo *int
+	var componente *int
+	var repuesto *int
+
+	err := r.DB.QueryRow(`
+        SELECT id, tag_name, element_path, pi_point_name,
+               equipo_id, componente_id, repuesto_id
+        FROM tags_descubiertos
+        WHERE equipo_id = $1 AND lower(trim(tag_name)) = lower(trim($2))
+        ORDER BY id ASC
+        LIMIT 1
+    `, equipoID, tagName).Scan(
+		&t.ID,
+		&t.TagName,
+		&t.ElementPath,
+		&t.PIPointName,
+		&equipo,
+		&componente,
+		&repuesto,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	t.EquipoID = equipo
+	t.ComponenteID = componente
+	t.RepuestoID = repuesto
+	return &t, nil
+}
+
+func (r *TagDescubiertoRepository) ObtenerActivosDelTag(
+	tagID int,
+) (equipoID *int, componenteID *int, repuestoID *int, err error) {
+	if tagID <= 0 {
+		return nil, nil, nil, nil
+	}
+
+	err = r.DB.QueryRow(`
+        SELECT equipo_id, componente_id, repuesto_id
+        FROM tags_descubiertos
+        WHERE id = $1
+    `, tagID).Scan(&equipoID, &componenteID, &repuestoID)
+
+	if err == sql.ErrNoRows {
+		return nil, nil, nil, nil
+	}
+	return equipoID, componenteID, repuestoID, err
+}

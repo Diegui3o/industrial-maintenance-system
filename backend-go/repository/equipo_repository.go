@@ -625,3 +625,51 @@ func (r *EquipoRepository) ListarHijos(padreID int) ([]models.Equipo, error) {
 func (r *EquipoRepository) ListarRaices() ([]models.Equipo, error) {
 	return []models.Equipo{}, nil
 }
+// ObtenerEquipoPadreDeComponente devuelve el equipo_id del componente.
+// Devuelve 0 si el componente no existe o no tiene equipo padre.
+func (r *EquipoRepository) ObtenerEquipoPadreDeComponente(componenteID int) (int, error) {
+	if componenteID <= 0 {
+		return 0, nil
+	}
+	var equipoID *int
+	err := r.DB.QueryRow(`
+        SELECT equipo_id FROM componentes_equipo WHERE id = $1
+    `, componenteID).Scan(&equipoID)
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if equipoID == nil {
+		return 0, nil
+	}
+	return *equipoID, nil
+}
+
+func (r *EquipoRepository) ObtenerEquipoPadreDeRepuesto(repuestoID int) (int, error) {
+	if repuestoID <= 0 {
+		return 0, nil
+	}
+	var equipoID *int
+	err := r.DB.QueryRow(`
+        SELECT ce.equipo_id
+        FROM componente_repuesto cr
+        JOIN componentes_equipo ce ON ce.id = cr.componente_id
+        WHERE cr.repuesto_id = $1
+          AND ce.equipo_id IS NOT NULL
+        LIMIT 1
+    `, repuestoID).Scan(&equipoID)
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if equipoID == nil {
+		return 0, nil
+	}
+	return *equipoID, nil
+}

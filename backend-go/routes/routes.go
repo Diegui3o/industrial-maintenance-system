@@ -47,6 +47,7 @@ func SetupRoutes(
 	piTagRepo := repository.NewPITagRepository(db)
 	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
 	estructuraPlantaRepo := repository.NewEstructuraPlantaRepository(db)
+	tiempoActivoRepo := repository.NewTiempoActivoRepository(db)
 
 	// ============================================
 	// SERVICES
@@ -66,6 +67,7 @@ func SetupRoutes(
 	)
 	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
 	estructuraPlantaService := services.NewEstructuraPlantaService(estructuraPlantaRepo)
+	tiempoActivoSvc := services.NewTiempoActivoService(tiempoActivoRepo)
 
 	// ============================================
 	// HANDLERS
@@ -117,6 +119,7 @@ func SetupRoutes(
 		estructuraPlantaService,
 		db,
 	)
+	tiempoActivoHandler := handlers.NewTiempoActivoHandler(tiempoActivoSvc)
 
 	// ============================================
 	// EQUIPOS
@@ -219,6 +222,7 @@ func SetupRoutes(
 		piTagHandler,
 		tagDescubiertoHandler,
 		equipoTagHandler,
+		tiempoActivoHandler,
 	)
 	// ============================================
 	// FIRESTORE

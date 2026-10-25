@@ -78,3 +78,68 @@ func (s *EventosService) ObtenerHistorialEquipo(
 ) ([]models.EventoEstado, error) {
 	return s.Repo.ObtenerHistorialEquipo(equipoID)
 }
+// CambiarEstadoActivo es como CambiarEstadoEquipo pero soporta
+// componentes y repuestos. No crea alarma; eso lo hace AlarmaService.
+func (s *EventosService) CambiarEstadoActivo(
+	equipoID int,
+	componenteID *int,
+	repuestoID *int,
+	tagID *int,
+	parametro *string,
+	nuevoEstado string,
+	motivo string,
+) error {
+	// Para componentes/repuestos no verificamos el estado actual,
+	// siempre registramos la transición porque puede haber múltiples
+	// sensores afectando al mismo activo.
+	if componenteID != nil && *componenteID > 0 {
+		if err := s.Repo.CambiarEstadoActivo(
+			equipoID, componenteID, nil, tagID, parametro,
+			nuevoEstado, motivo,
+		); err != nil {
+			return err
+		}
+		s.auditoriaService.RegistrarCambioEstado(
+			nil, equipoID, "", nuevoEstado, motivo,
+		)
+		return nil
+	}
+	if repuestoID != nil && *repuestoID > 0 {
+		if err := s.Repo.CambiarEstadoActivo(
+			equipoID, nil, repuestoID, tagID, parametro,
+			nuevoEstado, motivo,
+		); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Fallback al comportamiento legacy para equipos
+	estadoActual, err := s.Repo.ObtenerEstadoActualEquipo(equipoID)
+	if err != nil {
+		return err
+	}
+	if estadoActual == nuevoEstado {
+		return nil
+	}
+	if err := s.Repo.CambiarEstadoActivo(
+		equipoID, nil, nil, tagID, parametro,
+		nuevoEstado, motivo,
+	); err != nil {
+		return err
+	}
+	s.auditoriaService.RegistrarCambioEstado(
+		nil, equipoID, estadoActual, nuevoEstado, motivo,
+	)
+	if nuevoEstado == "fallo" {
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarFallo(equipoID, motivo)
+		}
+	}
+	if estadoActual == "fallo" && nuevoEstado == "activo" {
+		if s.whatsappNotificationService != nil {
+			s.whatsappNotificationService.NotificarRecuperacion(equipoID, motivo)
+		}
+	}
+	return nil
+}

@@ -11,6 +11,9 @@ func registrarConfiguracionRoutes(
 	configHandler *handlers.ConfigHandler,
 ) {
 	r.HandleFunc("/api/config/umbrales", configHandler.CrearUmbral).Methods("POST")
+	r.HandleFunc("/api/config/umbrales", configHandler.ListarTodosUmbrales).Methods("GET")
+	r.HandleFunc("/api/config/umbrales/{id}", configHandler.ActualizarUmbral).Methods("PUT")
+	r.HandleFunc("/api/config/umbrales/{id}", configHandler.EliminarUmbral).Methods("DELETE")
 	r.HandleFunc("/api/config/fuentes", configHandler.ListarFuentes).Methods("GET")
 	r.HandleFunc("/api/config/fuentes", configHandler.CrearFuente).Methods("POST")
 	r.HandleFunc("/api/config/fuentes/{id}", configHandler.ObtenerFuente).Methods("GET")

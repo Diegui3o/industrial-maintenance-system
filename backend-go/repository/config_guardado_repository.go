@@ -98,14 +98,26 @@ func (r *ConfigGuardadoRepository) ObtenerEventosEspeciales() ([]models.ConfigEv
 
 func (r *ConfigGuardadoRepository) GuardarEvento(evento *models.DatoEvento) error {
 	return r.DB.QueryRow(`
-		INSERT INTO datos_eventos (
-			equipo_id, tipo_evento, descripcion, estado_anterior, estado_nuevo,
-			valor_anterior, valor_nuevo, parametro, timestamp_evento
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id
-	`, evento.EquipoID, evento.TipoEvento, evento.Descripcion, evento.EstadoAnterior,
-		evento.EstadoNuevo, evento.ValorAnterior, evento.ValorNuevo, evento.Parametro,
-		evento.TimestampEvento).Scan(&evento.ID)
+        INSERT INTO datos_eventos (
+            equipo_id, componente_id, repuesto_id, tag_id,
+            tipo_evento, descripcion, estado_anterior, estado_nuevo,
+            valor_anterior, valor_nuevo, parametro, timestamp_evento
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id
+    `,
+		evento.EquipoID,
+		evento.ComponenteID,
+		evento.RepuestoID,
+		evento.TagID,
+		evento.TipoEvento,
+		evento.Descripcion,
+		evento.EstadoAnterior,
+		evento.EstadoNuevo,
+		evento.ValorAnterior,
+		evento.ValorNuevo,
+		evento.Parametro,
+		evento.TimestampEvento,
+	).Scan(&evento.ID)
 }
 
 func (r *ConfigGuardadoRepository) TieneEventoActivo(equipoID int, tipoEvento string) (bool, error) {

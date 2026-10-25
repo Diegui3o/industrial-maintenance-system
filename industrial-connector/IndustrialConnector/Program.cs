@@ -9,6 +9,8 @@ using IndustrialConnector.Workers;
 using Serilog;
 using Microsoft.Extensions.Logging;
 using IndustrialConnector.Services.PI;
+using IndustrialConnector.Services.Rules;
+using System.Collections.Generic;
 
 namespace IndustrialConnector
 {
@@ -55,6 +57,10 @@ namespace IndustrialConnector
                 sp => new BufferService(10000));
 
             builder.Services.AddSingleton<HealthService>();
+            builder.Services.Configure<List<ReglaAlarma>>(
+            builder.Configuration.GetSection("ReglasAlarma"));
+
+            builder.Services.AddSingleton<RuleEvaluator>();
 
 
             // ============================================

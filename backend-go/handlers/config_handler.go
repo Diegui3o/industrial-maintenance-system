@@ -129,3 +129,53 @@ func (h *ConfigHandler) ListarFuentesPorEquipo(w http.ResponseWriter, r *http.Re
 	}
 	utils.SuccessJSON(w, 200, fuentes)
 }
+func (h *ConfigHandler) ListarTodosUmbrales(w http.ResponseWriter, r *http.Request) {
+	umbrales, err := h.Repo.ListarTodosUmbrales()
+	if err != nil {
+		utils.ErrorJSON(w, 500, err.Error())
+		return
+	}
+	if umbrales == nil {
+		umbrales = []models.ConfigUmbral{}
+	}
+	utils.SuccessJSON(w, 200, umbrales)
+}
+
+func (h *ConfigHandler) ActualizarUmbral(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	if id <= 0 {
+		utils.ErrorJSON(w, 400, "id invalido")
+		return
+	}
+
+	var u models.ConfigUmbral
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		utils.ErrorJSON(w, 400, "JSON invalido: "+err.Error())
+		return
+	}
+
+	if err := h.Repo.ActualizarUmbral(id, &u); err != nil {
+		utils.ErrorJSON(w, 500, err.Error())
+		return
+	}
+	utils.SuccessJSON(w, 200, map[string]interface{}{
+		"mensaje": "Umbral actualizado",
+		"id":      id,
+	})
+}
+
+func (h *ConfigHandler) EliminarUmbral(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	if id <= 0 {
+		utils.ErrorJSON(w, 400, "id invalido")
+		return
+	}
+
+	if err := h.Repo.EliminarUmbral(id); err != nil {
+		utils.ErrorJSON(w, 500, err.Error())
+		return
+	}
+	utils.SuccessJSON(w, 200, map[string]string{
+		"mensaje": "Umbral eliminado",
+	})
+}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"strings"
 
 	"backend/models"
 	"backend/repository"
@@ -13,18 +14,20 @@ import (
 )
 
 type RuleEngine struct {
-	ConfigRepo         *repository.ConfigRepository
-	SensorRepo         *repository.SensorRepository
-	DecisionService    *services.DecisionService
-	AlarmaService      *services.AlarmaService
-	EventoService      *services.EventosService
-	NotifierService    *services.NotifierService
-	EquipoRepo         *repository.EquipoRepository
-	Dispatcher         *services.DispatcherService
-	TagDescubiertoRepo *repository.TagDescubiertoRepository
+    ConfigRepo         *repository.ConfigRepository
+    SensorRepo         *repository.SensorRepository
+    DecisionService    *services.DecisionService
+    AlarmaService      *services.AlarmaService
+    EventoService      *services.EventosService
+    NotifierService    *services.NotifierService
+    EquipoRepo         *repository.EquipoRepository
+    Dispatcher         *services.DispatcherService
+    TagDescubiertoRepo *repository.TagDescubiertoRepository
+    AlertaService      *services.AlertaService
+	TiempoActivoService *services.TiempoActivoService
 
-	tagEquipoCache map[string]int
-	tagCacheMu     sync.RWMutex
+    tagEquipoCache map[string]int
+    tagCacheMu     sync.RWMutex
 }
 
 func NewRuleEngine(
@@ -37,6 +40,8 @@ func NewRuleEngine(
 	equipoRepo *repository.EquipoRepository,
 	dispatcher *services.DispatcherService,
 	tagDescubiertoRepo *repository.TagDescubiertoRepository,
+	alertaService *services.AlertaService,
+	tiempoActivoService *services.TiempoActivoService,
 ) *RuleEngine {
 	return &RuleEngine{
 		ConfigRepo:         configRepo,
@@ -48,6 +53,8 @@ func NewRuleEngine(
 		EquipoRepo:         equipoRepo,
 		Dispatcher:         dispatcher,
 		TagDescubiertoRepo: tagDescubiertoRepo,
+		AlertaService:      alertaService,
+		TiempoActivoService: tiempoActivoService,
 
 		tagEquipoCache: make(map[string]int),
 	}
@@ -55,12 +62,18 @@ func NewRuleEngine(
 
 func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp time.Time) {
 	log.Printf(
-		"🔍 ProcessSensorData: Equipo=%d, Tag=%s, Valor=%.3f",
-		reading.EquipmentID,
+		"🔍 ProcessSensorData: Tag=%s, Valor=%.3f",
 		reading.TagName,
 		reading.Value,
 	)
-
+	// Ignorar lecturas sin calidad Good.
+	if !strings.EqualFold(reading.Quality, "Good") {
+		log.Printf(
+			"Lectura ignorada por calidad: tag=%s quality=%s valor=%.3f",
+			reading.TagName, reading.Quality, reading.Value,
+		)
+		return
+	}
 	if reading.EquipmentID <= 0 {
 
 		if reading.TagName == "" {
@@ -238,88 +251,242 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 		)
 	}
 
-	umbrales, err := e.ConfigRepo.ObtenerUmbrales(
-		reading.EquipmentID,
-		reading.TagName,
-	)
+// ============================================
+// RESOLVER ACTIVOS DEL TAG (equipo, componente, repuesto)
+// ============================================
 
-	if err != nil {
-		log.Printf(
-			"⚠️ Error obteniendo umbrales: Equipo=%d | Tag=%s | Error=%v",
-			reading.EquipmentID,
-			reading.TagName,
-			err,
-		)
-		return
-	}
-
-	if umbrales == nil {
-		return
-	}
-
-	fueraDeRango :=
-		(umbrales.UmbralMin != nil && reading.Value < *umbrales.UmbralMin) ||
-			(umbrales.UmbralMax != nil && reading.Value > *umbrales.UmbralMax)
-
-	if !fueraDeRango {
-		return
-	}
-
-	log.Printf(
-		"🚨 ALARMA: Equipo=%d | %s=%.3f está fuera de rango",
-		reading.EquipmentID,
-		reading.TagName,
-		reading.Value,
-	)
-
-	evento := &models.DatoEvento{
-		EquipoID:   reading.EquipmentID,
-		TipoEvento: "alarma",
-		Descripcion: fmt.Sprintf(
-			"%s = %.3f %s (fuera de rango)",
-			reading.TagName,
-			reading.Value,
-			reading.Unit,
-		),
-		ValorNuevo:      &reading.Value,
-		Parametro:       reading.TagName,
-		TimestampEvento: timestamp,
-	}
-
-	if err := e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento); err != nil {
-		log.Printf(
-			"⚠️ Error guardando evento de alarma: %v",
-			err,
-		)
-	}
-
-	if e.EventoService != nil {
-		if err := e.EventoService.CambiarEstadoEquipo(
-			reading.EquipmentID,
-			"fallo",
-			"Valor fuera de rango: "+reading.TagName,
-		); err != nil {
-			log.Printf(
-				"⚠️ Error cambiando estado del equipo: %v",
-				err,
-			)
-		}
-	}
-
-	if e.AlarmaService != nil {
-		motivoAlarma := fmt.Sprintf(
-			"%s = %.3f %s (fuera de rango)",
-			reading.TagName,
-			reading.Value,
-			reading.Unit,
-		)
-
-		e.AlarmaService.GenerarAlarmaPorFallo(
-			reading.EquipmentID,
-			motivoAlarma,
-		)
-	}
+// Intentar obtener el tag_id desde tags_descubiertos
+var tagID int
+tagDesc, _ := e.TagDescubiertoRepo.ObtenerTagPorEquipoYNombre(
+    reading.EquipmentID,
+    reading.TagName,
+)
+if tagDesc != nil {
+    tagID = tagDesc.ID
 }
+
+// Resolver los 3 activos del tag
+var equipoActivoID *int
+var componenteActivoID *int
+var repuestoActivoID *int
+var umbral *models.ConfigUmbral
+
+if tagID > 0 {
+    eqID, compID, repID, err := e.TagDescubiertoRepo.ObtenerActivosDelTag(tagID)
+    if err != nil {
+        log.Printf("Error obteniendo activos del tag %d: %v", tagID, err)
+    }
+    equipoActivoID = eqID
+    componenteActivoID = compID
+    repuestoActivoID = repID
+
+    // Buscar umbral por tag
+    u, err := e.ConfigRepo.ObtenerUmbralesPorTag(tagID, reading.TagName)
+    if err == nil && u != nil {
+        umbral = u
+    }
+}
+
+// Fallback legacy: si no hay tag_id ni umbral por tag,
+// buscar por equipo como antes
+if umbral == nil {
+    u, err := e.ConfigRepo.ObtenerUmbrales(
+        reading.EquipmentID,
+        reading.TagName,
+    )
+    if err != nil {
+        log.Printf(
+            "Error obteniendo umbrales legacy: Equipo=%d | Tag=%s | Error=%v",
+            reading.EquipmentID, reading.TagName, err,
+        )
+        return
+    }
+    if u == nil {
+        return
+    }
+    umbral = u
+}
+
+// ============================================
+// EVALUAR ACTIVOS
+// ============================================
+
+log.Printf(
+    "Evaluando tag=%s valor=%.3f equipo=%v componente=%v repuesto=%v",
+    reading.TagName, reading.Value,
+    ptrOrZero(equipoActivoID),
+    ptrOrZero(componenteActivoID),
+    ptrOrZero(repuestoActivoID),
+)
+// Registrar tiempo activo si está configurado
+if umbral != nil && umbral.ContarTiempoActivo && e.TiempoActivoService != nil {
+    eqID := ptrOrZero(equipoActivoID)
+    compID := ptrOrZero(componenteActivoID)
+    repID := ptrOrZero(repuestoActivoID)
+
+    activoTipo := "equipo"
+    activoID := eqID
+    if compID > 0 {
+        activoTipo = "componente"
+        activoID = compID
+    } else if repID > 0 {
+        activoTipo = "repuesto"
+        activoID = repID
+    }
+
+    e.TiempoActivoService.RegistrarLectura(
+        tagID, activoTipo, activoID,
+        reading.Value, reading.Quality, timestamp,
+    )
+}
+fueraDeRango :=
+    (umbral.UmbralMin != nil && reading.Value < *umbral.UmbralMin) ||
+    (umbral.UmbralMax != nil && reading.Value > *umbral.UmbralMax)
+
+if !fueraDeRango {
+    return
+}
+
+motivo := fmt.Sprintf(
+    "%s = %.3f %s (fuera de rango: min=%s max=%s)",
+    reading.TagName, reading.Value, reading.Unit,
+    fmtFloatPtr(umbral.UmbralMin), fmtFloatPtr(umbral.UmbralMax),
+)
+
+// ----- Activo: equipo -----
+if equipoActivoID != nil && *equipoActivoID > 0 {
+    log.Printf("EVAL EQUIPO: Equipo=%d modo=%s | %s", *equipoActivoID, umbral.Modo, motivo)
+
+    eventoEq := &models.DatoEvento{
+        EquipoID:        *equipoActivoID,
+        TipoEvento:      "alarma",
+        Descripcion:     motivo,
+        ValorNuevo:      &reading.Value,
+        Parametro:       reading.TagName,
+        TagID:           &tagID,
+        TimestampEvento: timestamp,
+    }
+    if err := e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoEq); err != nil {
+        log.Printf("Error guardando evento equipo: %v", err)
+    }
+
+    if umbral.Modo == "alerta" {
+        // Modo alerta: no cambia estado, solo crea alerta
+        if e.AlertaService != nil {
+            e.AlertaService.GenerarAlertaPolimorfica(
+                *equipoActivoID, nil, nil, &tagID, &reading.TagName,
+                &reading.Value, umbral.UmbralMin, umbral.UmbralMax, motivo,
+            )
+        }
+    } else {
+        // Modo fallo: cambia estado + alarma
+        if e.EventoService != nil {
+            if err := e.EventoService.CambiarEstadoActivo(
+                *equipoActivoID, nil, nil, &tagID, &reading.TagName,
+                "fallo", "Valor fuera de rango: "+reading.TagName,
+            ); err != nil {
+                log.Printf("Error cambiando estado equipo: %v", err)
+            }
+        }
+        if e.AlarmaService != nil {
+            e.AlarmaService.GenerarAlarmaPolimorfica(
+                *equipoActivoID, nil, nil, &tagID, &reading.TagName, motivo,
+            )
+        }
+    }
+}
+
+// ----- Activo: componente -----
+if componenteActivoID != nil && *componenteActivoID > 0 {
+    // Equipo padre del componente
+    eqPadre, err := e.EquipoRepo.ObtenerEquipoPadreDeComponente(*componenteActivoID)
+    if err != nil || eqPadre <= 0 {
+        log.Printf(
+            "Componente %d sin equipo padre, se omite alarma",
+            *componenteActivoID,
+        )
+    } else {
+        log.Printf(
+            "ALARMA COMPONENTE: Componente=%d (equipo=%d) | %s",
+            *componenteActivoID, eqPadre, motivo,
+        )
+
+        eventoComp := &models.DatoEvento{
+            EquipoID:     eqPadre,
+            ComponenteID: componenteActivoID,
+            TipoEvento:   "alarma",
+            Descripcion:  motivo,
+            ValorNuevo:   &reading.Value,
+            Parametro:    reading.TagName,
+            TagID:        &tagID,
+            TimestampEvento: timestamp,
+        }
+        if err := e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoComp); err != nil {
+            log.Printf("Error guardando evento componente: %v", err)
+        }
+
+        if e.EventoService != nil {
+            if err := e.EventoService.CambiarEstadoActivo(
+                eqPadre, componenteActivoID, nil, &tagID, &reading.TagName,
+                "fallo", "Valor fuera de rango: "+reading.TagName,
+            ); err != nil {
+                log.Printf("Error cambiando estado componente: %v", err)
+            }
+        }
+
+        if e.AlarmaService != nil {
+            e.AlarmaService.GenerarAlarmaPolimorfica(
+                eqPadre, componenteActivoID, nil, &tagID, &reading.TagName, motivo,
+            )
+        }
+    }
+}
+
+// ----- Activo: repuesto -----
+if repuestoActivoID != nil && *repuestoActivoID > 0 {
+    eqPadre, err := e.EquipoRepo.ObtenerEquipoPadreDeRepuesto(*repuestoActivoID)
+    if err != nil || eqPadre <= 0 {
+        log.Printf(
+            "Repuesto %d sin equipo padre, se omite alarma",
+            *repuestoActivoID,
+        )
+    } else {
+        log.Printf(
+            "ALARMA REPUESTO: Repuesto=%d (equipo=%d) | %s",
+            *repuestoActivoID, eqPadre, motivo,
+        )
+
+        eventoRep := &models.DatoEvento{
+            EquipoID:     eqPadre,
+            RepuestoID:   repuestoActivoID,
+            TipoEvento:   "alarma",
+            Descripcion:  motivo,
+            ValorNuevo:   &reading.Value,
+            Parametro:    reading.TagName,
+            TagID:        &tagID,
+            TimestampEvento: timestamp,
+        }
+        if err := e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoRep); err != nil {
+            log.Printf("Error guardando evento repuesto: %v", err)
+        }
+
+        if e.EventoService != nil {
+            if err := e.EventoService.CambiarEstadoActivo(
+                eqPadre, nil, repuestoActivoID, &tagID, &reading.TagName,
+                "fallo", "Valor fuera de rango: "+reading.TagName,
+            ); err != nil {
+                log.Printf("Error cambiando estado repuesto: %v", err)
+            }
+        }                           
+
+        if e.AlarmaService != nil { 
+            e.AlarmaService.GenerarAlarmaPolimorfica(
+                eqPadre, nil, repuestoActivoID, &tagID, &reading.TagName, motivo,
+            )
+        } 
+    }     
+}         
+}       
 
 func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetries int) {
 	if maxRetries < 1 {
@@ -407,4 +574,16 @@ func (e *RuleEngine) guardarEquipoEnCache(
 		reading.PIPointName,
 		equipoID,
 	)
+}
+func ptrOrZero(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+func fmtFloatPtr(p *float64) string {
+	if p == nil {
+		return "-"
+	}
+	return fmt.Sprintf("%.3f", *p)
 }

@@ -100,7 +100,7 @@ namespace IndustrialConnector.Services.PI
                 catch
                 {
                     hasValue = false;
-                    quality = "Good";
+                    quality = "NoValue";
 
                     _logger.LogDebug(
                         "⚠️ Valor no numérico: {Tag} = {Value}",
@@ -125,6 +125,14 @@ namespace IndustrialConnector.Services.PI
                 }
             }
             catch { }
+
+            if (!hasValue)
+            {
+                _logger.LogDebug(
+                    "Lectura descartada (sin valor): Tag={Tag} | PI={PI}",
+                    tagName, attribute.Name);
+                return null;
+            }
 
             var reading = new SensorReading
             {

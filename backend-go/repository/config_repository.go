@@ -187,3 +187,128 @@ func (r *ConfigRepository) ObtenerEstadoEquipo(equipoID int) (string, error) {
 	err := r.DB.QueryRow(`SELECT estado_equipo FROM equipos WHERE id = $1`, equipoID).Scan(&estado)
 	return estado, err
 }
+// ListarTodosUmbrales lista TODOS los umbrales configurados.
+func (r *ConfigRepository) ListarTodosUmbrales() ([]models.ConfigUmbral, error) {
+	rows, err := r.DB.Query(`
+        SELECT id, equipo_id, parametro, umbral_min, umbral_max, unidad, severidad, activo
+        FROM config_umbrales
+        ORDER BY equipo_id, parametro
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var umbrales []models.ConfigUmbral
+	for rows.Next() {
+		var u models.ConfigUmbral
+		if err := rows.Scan(
+			&u.ID,
+			&u.EquipoID,
+			&u.Parametro,
+			&u.UmbralMin,
+			&u.UmbralMax,
+			&u.Unidad,
+			&u.Severidad,
+			&u.Activo,
+		); err != nil {
+			return nil, err
+		}
+		umbrales = append(umbrales, u)
+	}
+	return umbrales, rows.Err()
+}
+
+// ActualizarUmbral modifica un umbral existente.
+func (r *ConfigRepository) ActualizarUmbral(id int, u *models.ConfigUmbral) error {
+	result, err := r.DB.Exec(`
+        UPDATE config_umbrales
+        SET parametro = $1,
+            umbral_min = $2,
+            umbral_max = $3,
+            unidad = $4,
+            severidad = $5,
+            activo = $6,
+            actualizado_en = NOW()
+        WHERE id = $7
+    `,
+		u.Parametro,
+		u.UmbralMin,
+		u.UmbralMax,
+		u.Unidad,
+		u.Severidad,
+		u.Activo,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	filas, _ := result.RowsAffected()
+	if filas == 0 {
+		return fmt.Errorf("umbral id=%d no encontrado", id)
+	}
+	return nil
+}
+
+// EliminarUmbral borra un umbral.
+func (r *ConfigRepository) EliminarUmbral(id int) error {
+	result, err := r.DB.Exec(
+		`DELETE FROM config_umbrales WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	filas, _ := result.RowsAffected()
+	if filas == 0 {
+		return fmt.Errorf("umbral id=%d no encontrado", id)
+	}
+	return nil
+}
+func (r *ConfigRepository) ObtenerUmbralesPorTag(
+	tagID int,
+	parametro string,
+) (*models.ConfigUmbral, error) {
+	if tagID <= 0 {
+		return nil, nil
+	}
+
+	u := &models.ConfigUmbral{}
+	err := r.DB.QueryRow(`
+        SELECT id, equipo_id, tag_id, componente_id, repuesto_id,
+               parametro, umbral_min, umbral_max,
+               COALESCE(unidad, ''),
+               COALESCE(severidad, 'alta'),
+               COALESCE(activo, true),
+               COALESCE(modo, 'fallo'),
+               COALESCE(contar_tiempo_activo, false)
+        FROM config_umbrales
+        WHERE tag_id = $1 AND lower(trim(parametro)) = lower(trim($2))
+        ORDER BY id ASC
+        LIMIT 1
+    `, tagID, parametro).Scan(
+		&u.ID,
+		&u.EquipoID,
+		&u.TagID,
+		&u.ComponenteID,
+		&u.RepuestoID,
+		&u.Parametro,
+		&u.UmbralMin,
+		&u.UmbralMax,
+		&u.Unidad,
+		&u.Severidad,
+		&u.Activo,
+		&u.Modo,
+		&u.ContarTiempoActivo,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}

@@ -86,6 +86,7 @@ export function ComponenteMotorFicha({
               <option value="220/440">220/440</option>
               <option value="230/460">230/460</option>
               <option value="440/760">440/760</option>
+              <option value="440/760">2300</option>
             </select>
           </label>
 

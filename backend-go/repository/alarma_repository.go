@@ -12,16 +12,6 @@ type AlarmaRepository struct {
 	DB *sql.DB
 }
 
-// Crear: inserta una nueva alarma
-func (r *AlarmaRepository) Crear(a *models.Alarma) error {
-	query := `
-        INSERT INTO alarmas (equipo_id, tipo, mensaje, severidad, estado)
-        VALUES ($1, $2, $3, $4, 'activa')
-        RETURNING id, fecha_generada
-    `
-	return r.DB.QueryRow(query, a.EquipoID, a.Tipo, a.Mensaje, a.Severidad).Scan(&a.ID, &a.FechaGenerada)
-}
-
 // ListarActivas: alarmas no cerradas
 func (r *AlarmaRepository) ListarActivas() ([]models.Alarma, error) {
 	query := `
@@ -123,4 +113,55 @@ func (r *AlarmaRepository) CerrarAlarmasActivasPorEquipo(equipoID int) (int, err
 	}
 	cerradas, _ := result.RowsAffected()
 	return int(cerradas), nil
+}
+// Crear: inserta una nueva alarma con soporte polimórfico
+func (r *AlarmaRepository) Crear(a *models.Alarma) error {
+	query := `
+        INSERT INTO alarmas (
+            equipo_id, componente_id, repuesto_id,
+            tag_id, parametro, activo_tipo,
+            tipo, mensaje, severidad, estado
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'activa')
+        RETURNING id, fecha_generada
+    `
+	return r.DB.QueryRow(
+		query,
+		a.EquipoID,
+		a.ComponenteID,
+		a.RepuestoID,
+		a.TagID,
+		a.Parametro,
+		nullableString(a.ActivoTipo),
+		a.Tipo,
+		a.Mensaje,
+		a.Severidad,
+	).Scan(&a.ID, &a.FechaGenerada)
+}
+
+func nullableString(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func (r *AlarmaRepository) ExisteAlarmaActiva(
+	equipoID int,
+	componenteID *int,
+	repuestoID *int,
+	parametro *string,
+) (bool, error) {
+	var existe bool
+	err := r.DB.QueryRow(`
+        SELECT EXISTS(
+            SELECT 1 FROM alarmas
+            WHERE estado = 'activa'
+              AND COALESCE(equipo_id, 0) = COALESCE($1, 0)
+              AND COALESCE(componente_id, 0) = COALESCE($2, 0)
+              AND COALESCE(repuesto_id, 0) = COALESCE($3, 0)
+              AND COALESCE(parametro, '') = COALESCE($4, '')
+        )
+    `, equipoID, componenteID, repuestoID, parametro).Scan(&existe)
+	return existe, err
 }

@@ -42,6 +42,12 @@ func (s *AlarmaService) GenerarAlarmaPorFallo(equipoID int, motivo string) {
 	}
 
 	if !equipo.Critico {
+		log.Printf(
+			"⚠️ Alarma omitida (equipo no crítico): Equipo=%d (%s) | Motivo=%s",
+			equipoID,
+			equipo.Nombre,
+			motivo,
+		)
 		return
 	}
 
@@ -82,4 +88,84 @@ func (s *AlarmaService) AtenderAlarma(id int) error {
 }
 func (s *AlarmaService) CerrarAlarma(id int) error {
 	return s.Repo.Cerrar(id)
+}
+// GenerarAlarmaPolimorfica genera una alarma asociada a un activo
+// concreto (equipo, componente o repuesto). Si componenteID o
+// repuestoID están presentes, la alarma se asocia a ese activo.
+// Si el activo (equipo) es crítico, se crea; si no, no se crea
+// (respeta la regla actual: solo equipos críticos generan alarma).
+func (s *AlarmaService) GenerarAlarmaPolimorfica(
+	equipoID int,
+	componenteID *int,
+	repuestoID *int,
+	tagID *int,
+	parametro *string,
+	motivo string,
+) {
+	// Determinar activo_tipo y activo_id según los parámetros
+	activoTipo := "equipo"
+	if componenteID != nil && *componenteID > 0 {
+		activoTipo = "componente"
+	} else if repuestoID != nil && *repuestoID > 0 {
+		activoTipo = "repuesto"
+	}
+
+	// Regla actual: solo equipos críticos generan alarma.
+	// Para componentes/repuestos, se usa la criticidad del equipo padre.
+	if equipoID <= 0 {
+		log.Printf("Alarma omitida (sin equipo padre): tipo=%s motivo=%s", activoTipo, motivo)
+		return
+	}
+	equipo, err := s.EquipoRepo.ObtenerEquipoPorID(equipoID)
+	if err != nil {
+		log.Printf("Error al buscar equipo para alarma: %v", err)
+		return
+	}
+	if !equipo.Critico {
+		log.Printf(
+			"Alarma omitida (equipo no crítico): Equipo=%d (%s) | Activo=%s | Motivo=%s",
+			equipoID, equipo.Nombre, activoTipo, motivo,
+		)
+		return
+	}
+
+	mensaje := ""
+	if componenteID != nil && *componenteID > 0 {
+		mensaje = fmt.Sprintf("Componente en fallo: %s", motivo)
+	} else if repuestoID != nil && *repuestoID > 0 {
+		mensaje = fmt.Sprintf("Repuesto en fallo: %s", motivo)
+	} else {
+		mensaje = fmt.Sprintf("Equipo crítico %s en fallo: %s", equipo.Nombre, motivo)
+	}
+	
+	// Si ya hay una alarma activa para este activo+parametro, no crear otra.
+	existe, err := s.Repo.ExisteAlarmaActiva(equipoID, componenteID, repuestoID, parametro)
+	if err != nil {
+		log.Printf("Error comprobando alarma activa: %v", err)
+	}
+	if existe {
+		log.Printf("Alarma ya activa (no se duplica): activo=%s motivo=%s", activoTipo, motivo)
+		return
+	}
+
+	alarma := &models.Alarma{
+		EquipoID:     equipoID,
+		ComponenteID: componenteID,
+		RepuestoID:   repuestoID,
+		TagID:        tagID,
+		Parametro:    parametro,
+		ActivoTipo:   activoTipo,
+		Tipo:         "fallo_" + activoTipo,
+		Mensaje:      mensaje,
+		Severidad:    "alta",
+	}
+
+	if err := s.Repo.Crear(alarma); err != nil {
+		log.Printf("Error generando alarma %s: %v", activoTipo, err)
+	} else {
+		log.Printf(
+			"Alarma %s generada: activo_id=%d equipo_id=%d tag_id=%v",
+			activoTipo, *componenteID, equipoID, tagID,
+		)
+	}
 }
