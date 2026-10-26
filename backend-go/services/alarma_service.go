@@ -163,9 +163,13 @@ func (s *AlarmaService) GenerarAlarmaPolimorfica(
 	if err := s.Repo.Crear(alarma); err != nil {
 		log.Printf("Error generando alarma %s: %v", activoTipo, err)
 	} else {
+		compVal := 0
+		if componenteID != nil {
+			compVal = *componenteID
+		}
 		log.Printf(
-			"Alarma %s generada: activo_id=%d equipo_id=%d tag_id=%v",
-			activoTipo, *componenteID, equipoID, tagID,
+			"Alarma %s generada: componente=%d equipo_id=%d tag_id=%v",
+			activoTipo, compVal, equipoID, tagID,
 		)
 	}
 }

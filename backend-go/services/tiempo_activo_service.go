@@ -153,3 +153,45 @@ func (s *TiempoActivoService) ResumenPorDia(
 	}
 	return res, nil
 }
+// Transicionar cierra la fila abierta con el motivo indicado y abre
+// una nueva con el nuevo estado.
+//
+// Es el método usado por el RuleEngine para reflejar cambios de estado
+// explícitos (recuperado, salida_por_falla, etc.).
+func (s *TiempoActivoService) Transicionar(
+	tagID int,
+	activoTipo string,
+	activoID int,
+	nuevoEstado string,
+	motivoCierre string,
+	valor float64,
+	timestamp time.Time,
+) {
+	abierta, err := s.Repo.BuscarAbierto(tagID, activoTipo, activoID)
+	if err != nil {
+		log.Printf("Error buscando tiempo abierto para transición (tag=%d): %v", tagID, err)
+		return
+	}
+
+	// Cerrar la fila abierta (si existe)
+	if abierta != nil {
+		if !timestamp.After(abierta.Desde) {
+			log.Printf(
+				"Transición ignorada (timestamp antiguo): tag=%d ts=%v desde=%v",
+				tagID, timestamp, abierta.Desde,
+			)
+			return
+		}
+		if err := s.Repo.CerrarAbierto(abierta.ID, motivoCierre, timestamp); err != nil {
+			log.Printf("Error cerrando tiempo (id=%d): %v", abierta.ID, err)
+		}
+	}
+
+	// Abrir nueva fila
+	valorPtr := valor
+	if _, err := s.Repo.AbrirNuevo(
+		tagID, activoTipo, activoID, nuevoEstado, timestamp, &valorPtr,
+	); err != nil {
+		log.Printf("Error abriendo tiempo de transición (tag=%d): %v", tagID, err)
+	}
+}

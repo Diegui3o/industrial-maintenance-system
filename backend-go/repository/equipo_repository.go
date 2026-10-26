@@ -673,3 +673,77 @@ func (r *EquipoRepository) ObtenerEquipoPadreDeRepuesto(repuestoID int) (int, er
 	}
 	return *equipoID, nil
 }
+// ObtenerEstadoActivo devuelve el estado actual de un activo
+// (equipo, componente o repuesto). Si el activo no existe, devuelve "".
+func (r *EquipoRepository) ObtenerEstadoActivo(
+	tipo string,
+	id int,
+) (string, error) {
+	if id <= 0 {
+		return "", nil
+	}
+
+	var estado string
+	var err error
+
+	switch tipo {
+	case "equipo":
+		err = r.DB.QueryRow(`SELECT estado_equipo FROM equipos WHERE id = $1`, id).Scan(&estado)
+	case "componente":
+		err = r.DB.QueryRow(`SELECT estado_componente FROM componentes_equipo WHERE id = $1`, id).Scan(&estado)
+	case "repuesto":
+		err = r.DB.QueryRow(`SELECT COALESCE(estado, 'activo') FROM repuestos WHERE id = $1`, id).Scan(&estado)
+	default:
+		return "", fmt.Errorf("tipo de activo desconocido: %s", tipo)
+	}
+
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return estado, nil
+}
+
+// ActualizarEstadoActivo cambia el estado de un activo.
+func (r *EquipoRepository) ActualizarEstadoActivo(
+	tipo string,
+	id int,
+	nuevoEstado string,
+) error {
+	if id <= 0 {
+		return fmt.Errorf("id inválido")
+	}
+
+	var err error
+	switch tipo {
+	case "equipo":
+		_, err = r.DB.Exec(`
+            UPDATE equipos
+            SET estado_equipo = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, nuevoEstado, id)
+	case "componente":
+		_, err = r.DB.Exec(`
+            UPDATE componentes_equipo
+            SET estado_componente = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, nuevoEstado, id)
+	case "repuesto":
+		// repuestos usa 'falla' en lugar de 'fallo'
+		estadoRepuesto := nuevoEstado
+		if nuevoEstado == "fallo" {
+			estadoRepuesto = "falla"
+		}
+		_, err = r.DB.Exec(`
+            UPDATE repuestos
+            SET estado = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, estadoRepuesto, id)
+	default:
+		return fmt.Errorf("tipo de activo desconocido: %s", tipo)
+	}
+
+	return err
+}

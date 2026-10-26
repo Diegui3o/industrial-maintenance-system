@@ -32,6 +32,7 @@ func SetupRoutes(
 	usuarioRepo := &repository.UsuarioRepository{DB: db}
 	dashboardRepo := &repository.DashboardRepository{DB: db}
 	dispositivoRepo := &repository.DispositivoRedRepository{DB: db}
+	eventosRepo := &repository.EventosRepository{DB: db}
 	configRepo := repository.NewConfigRepository(db)
 	whatsappRepo := repository.NewWhatsAppRepository(db)
 	mantenimientoRepo := repository.NewMantenimientoRepository(db)
@@ -88,6 +89,14 @@ func SetupRoutes(
 		Repo:      configRepo,
 		Scheduler: sched,
 	}
+	activoService := services.NewActivoService(
+		equipoRepo,
+		alarmaRepo,
+		repository.NewAlertaRepository(db),
+		eventosRepo,
+		repository.NewTiempoActivoRepository(db),
+	)
+	activoHandler := handlers.NewActivoHandler(activoService)
 	whatsappHandler := &handlers.WhatsAppHandler{
 		Repo:    whatsappRepo,
 		Manager: whatsappManager,
@@ -259,6 +268,10 @@ func SetupRoutes(
 	registrarConexionesRoutes(
 		r,
 		conexionHandler,
+	)
+	registrarActivosRoutes(
+		r,
+		activoHandler,
 	)
 	// ============================================
 	// ============================================
