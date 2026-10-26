@@ -384,15 +384,17 @@ if !fueraDeRango {
             _ = e.cerrarAlarmasActivasPorActivo(activoTipoActual, activoIDActual)
         }
 
-        // 2. Cambiar estado del activo a activo
-        _ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "activo")
+        // 2. Registrar evento de recuperación PRIMERO (mientras el estado es 'fallo')
+        if e.EventoService != nil {
+            _ = e.EventoService.CambiarEstadoActivo(
+                *equipoActivoID, componenteActivoID, repuestoActivoID,
+                &tagID, &reading.TagName, "activo",
+                fmt.Sprintf("Recuperado: %s = %.3f dentro de rango", reading.TagName, reading.Value),
+            )
+        }
 
-        // 3. Registrar evento de recuperaciÃ³n
-        _ = e.EventoService.CambiarEstadoActivo(
-            *equipoActivoID, componenteActivoID, repuestoActivoID,
-            &tagID, &reading.TagName, "activo",
-            fmt.Sprintf("Recuperado: %s = %.3f dentro de rango", reading.TagName, reading.Value),
-        )
+        // 3. Cambiar estado del activo a activo
+        _ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "activo")
 
         // 4. Cerrar fila de tiempo con motivo 'recuperado', abrir 'activo'
         if e.TiempoActivoService != nil && umbral.ContarTiempoActivo {
@@ -458,14 +460,16 @@ eventoAlarma := &models.DatoEvento{
 }
 _ = e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoAlarma)
 
-// 2. Cambiar estado del activo a 'fallo'
-_ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "fallo")
+// 2. Registrar cambio en eventos_estado PRIMERO (mientras el estado es 'activo' o 'mantenimiento')
+if e.EventoService != nil {
+    _ = e.EventoService.CambiarEstadoActivo(
+        *equipoActivoID, componenteActivoID, repuestoActivoID,
+        &tagID, &reading.TagName, "fallo", motivo,
+    )
+}
 
-// 3. Registrar cambio en eventos_estado
-_ = e.EventoService.CambiarEstadoActivo(
-    *equipoActivoID, componenteActivoID, repuestoActivoID,
-    &tagID, &reading.TagName, "fallo", motivo,
-)
+// 3. Cambiar estado del activo a 'fallo'
+_ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "fallo")
 
 // 4. Crear alarma/evento segÃºn el modo
 if umbral.Modo == "alerta" {
