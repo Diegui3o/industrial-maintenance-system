@@ -24,10 +24,19 @@ type RuleEngine struct {
     Dispatcher         *services.DispatcherService
     TagDescubiertoRepo *repository.TagDescubiertoRepository
     AlertaService      *services.AlertaService
-	TiempoActivoService *services.TiempoActivoService
+    TiempoActivoService *services.TiempoActivoService
 
     tagEquipoCache map[string]int
     tagCacheMu     sync.RWMutex
+
+    // Contadores de confirmación por (tagID|parametro)
+    confirmaciones   map[string]*contadorConfirmacion
+    confirmacionesMu sync.RWMutex
+}
+
+type contadorConfirmacion struct {
+    fueraConsecutivas  int
+    dentroConsecutivas int
 }
 
 func NewRuleEngine(
@@ -43,21 +52,23 @@ func NewRuleEngine(
 	alertaService *services.AlertaService,
 	tiempoActivoService *services.TiempoActivoService,
 ) *RuleEngine {
-	return &RuleEngine{
-		ConfigRepo:         configRepo,
-		SensorRepo:         sensorRepo,
-		DecisionService:    decisionService,
-		AlarmaService:      alarmaService,
-		EventoService:      eventoService,
-		NotifierService:    notifierService,
-		EquipoRepo:         equipoRepo,
-		Dispatcher:         dispatcher,
-		TagDescubiertoRepo: tagDescubiertoRepo,
-		AlertaService:      alertaService,
-		TiempoActivoService: tiempoActivoService,
+    return &RuleEngine{
+        ConfigRepo:         configRepo,
+        SensorRepo:         sensorRepo,
+        DecisionService:    decisionService,
+        AlarmaService:      alarmaService,
+        EventoService:      eventoService,
+        NotifierService:    notifierService,
+        EquipoRepo:         equipoRepo,
+        Dispatcher:         dispatcher,
+        TagDescubiertoRepo: tagDescubiertoRepo,
+        AlertaService:      alertaService,
+        TiempoActivoService: tiempoActivoService,
 
-		tagEquipoCache: make(map[string]int),
-	}
+        tagEquipoCache: make(map[string]int),
+
+        confirmaciones: make(map[string]*contadorConfirmacion),
+    }
 }
 
 func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp time.Time) {
@@ -250,12 +261,7 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 			err,
 		)
 	}
-
-// ============================================
-// RESOLVER ACTIVOS DEL TAG (equipo, componente, repuesto)
-// ============================================
-
-// Intentar obtener el tag_id desde tags_descubiertos
+	
 var tagID int
 tagDesc, _ := e.TagDescubiertoRepo.ObtenerTagPorEquipoYNombre(
     reading.EquipmentID,
@@ -287,8 +293,6 @@ if tagID > 0 {
     }
 }
 
-// Fallback legacy: si no hay tag_id ni umbral por tag,
-// buscar por equipo como antes
 if umbral == nil {
     u, err := e.ConfigRepo.ObtenerUmbrales(
         reading.EquipmentID,
@@ -370,7 +374,56 @@ if err != nil {
 log.Printf("Activo %s=%d estado=%s | valor=%.3f fueraRango=%v",
     activoTipoActual, activoIDActual, estadoActual, reading.Value, fueraDeRango)
 
-// ----- CASO A: valor DENTRO del rango -----
+claveContador := fmt.Sprintf("%d|%s", tagID, reading.TagName)
+
+e.confirmacionesMu.Lock()
+if e.confirmaciones[claveContador] == nil {
+    e.confirmaciones[claveContador] = &contadorConfirmacion{}
+}
+contador := e.confirmaciones[claveContador]
+e.confirmacionesMu.Unlock()
+
+if fueraDeRango {
+    contador.fueraConsecutivas++
+    contador.dentroConsecutivas = 0
+} else {
+    contador.dentroConsecutivas++
+    contador.fueraConsecutivas = 0
+}
+
+lecturasConfirmacion := 3
+if umbral.LecturasConfirmacion != nil && *umbral.LecturasConfirmacion > 0 {
+    lecturasConfirmacion = *umbral.LecturasConfirmacion
+}
+
+log.Printf(
+    "Confirmacion tag=%s: fuera=%d dentro=%d necesarias=%d",
+    reading.TagName,
+    contador.fueraConsecutivas,
+    contador.dentroConsecutivas,
+    lecturasConfirmacion,
+)
+
+if fueraDeRango && estadoActual != "fallo" && contador.fueraConsecutivas < lecturasConfirmacion {
+    log.Printf(
+        "Esperando confirmacion de falla: tag=%s %d/%d",
+        reading.TagName,
+        contador.fueraConsecutivas,
+        lecturasConfirmacion,
+    )
+    return
+}
+
+if !fueraDeRango && estadoActual == "fallo" && contador.dentroConsecutivas < lecturasConfirmacion {
+    log.Printf(
+        "Esperando confirmacion de recuperacion: tag=%s %d/%d",
+        reading.TagName,
+        contador.dentroConsecutivas,
+        lecturasConfirmacion,
+    )
+    return
+}
+
 if !fueraDeRango {
     // Solo hay transiciÃ³n si estaba en 'fallo' (recuperaciÃ³n)
     if estadoActual == "fallo" {
@@ -411,8 +464,6 @@ if !fueraDeRango {
     return
 }
 
-// ----- CASO B: valor FUERA del rango -----
-// Solo hay transiciÃ³n si NO estaba ya en 'fallo'.
 if estadoActual == "fallo" {
     // Ya estÃ¡ en fallo, no repetir. Registrar evento silencioso para histÃ³rico.
     evento := &models.DatoEvento{

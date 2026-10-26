@@ -167,9 +167,11 @@ func (s *AlarmaService) GenerarAlarmaPolimorfica(
 		if componenteID != nil {
 			compVal = *componenteID
 		}
-		log.Printf(
-			"Alarma %s generada: componente=%d equipo_id=%d tag_id=%v",
-			activoTipo, compVal, equipoID, tagID,
-		)
+		tagVal := 0
+		if tagID != nil {
+			tagVal = *tagID
+		}
+		log.Printf("Alarma %s generada: componente=%d equipo_id=%d tag_id=%d",
+			activoTipo, compVal, equipoID, tagVal)
 	}
 }

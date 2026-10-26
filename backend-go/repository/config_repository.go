@@ -283,7 +283,10 @@ func (r *ConfigRepository) ObtenerUmbralesPorTag(
                COALESCE(severidad, 'alta'),
                COALESCE(activo, true),
                COALESCE(modo, 'fallo'),
-               COALESCE(contar_tiempo_activo, false)
+               COALESCE(contar_tiempo_activo, false),
+               lecturas_confirmacion,
+               hist_min,
+               hist_max
         FROM config_umbrales
         WHERE tag_id = $1 AND lower(trim(parametro)) = lower(trim($2))
         ORDER BY id ASC
@@ -302,6 +305,9 @@ func (r *ConfigRepository) ObtenerUmbralesPorTag(
 		&u.Activo,
 		&u.Modo,
 		&u.ContarTiempoActivo,
+		&u.LecturasConfirmacion,
+		&u.HistMin,
+		&u.HistMax,
 	)
 
 	if err == sql.ErrNoRows {
