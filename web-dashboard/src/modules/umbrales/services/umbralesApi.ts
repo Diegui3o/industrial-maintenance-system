@@ -1,4 +1,5 @@
-﻿const API_BASE = "http://127.0.0.1:1883";
+﻿// src/modules/umbrales/services/umbralesApi.ts
+const API_BASE = "http://127.0.0.1:1883";
 
 export interface Umbral {
   id: number;
@@ -55,14 +56,4 @@ export async function getTagsDescubiertos(): Promise<TagDescubierto[]> {
   if (!res.ok) throw new Error(`GET /api/pi/tags/descubiertos -> ${res.status}`);
   const json = await res.json();
   return (json?.value || json || []) as TagDescubierto[];
-}
-
-export async function asignarTagEquipo(tag_id: number, equipo_id: number): Promise<any> {
-  const res = await fetch(`${API_BASE}/api/pi/tags/asignar`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tag_id, equipo_id }),
-  });
-  if (!res.ok) throw new Error(`POST /api/pi/tags/asignar -> ${res.status}`);
-  return res.json();
 }
