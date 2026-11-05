@@ -1,4 +1,4 @@
-import {
+﻿import {
   BrowserRouter,
   Routes,
   Route,
@@ -18,6 +18,7 @@ import EquipoFormPage from './modules/equipos/pages/EquipoFormPage';
 import EquipoEditPage from './modules/equipos/pages/EquipoEditPage';
 
 import AlarmasPage from './modules/alarmas/pages/AlarmasPage';
+import UmbralesPage from './modules/umbrales/pages/UmbralesPage';
 import EventosPage from './modules/eventos/page/EventosPage';
 import MetricasPage from './modules/metricas/page/MetricasPage';
 import ConfiguracionPage from './modules/configuracion/page/ConfiguracionPage';
@@ -37,6 +38,7 @@ import { useEffect, useState } from 'react';
 // ============================================================
 
 const RUTAS_PRINCIPALES = new Set([
+  '/umbrales',
   '/mina',
   '/planta',
   '/infraestructura',
@@ -66,7 +68,7 @@ function normalizarRuta(pathname: string) {
 
 
 // ============================================================
-// OBTENER PADRE JERÁRQUICO
+// OBTENER PADRE JERÃRQUICO
 // ============================================================
 
 function obtenerPadreRuta(
@@ -76,7 +78,7 @@ function obtenerPadreRuta(
   const ruta = normalizarRuta(pathname);
 
   // ----------------------------------------------------------
-  // DASHBOARD = RAÍZ DEL SISTEMA
+  // DASHBOARD = RAÃZ DEL SISTEMA
   // ----------------------------------------------------------
 
   if (ruta === '/dashboard') {
@@ -141,7 +143,7 @@ function obtenerPadreRuta(
 
 
 // ============================================================
-// NAVEGACIÓN JERÁRQUICA
+// NAVEGACIÃ“N JERÃRQUICA
 // ============================================================
 
 function useNavegacionJerarquica() {
@@ -244,7 +246,7 @@ function useNavegacionJerarquica() {
     }
 
     // --------------------------------------------------------
-    // DASHBOARD SIEMPRE ES RAÍZ
+    // DASHBOARD SIEMPRE ES RAÃZ
     // --------------------------------------------------------
 
     else if (
@@ -508,7 +510,7 @@ export default function App() {
         <Routes>
 
           {/* ------------------------------------------------
-              RAÍZ EXTERNA
+              RAÃZ EXTERNA
               ------------------------------------------------ */}
 
           <Route
@@ -522,7 +524,7 @@ export default function App() {
           />
 
           {/* ------------------------------------------------
-              RAÍZ DEL SISTEMA
+              RAÃZ DEL SISTEMA
               ------------------------------------------------ */}
 
           <Route
@@ -563,9 +565,9 @@ export default function App() {
               <EquipoEditRoute />
             }
           />
-
+          <Route path="/umbrales" element={<UmbralesPage onNavigate={(page) => window.location.href = `/${page}`} />} />
           {/* ------------------------------------------------
-              MÓDULOS PRINCIPALES
+              MÃ“DULOS PRINCIPALES
               ------------------------------------------------ */}
 
           <Route
@@ -634,7 +636,7 @@ export default function App() {
           />
 
           {/* ------------------------------------------------
-              ÁREAS
+              ÃREAS
               ------------------------------------------------ */}
 
           <Route
@@ -688,3 +690,6 @@ export default function App() {
     </AppProvider>
   );
 }
+
+
+

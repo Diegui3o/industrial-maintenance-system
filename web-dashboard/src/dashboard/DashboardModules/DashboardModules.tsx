@@ -1,4 +1,4 @@
-import { colors } from '../../theme/colors';
+﻿import { colors } from '../../theme/colors';
 import './DashboardModules.css';
 
 interface DashboardModulesProps {
@@ -8,6 +8,7 @@ interface DashboardModulesProps {
 const icons: Record<string, string> = {
   equipos: '🏭',
   alarmas: '🚨',
+  umbrales: '⚡',
   notificaciones: '💬',
   mantenimiento: '🔧',
   metricas: '📊',
@@ -20,6 +21,7 @@ export function DashboardModules({ onNavigate }: DashboardModulesProps) {
   const modules = [
     { id: 'equipos', title: 'Equipos', description: 'Inventario y estado', color: '#C45A1A' },
     { id: 'alarmas', title: 'Alarmas', description: 'Alarmas activas', color: '#B93636' },
+    { id: 'umbrales', title: 'Umbrales y Tags PI', description: 'Gestión de tags y reglas', color: '#0284C7' },
     { id: 'notificaciones', title: 'WhatsApp', description: 'Notificaciones y grupos', color: '#25D366' },
     { id: 'mantenimiento', title: 'Mantenimiento', description: 'Órdenes y trabajos', color: '#A16207' },
     { id: 'metricas', title: 'Sensores', description: 'Lecturas y monitoreo', color: '#2563A0' },
@@ -60,3 +62,5 @@ export function DashboardModules({ onNavigate }: DashboardModulesProps) {
     </section>
   );
 }
+
+export default DashboardModules;
