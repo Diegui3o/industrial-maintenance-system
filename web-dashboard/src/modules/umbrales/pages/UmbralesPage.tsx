@@ -179,9 +179,15 @@ export default function UmbralesPage({ onNavigate }: Props) {
         <p style={{ color: colors.text.muted }}>Cargando información...</p>
       )}
 
-      {(umbralesQuery.isError || tagsQuery.isError) && (
+      {/* Solo mostrar error si TAMBIÉN fallan los otros queries críticos */}
+      {tagsQuery.isError && (
         <p style={{ color: '#b91c1c' }}>
-          No se pudo cargar información del servidor. Verifica la conexión e inténtalo nuevamente.
+          No se pudo cargar información de tags PI. Verifica la conexión.
+        </p>
+      )}
+      {umbralesQuery.isError && (
+        <p style={{ color: '#b91c1c' }}>
+          No se pudieron cargar los umbrales existentes. El selector sigue funcionando.
         </p>
       )}
 
