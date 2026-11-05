@@ -19,6 +19,8 @@ type TagDescubierto struct {
 	Frecuencia              int        `json:"frecuencia"`
 	Source                  string     `json:"source"`
 	EquipoID                *int       `json:"equipo_id"`
+	ComponenteID            *int       `json:"componente_id,omitempty"`
+	RepuestoID              *int       `json:"repuesto_id,omitempty"`
 	AsignadoAutomaticamente bool       `json:"asignado_automaticamente"`
 	CreadoEn                time.Time  `json:"creado_en"`
 	ActualizadoEn           *time.Time `json:"actualizado_en"`

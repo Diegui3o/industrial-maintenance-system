@@ -11,6 +11,7 @@ func registrarPIRoutes(
 	piTagHandler *handlers.PITagHandler,
 	tagDescubiertoHandler *handlers.TagDescubiertoHandler,
 	equipoTagHandler *handlers.EquipoTagHandler,
+	tiempoActivoHandler *handlers.TiempoActivoHandler,
 ) {
 	r.HandleFunc("/api/pi/tags/sin-equipo", piTagHandler.GetTagsSinEquipo).Methods("GET")
 	r.HandleFunc("/api/pi/tags/sugerencias", piTagHandler.GetSugerenciasAgrupacion).Methods("GET")
@@ -30,4 +31,6 @@ func registrarPIRoutes(
 	r.HandleFunc("/api/pi/tags/jerarquia", piTagHandler.GetTagsJerarquia).Methods("GET")
 	r.HandleFunc("/api/pi/tags/estructura", piTagHandler.GetEstructuraTags).Methods("GET")
 	r.HandleFunc("/api/pi/tags/valor", piTagHandler.GetTagValor).Methods("GET")
+	r.HandleFunc("/api/tiempos/{id}/guardias", tiempoActivoHandler.Guardias).Methods("GET")
+	r.HandleFunc("/api/tiempos/{id}/dias", tiempoActivoHandler.Dias).Methods("GET")
 }

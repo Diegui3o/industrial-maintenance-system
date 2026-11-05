@@ -22,6 +22,8 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 	notifRepo := repository.NewNotificacionRepository(db)
 	configGuardadoRepo := repository.NewConfigGuardadoRepository(db)
 	tagDescubiertoRepo := repository.NewTagDescubiertoRepository(db)
+	alertaRepo := repository.NewAlertaRepository(db)
+	alertaService := services.NewAlertaService(alertaRepo)
 
 	// Crear manager de WhatsApp (multi‑instancia)
 	whatsappManager := services.NewWhatsAppManager(db, whatsappRepo)
@@ -55,6 +57,13 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		whatsappNotificationService,
 	)
 
+	// Crear repositorio y servicio de tiempo activo
+	tiempoActivoRepo := repository.NewTiempoActivoRepository(db)
+	tiempoActivoService := services.NewTiempoActivoService(tiempoActivoRepo)
+
+	// Cerrar tiempos huérfanos de la sesión anterior
+	tiempoActivoService.CerrarTodosLosAbiertos()
+
 	ruleEngine := engine.NewRuleEngine(
 		configRepo,
 		sensorRepo,
@@ -65,6 +74,8 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		equipoRepo,
 		dispatcherService,
 		tagDescubiertoRepo,
+		alertaService,
+		tiempoActivoService,
 	)
 
 	// ============================================

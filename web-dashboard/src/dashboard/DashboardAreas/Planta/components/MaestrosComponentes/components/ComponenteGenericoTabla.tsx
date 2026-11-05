@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { getMaestrosComponentesPorTipo } from '../../../services/maestrosComponentesApi';
 
 interface Props {
@@ -74,17 +74,17 @@ export function ComponenteGenericoTabla({ tipo }: Props) {
       </div>
 
       <div className="motor-electrico-tabla-wrapper">
-        <table className="motor-electrico-tabla">
+        <table className="motor-electrico-tabla" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
-              <th>Código interno</th>
-              <th>Código SAP</th>
-              <th>Nombre</th>
-              <th>TAG</th>
-              <th>Marca</th>
-              <th>Modelo</th>
-              <th>N° Serie</th>
-              <th>Estado</th>
+              <th style={{ width: '13%' }}>Código interno</th>
+              <th style={{ width: '12%' }}>Código SAP</th>
+              <th style={{ width: '20%' }}>Nombre</th>
+              <th style={{ width: '12%' }}>TAG</th>
+              <th style={{ width: '15%' }}>Marca</th>
+              <th style={{ width: '13%' }}>Modelo</th>
+              <th style={{ width: '10%' }}>N° Serie</th>
+              <th style={{ width: '5%' }}>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -95,18 +95,39 @@ export function ComponenteGenericoTabla({ tipo }: Props) {
                 </td>
               </tr>
             ) : (
-              datosFiltrados.map((item, idx) => (
-                <tr key={item.id ?? idx}>
-                  <td>{item.codigo_interno || item.codigo || '—'}</td>
-                  <td>{item.codigo_sap || '—'}</td>
-                  <td>{item.nombre || item.nombre_componente || '—'}</td>
-                  <td>{item.tag || '—'}</td>
-                  <td>{item.marca || '—'}</td>
-                  <td>{item.modelo || '—'}</td>
-                  <td>{item.numero_serie || '—'}</td>
-                  <td>{item.activo !== false ? 'ACTIVO' : 'INACTIVO'}</td>
-                </tr>
-              ))
+              datosFiltrados.map((item, idx) => {
+                const marcaText = item.marca || '—';
+                const modeloText = item.modelo || '—';
+                const serieText = item.numero_serie || '—';
+                const nombreText = item.nombre || item.nombre_componente || '—';
+
+                return (
+                  <tr key={item.id ?? idx}>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.codigo_interno || item.codigo || ''}>
+                      {item.codigo_interno || item.codigo || '—'}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.codigo_sap || ''}>
+                      {item.codigo_sap || '—'}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={nombreText}>
+                      {nombreText}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.tag || ''}>
+                      {item.tag || '—'}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={marcaText}>
+                      {marcaText}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={modeloText}>
+                      {modeloText}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={serieText}>
+                      {serieText}
+                    </td>
+                    <td>{item.activo !== false ? 'ACTIVO' : 'INACTIVO'}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

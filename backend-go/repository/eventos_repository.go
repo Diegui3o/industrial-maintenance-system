@@ -295,3 +295,89 @@ func (r *EventosRepository) ObtenerEstadoActualEquipo(
 
 	return estado, err
 }
+// CambiarEstadoActivo es como CambiarEstadoEquipo pero soporta
+// componentes y repuestos. No inserta alarma; eso lo hace AlarmaService.
+func (r *EventosRepository) CambiarEstadoActivo(
+	equipoID int,
+	componenteID *int,
+	repuestoID *int,
+	tagID *int,
+	parametro *string,
+	estado string,
+	motivo string,
+) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// 1. Cerrar evento abierto del activo afectado
+	if componenteID != nil && *componenteID > 0 {
+		_, err = tx.Exec(`
+            UPDATE eventos_estado
+            SET fecha_fin = CURRENT_TIMESTAMP
+            WHERE componente_id = $1 AND fecha_fin IS NULL
+        `, *componenteID)
+	} else if repuestoID != nil && *repuestoID > 0 {
+		_, err = tx.Exec(`
+            UPDATE eventos_estado
+            SET fecha_fin = CURRENT_TIMESTAMP
+            WHERE repuesto_id = $1 AND fecha_fin IS NULL
+        `, *repuestoID)
+	} else {
+		_, err = tx.Exec(`
+            UPDATE eventos_estado
+            SET fecha_fin = CURRENT_TIMESTAMP
+            WHERE equipo_id = $1 AND fecha_fin IS NULL
+        `, equipoID)
+	}
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 2. Insertar nuevo evento con las columnas del activo
+	_, err = tx.Exec(`
+        INSERT INTO eventos_estado (
+            equipo_id, componente_id, repuesto_id,
+            estado, motivo, fecha_inicio
+        )
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+    `, equipoID, componenteID, repuestoID, estado, motivo)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 3. Actualizar el campo estado del activo afectado
+	if componenteID != nil && *componenteID > 0 {
+		_, err = tx.Exec(`
+            UPDATE componentes_equipo
+            SET estado_componente = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, estado, *componenteID)
+	} else if repuestoID != nil && *repuestoID > 0 {
+		// repuestos usa 'falla' en lugar de 'fallo'
+		estadoRepuesto := estado
+		if estado == "fallo" {
+			estadoRepuesto = "falla"
+		}
+		_, err = tx.Exec(`
+            UPDATE repuestos
+            SET estado = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, estadoRepuesto, *repuestoID)
+	} else {
+		_, err = tx.Exec(`
+            UPDATE equipos
+            SET estado_equipo = $1, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, estado, equipoID)
+	}
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}

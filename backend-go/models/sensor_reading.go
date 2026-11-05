@@ -24,4 +24,8 @@ type SensorReading struct {
 	ElementoPadre      string `json:"elementoPadre,omitempty"`
 	PathJerarquico     string `json:"pathJerarquico,omitempty"`
 	ElementosAncestros string `json:"elementosAncestros,omitempty"`
+
+	// Polimórfico (el backend los resuelve desde tags_descubiertos)
+	ComponenteID int `json:"componenteId,omitempty"`
+	RepuestoID   int `json:"repuestoId,omitempty"`
 }
