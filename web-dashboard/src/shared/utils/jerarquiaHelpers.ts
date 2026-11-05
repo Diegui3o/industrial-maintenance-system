@@ -32,6 +32,40 @@ export function etiquetaRepuesto(r: any): string {
   return `${cod ? `[${cod}] ` : ''}${nombreDe(r)}${stock}`;
 }
 
+// Acepta tags de las 2 formas (tag_descubiertos y pi_tags agregado)
 export function etiquetaTag(tag: any): string {
-  return tag?.tag_name ?? tag?.nombre ?? tag?.tag_path ?? '(sin nombre)';
+  const candidatos = [
+    tag?.tag_name,
+    tag?.nombre,
+    tag?.pi_point_name,
+    tag?.element_name,
+    tag?.tag_path,
+    tag?.parametro,
+  ];
+  for (const c of candidatos) {
+    if (c && String(c).trim()) return String(c).trim();
+  }
+  return `Tag #${tag?.id ?? '?'}`;
+}
+
+// Contexto adicional del tag (element_name + unidad) para el listado
+export function contextoTag(tag: any): string {
+  const partes: string[] = [];
+  if (tag?.element_name && tag.element_name !== etiquetaTag(tag)) {
+    partes.push(String(tag.element_name).trim());
+  }
+  if (tag?.unidad && tag.unidad !== 'N/A' && String(tag.unidad).trim()) {
+    partes.push(String(tag.unidad).trim());
+  }
+  return partes.join(' · ');
+}
+
+// Validar tag usable
+export function tagEsValido(tag: any): boolean {
+  if (!tag) return false;
+  if (tag.id == null) return false;
+  const nombre = etiquetaTag(tag);
+  if (!nombre || nombre.startsWith('Tag #')) return false;
+  if (String(nombre).toUpperCase() === 'NULL') return false;
+  return true;
 }

@@ -1,6 +1,6 @@
 ﻿import type { Alarma } from "../../../shared/types/alarma";
 
-const API_BASE = "http://127.0.0.1:1883";
+const API_BASE = '';
 
 export async function getAlarmas(): Promise<Alarma[]> {
   const res = await fetch(`${API_BASE}/api/alarmas`);

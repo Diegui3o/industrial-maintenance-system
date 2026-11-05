@@ -12,7 +12,7 @@ import type {
   RepuestoJerarquia,
 } from '../../../shared/types/seleccionJerarquica';
 
-const API_BASE = 'http://127.0.0.1:1883';
+const API_BASE = '';
 
 function normalizarLista<T>(json: any): T[] {
   if (Array.isArray(json)) return json as T[];
@@ -43,10 +43,8 @@ export const jerarquiaApi = {
     return todos.filter((s) => Number(s.proceso_id) === Number(procesoId));
   },
 
-  // Filtra equipos por subproceso_nombre en cliente.
-  // Cachea la lista completa una vez y filtra en memoria (72 equipos = trivial).
   getEquiposPorSubproceso: async (
-    subprocesoId: number,
+    _subprocesoId: number,           // ← prefijo _
     subprocesoNombre: string,
   ): Promise<EquipoJerarquia[]> => {
     const data = await getJson('/api/equipos');

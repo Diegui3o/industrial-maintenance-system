@@ -3,7 +3,7 @@
 
 import type { TagDescubierto, TagAgrupado, AsignacionTagsEquipo } from '../../../shared/types/piTag';
 
-const API_BASE = 'http://127.0.0.1:1883';
+const API_BASE = '';
 
 function normalizarLista<T>(json: any): T[] {
   if (Array.isArray(json)) return json as T[];
@@ -68,12 +68,11 @@ export const piTagsApi = {
     return postJson('/api/pi/tags/asignar', body);
   },
 
-  // Firma real: ver tag_descubierto_handler.go AsignarMultiplesTags
-  // Body: { tag_ids: number[], equipo_id: number }
   asignarMultiplesPorId: async (equipoId: number, tagIds: number[]): Promise<any> => {
     return postJson('/api/pi/tags/asignar-multiple', {
       equipo_id: equipoId,
       tag_ids: tagIds,
     });
   },
+    
 };

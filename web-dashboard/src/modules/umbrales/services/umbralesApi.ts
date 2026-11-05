@@ -1,5 +1,5 @@
 ﻿// src/modules/umbrales/services/umbralesApi.ts
-const API_BASE = "http://127.0.0.1:1883";
+const API_BASE = '';
 
 export interface Umbral {
   id: number;
