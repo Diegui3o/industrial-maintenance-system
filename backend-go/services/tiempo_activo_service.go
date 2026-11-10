@@ -9,20 +9,17 @@ import (
 )
 
 type TiempoActivoService struct {
-	Repo *repository.TiempoActivoRepository
+	Repo         *repository.TiempoActivoRepository
+	ParadaSvc    *ParadaService
 }
 
-func NewTiempoActivoService(repo *repository.TiempoActivoRepository) *TiempoActivoService {
-	return &TiempoActivoService{Repo: repo}
+func NewTiempoActivoService(
+	repo *repository.TiempoActivoRepository,
+	paradaSvc *ParadaService,
+) *TiempoActivoService {
+	return &TiempoActivoService{Repo: repo, ParadaSvc: paradaSvc}
 }
 
-// RegistrarLectura decide el estado actual del tag y, si cambia
-// respecto a la fila abierta, cierra la anterior y abre una nueva.
-//
-// Regla:
-//   - valor > 0 y Quality == "Good"  → 'activo'
-//   - valor ≈ 0 o Quality != "Good"  → 'inactivo'
-//   - hueco de datos > 30 s          → 'sin_dato' (antes del nuevo estado)
 func (s *TiempoActivoService) RegistrarLectura(
 	tagID int,
 	activoTipo string,
@@ -30,6 +27,7 @@ func (s *TiempoActivoService) RegistrarLectura(
 	valor float64,
 	quality string,
 	timestamp time.Time,
+	reportarInfo *models.ReportarParadaInfo,
 ) {
 	// 1. Determinar estado actual
 	estadoActual := "inactivo"
@@ -72,6 +70,40 @@ func (s *TiempoActivoService) RegistrarLectura(
 			return
 		}
 
+		if abierta.Estado == "inactivo" && reportarInfo != nil && reportarInfo.Reportar {
+			duracionSegundos := int(timestamp.Sub(abierta.Desde).Seconds())
+			minDur := reportarInfo.MinDuracionSegundos
+			if minDur <= 0 {
+				minDur = 1200 // 20 minutos por defecto si no se especifica
+			}
+
+			if duracionSegundos >= minDur {
+				duracionMinutos := duracionSegundos / 60
+				if s.ParadaSvc != nil {
+					if err := s.ParadaSvc.RegistrarParada(
+						reportarInfo.EquipoID,
+						tagID,
+						reportarInfo.ComponenteID,
+						reportarInfo.RepuestoID,
+						abierta.Desde,
+						timestamp,
+						duracionMinutos,
+					); err != nil {
+						log.Printf(
+							"Error registrando parada (tag=%d, equipo=%d): %v",
+							tagID, reportarInfo.EquipoID, err,
+						)
+					}
+				}
+			} else {
+				log.Printf(
+					"Parada no reportada (duración %ds < mínimo %ds): tag=%d",
+					duracionSegundos, minDur, tagID,
+				)
+			}
+		}
+
+		// --- 5.2 Cerrar la fila en la base ---
 		if err := s.Repo.CerrarAbierto(abierta.ID, "cambio_estado", timestamp); err != nil {
 			log.Printf("Error cerrando tiempo abierto (id=%d): %v", abierta.ID, err)
 		}
@@ -153,11 +185,8 @@ func (s *TiempoActivoService) ResumenPorDia(
 	}
 	return res, nil
 }
-// Transicionar cierra la fila abierta con el motivo indicado y abre
-// una nueva con el nuevo estado.
-//
-// Es el método usado por el RuleEngine para reflejar cambios de estado
-// explícitos (recuperado, salida_por_falla, etc.).
+// Transicionar cierra la fila abierta y abre una nueva con el nuevo estado.
+// Devuelve la fila cerrada (puede ser nil si no había abierta).
 func (s *TiempoActivoService) Transicionar(
 	tagID int,
 	activoTipo string,
@@ -166,12 +195,14 @@ func (s *TiempoActivoService) Transicionar(
 	motivoCierre string,
 	valor float64,
 	timestamp time.Time,
-) {
+) *models.TiempoActivo {
 	abierta, err := s.Repo.BuscarAbierto(tagID, activoTipo, activoID)
 	if err != nil {
 		log.Printf("Error buscando tiempo abierto para transición (tag=%d): %v", tagID, err)
-		return
+		return nil
 	}
+
+	var cerrada *models.TiempoActivo
 
 	// Cerrar la fila abierta (si existe)
 	if abierta != nil {
@@ -180,8 +211,16 @@ func (s *TiempoActivoService) Transicionar(
 				"Transición ignorada (timestamp antiguo): tag=%d ts=%v desde=%v",
 				tagID, timestamp, abierta.Desde,
 			)
-			return
+			return nil
 		}
+
+		// Calcular duración antes de cerrar (para devolverla con el modelo)
+		duracionSegundos := int(timestamp.Sub(abierta.Desde).Seconds())
+		abierta.Hasta = &timestamp
+		abierta.DuracionSegundos = &duracionSegundos
+		abierta.MotivoCierre = motivoCierre
+		cerrada = abierta
+
 		if err := s.Repo.CerrarAbierto(abierta.ID, motivoCierre, timestamp); err != nil {
 			log.Printf("Error cerrando tiempo (id=%d): %v", abierta.ID, err)
 		}
@@ -194,4 +233,6 @@ func (s *TiempoActivoService) Transicionar(
 	); err != nil {
 		log.Printf("Error abriendo tiempo de transición (tag=%d): %v", tagID, err)
 	}
+
+	return cerrada
 }

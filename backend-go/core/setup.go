@@ -1,4 +1,4 @@
-// core/setup.go
+﻿// core/setup.go
 package core
 
 import (
@@ -25,7 +25,7 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 	alertaRepo := repository.NewAlertaRepository(db)
 	alertaService := services.NewAlertaService(alertaRepo)
 
-	// Crear manager de WhatsApp (multi‑instancia)
+	// Crear manager de WhatsApp (multiâ€‘instancia)
 	whatsappManager := services.NewWhatsAppManager(db, whatsappRepo)
 	whatsappManager.CargarInstancias()
 
@@ -43,7 +43,7 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 		EquipoRepo: equipoRepo,
 	}
 
-	// Servicio de notificación que recorre todos los clientes del manager
+	// Servicio de notificaciÃ³n que recorre todos los clientes del manager
 	whatsappNotificationService := services.NewWhatsAppNotificationServiceConManager(
 		whatsappManager,
 		whatsappRepo,
@@ -59,9 +59,11 @@ func InitScheduler(db *sql.DB) (*scheduler.Scheduler, *engine.RuleEngine, *servi
 
 	// Crear repositorio y servicio de tiempo activo
 	tiempoActivoRepo := repository.NewTiempoActivoRepository(db)
-	tiempoActivoService := services.NewTiempoActivoService(tiempoActivoRepo)
+	paradaRepo := repository.NewParadaRepository(db)
+	paradaSvc := services.NewParadaService(paradaRepo, equipoRepo, tagDescubiertoRepo)
+	tiempoActivoService := services.NewTiempoActivoService(tiempoActivoRepo, paradaSvc)
 
-	// Cerrar tiempos huérfanos de la sesión anterior
+	// Cerrar tiempos huÃ©rfanos de la sesiÃ³n anterior
 	tiempoActivoService.CerrarTodosLosAbiertos()
 
 	ruleEngine := engine.NewRuleEngine(

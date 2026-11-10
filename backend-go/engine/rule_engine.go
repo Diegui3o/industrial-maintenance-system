@@ -338,10 +338,22 @@ if umbral != nil && umbral.ContarTiempoActivo && e.TiempoActivoService != nil {
         activoID = repID
     }
 
-    e.TiempoActivoService.RegistrarLectura(
-        tagID, activoTipo, activoID,
-        reading.Value, reading.Quality, timestamp,
-    )
+	var reportarInfo *models.ReportarParadaInfo
+	if umbral.ReportarParada {
+		reportarInfo = &models.ReportarParadaInfo{
+			Reportar:            true,
+			MinDuracionSegundos: ptrOrZeroInt(umbral.MinDuracionParadaSegundos),
+			EquipoID:            ptrOrZero(equipoActivoID),
+			ComponenteID:        componenteActivoID,
+			RepuestoID:          repuestoActivoID,
+		}
+	}
+
+	e.TiempoActivoService.RegistrarLectura(
+		tagID, activoTipo, activoID,
+		reading.Value, reading.Quality, timestamp,
+		reportarInfo,
+	)
 }
 fueraDeRango :=
     (umbral.UmbralMin != nil && reading.Value < *umbral.UmbralMin) ||
@@ -643,6 +655,12 @@ func fmtFloatPtr(p *float64) string {
 		return "-"
 	}
 	return fmt.Sprintf("%.3f", *p)
+}
+func ptrOrZeroInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 // cerrarAlarmasActivasPorActivo cierra las alarmas activas de un componente/repuesto.
 func (e *RuleEngine) cerrarAlarmasActivasPorActivo(tipo string, id int) error {

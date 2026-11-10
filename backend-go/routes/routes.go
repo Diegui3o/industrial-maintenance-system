@@ -1,4 +1,4 @@
-// routes/routes.go
+﻿// routes/routes.go
 package routes
 
 import (
@@ -69,7 +69,9 @@ func SetupRoutes(
 	)
 	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
 	estructuraPlantaService := services.NewEstructuraPlantaService(estructuraPlantaRepo)
-	tiempoActivoSvc := services.NewTiempoActivoService(tiempoActivoRepo)
+	paradaRepo := repository.NewParadaRepository(db)
+    paradaSvc := services.NewParadaService(paradaRepo, equipoRepo, tagDescubiertoRepo)
+    tiempoActivoSvc := services.NewTiempoActivoService(tiempoActivoRepo, paradaSvc)
 	alertaHandler := handlers.NewAlertaHandler(alertaRepo)
 
 	// ============================================
@@ -258,7 +260,7 @@ func SetupRoutes(
 	)
 
 	// ============================================
-	// DIAGNÓSTICO
+	// DIAGNÃ“STICO
 	// ============================================
 
 	diagHandler := &handlers.DiagnosticoHandler{}

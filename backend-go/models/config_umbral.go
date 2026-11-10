@@ -19,6 +19,12 @@ type ConfigUmbral struct {
 	LecturasConfirmacion *int       `json:"lecturas_confirmacion,omitempty"`
 	HistMin              *float64   `json:"hist_min,omitempty"`
 	HistMax              *float64   `json:"hist_max,omitempty"`
-	CreadoEn             time.Time  `json:"creado_en"`
-	ActualizadoEn        *time.Time `json:"actualizado_en"`
+
+	// Reporte de paradas
+	ReportarParada            bool     `json:"reportar_parada"`
+	UmbralParada              *float64 `json:"umbral_parada,omitempty"`
+	MinDuracionParadaSegundos *int     `json:"min_duracion_parada_segundos,omitempty"`
+
+	CreadoEn      time.Time  `json:"creado_en"`
+	ActualizadoEn *time.Time `json:"actualizado_en"`
 }
