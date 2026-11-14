@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ func (h *TagDescubiertoHandler) GetTagDescubierto(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "ID inválido")
+		utils.ErrorJSON(w, http.StatusBadRequest, "ID invÃ¡lido")
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *TagDescubiertoHandler) AsignarTag(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON invÃ¡lido: "+err.Error())
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *TagDescubiertoHandler) EliminarTag(w http.ResponseWriter, r *http.Reque
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "ID inválido")
+		utils.ErrorJSON(w, http.StatusBadRequest, "ID invÃ¡lido")
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		utils.ErrorJSON(w, http.StatusBadRequest, "JSON inválido: "+err.Error())
+		utils.ErrorJSON(w, http.StatusBadRequest, "JSON invÃ¡lido: "+err.Error())
 		return
 	}
 
@@ -169,3 +169,38 @@ func (h *TagDescubiertoHandler) AsignarMultiplesTags(w http.ResponseWriter, r *h
 		"total":     len(data.TagIDs),
 	})
 }
+	// POST /api/pi/tags/sync
+	// Body: array de TagDescubierto
+	// Hace Upsert masivo de todos los tags descubiertos en PI.
+	func (h *TagDescubiertoHandler) SincronizarCatalogo(w http.ResponseWriter, r *http.Request) {
+		var tags []models.TagDescubierto
+		if err := json.NewDecoder(r.Body).Decode(&tags); err != nil {
+			utils.ErrorJSON(w, http.StatusBadRequest, "JSON invÃ¡lido: "+err.Error())
+			return
+		}
+
+		if len(tags) == 0 {
+			utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
+				"total": 0, "insertados": 0, "errores": 0,
+			})
+			return
+		}
+
+		total := len(tags)
+		insertados := 0
+		errores := 0
+
+		for i := range tags {
+			if err := h.Repo.Upsert(&tags[i]); err != nil {
+				errores++
+				continue
+			}
+			insertados++
+		}
+
+		utils.SuccessJSON(w, http.StatusOK, map[string]interface{}{
+			"total":      total,
+			"insertados": insertados,
+			"errores":    errores,
+		})
+	}

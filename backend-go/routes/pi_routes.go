@@ -33,4 +33,5 @@ func registrarPIRoutes(
 	r.HandleFunc("/api/pi/tags/valor", piTagHandler.GetTagValor).Methods("GET")
 	r.HandleFunc("/api/tiempos/{id}/guardias", tiempoActivoHandler.Guardias).Methods("GET")
 	r.HandleFunc("/api/tiempos/{id}/dias", tiempoActivoHandler.Dias).Methods("GET")
+	r.HandleFunc("/api/pi/tags/sync", tagDescubiertoHandler.SincronizarCatalogo).Methods("POST")
 }

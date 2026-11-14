@@ -2,16 +2,13 @@ package models
 
 import "time"
 
-// Parada representa una parada reportada de un equipo.
-// Los snapshots (proceso, subproceso, componente, repuesto, tag)
-// se guardan al momento de crear la parada, para que el reporte
-// sea legible sin necesidad de joins.
 type Parada struct {
-	ID          int     `json:"id"`
-	EquipoID    int     `json:"equipo_id"`
-	TagID       *int    `json:"tag_id,omitempty"`
+	ID           int    `json:"id"`
+	EquipoID     int    `json:"equipo_id"`
+	EquipoNombre string `json:"equipo_nombre,omitempty"`
+	TagID        *int   `json:"tag_id,omitempty"`
 	ComponenteID *int   `json:"componente_id,omitempty"`
-	RepuestoID  *int    `json:"repuesto_id,omitempty"`
+	RepuestoID   *int   `json:"repuesto_id,omitempty"`
 
 	// Snapshots informativos
 	ProcesoNombre    string `json:"proceso_nombre,omitempty"`
@@ -57,6 +54,7 @@ type ActualizarResponsableRequest struct {
 	AreaResponsable     string `json:"area_responsable"`
 	Motivo              string `json:"motivo"`
 }
+
 // ReportarParadaInfo es el contexto que el RuleEngine pasa a
 // TiempoActivoService.RegistrarLectura para que sepa si debe
 // reportar la parada al cerrar una fila 'inactivo'.

@@ -9,8 +9,8 @@ import (
 )
 
 type TiempoActivoService struct {
-	Repo         *repository.TiempoActivoRepository
-	ParadaSvc    *ParadaService
+	Repo      *repository.TiempoActivoRepository
+	ParadaSvc *ParadaService
 }
 
 func NewTiempoActivoService(
@@ -29,6 +29,10 @@ func (s *TiempoActivoService) RegistrarLectura(
 	timestamp time.Time,
 	reportarInfo *models.ReportarParadaInfo,
 ) {
+	log.Printf(
+		"[DEBUG] RegistrarLectura: tagID=%d tipo=%s id=%d valor=%.3f quality=%s",
+		tagID, activoTipo, activoID, valor, quality,
+	)
 	// 1. Determinar estado actual
 	estadoActual := "inactivo"
 	if quality == "Good" && valor > 0.0001 {
@@ -185,8 +189,7 @@ func (s *TiempoActivoService) ResumenPorDia(
 	}
 	return res, nil
 }
-// Transicionar cierra la fila abierta y abre una nueva con el nuevo estado.
-// Devuelve la fila cerrada (puede ser nil si no había abierta).
+
 func (s *TiempoActivoService) Transicionar(
 	tagID int,
 	activoTipo string,
@@ -195,32 +198,38 @@ func (s *TiempoActivoService) Transicionar(
 	motivoCierre string,
 	valor float64,
 	timestamp time.Time,
-) *models.TiempoActivo {
+) {
 	abierta, err := s.Repo.BuscarAbierto(tagID, activoTipo, activoID)
 	if err != nil {
 		log.Printf("Error buscando tiempo abierto para transición (tag=%d): %v", tagID, err)
-		return nil
+		return
 	}
 
-	var cerrada *models.TiempoActivo
-
-	// Cerrar la fila abierta (si existe)
+	// Si hay fila abierta:
 	if abierta != nil {
+		// Ignorar timestamps desordenados
 		if !timestamp.After(abierta.Desde) {
 			log.Printf(
 				"Transición ignorada (timestamp antiguo): tag=%d ts=%v desde=%v",
 				tagID, timestamp, abierta.Desde,
 			)
-			return nil
+			return
 		}
 
-		// Calcular duración antes de cerrar (para devolverla con el modelo)
-		duracionSegundos := int(timestamp.Sub(abierta.Desde).Seconds())
-		abierta.Hasta = &timestamp
-		abierta.DuracionSegundos = &duracionSegundos
-		abierta.MotivoCierre = motivoCierre
-		cerrada = abierta
+		// Si el estado no cambió, solo actualizar extremos y salir
+		if abierta.Estado == nuevoEstado {
+			_ = s.Repo.ActualizarValoresExtremos(abierta.ID, valor)
+			return
+		}
 
+		// Ajustar motivo específico según la transición
+		if abierta.Estado == "fallo" && nuevoEstado == "activo" {
+			motivoCierre = "recuperado"
+		} else if abierta.Estado == "mantenimiento" && nuevoEstado == "fallo" {
+			motivoCierre = "salida_por_falla"
+		}
+
+		// Cerrar la fila anterior
 		if err := s.Repo.CerrarAbierto(abierta.ID, motivoCierre, timestamp); err != nil {
 			log.Printf("Error cerrando tiempo (id=%d): %v", abierta.ID, err)
 		}
@@ -228,11 +237,13 @@ func (s *TiempoActivoService) Transicionar(
 
 	// Abrir nueva fila
 	valorPtr := valor
+	log.Printf("[DEBUG] Llamando AbrirNuevo: tagID=%d tipo=%s id=%d estado=%s",
+		tagID, activoTipo, activoID, nuevoEstado)
 	if _, err := s.Repo.AbrirNuevo(
 		tagID, activoTipo, activoID, nuevoEstado, timestamp, &valorPtr,
 	); err != nil {
-		log.Printf("Error abriendo tiempo de transición (tag=%d): %v", tagID, err)
+		log.Printf("[DEBUG] ERROR AbrirNuevo: %v", err)
+	} else {
+		log.Printf("[DEBUG] AbrirNuevo OK")
 	}
-
-	return cerrada
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"backend/models"
@@ -98,6 +99,9 @@ func (r *TiempoActivoRepository) AbrirNuevo(
 	desde time.Time,
 	valor *float64,
 ) (int, error) {
+	log.Printf("[DEBUG] Repo.AbrirNuevo: tagID=%d, tipo=%s, id=%d, estado=%s",
+		tagID, activoTipo, activoID, estado)
+
 	var id int
 	err := r.DB.QueryRow(`
         INSERT INTO tiempos_activo_sensor
@@ -109,7 +113,13 @@ func (r *TiempoActivoRepository) AbrirNuevo(
 		tagID, nullableString(activoTipo), activoID, estado, desde,
 		valor,
 	).Scan(&id)
-	return id, err
+
+	if err != nil {
+		log.Printf("[DEBUG] Repo.AbrirNuevo ERROR: %v", err)
+		return 0, err
+	}
+	log.Printf("[DEBUG] Repo.AbrirNuevo OK: id=%d", id)
+	return id, nil
 }
 
 // CerrarTodosLosAbiertos se llama al arrancar el backend.

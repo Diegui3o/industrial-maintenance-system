@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using IndustrialConnector.Services.PI;
 using IndustrialConnector.Services.Rules;
 using System.Collections.Generic;
+using IndustrialConnector.Services.Export;
 
 namespace IndustrialConnector
 {
@@ -43,6 +44,8 @@ namespace IndustrialConnector
 
             builder.Services.AddSingleton<PiAttributeDiscoveryService>();
 
+            builder.Services.AddSingleton<CatalogSyncService>();
+
             builder.Services.AddSingleton<PiAttributeClassifierService>();
 
             builder.Services.AddSingleton<PiAttributeReaderService>();
@@ -61,7 +64,13 @@ namespace IndustrialConnector
             builder.Configuration.GetSection("ReglasAlarma"));
 
             builder.Services.AddSingleton<RuleEvaluator>();
-
+                        
+            builder.Services.AddHttpClient<TagsConfigService>(client =>
+            {
+                var config = builder.Configuration.GetSection("GoBackend").Get<GoBackendConfig>();
+                client.BaseAddress = new Uri(config?.BaseUrl ?? "http://10.30.37.165:1883");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
 
             // ============================================
             // HTTP CLIENT - BACKEND GO

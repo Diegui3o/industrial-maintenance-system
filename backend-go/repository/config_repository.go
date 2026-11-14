@@ -17,10 +17,25 @@ func NewConfigRepository(db *sql.DB) *ConfigRepository {
 func (r *ConfigRepository) ObtenerUmbrales(equipoID int, parametro string) (*models.ConfigUmbral, error) {
 	u := &models.ConfigUmbral{}
 	err := r.DB.QueryRow(`
-        SELECT id, equipo_id, parametro, umbral_min, umbral_max, unidad, severidad, activo
+        SELECT id, equipo_id, parametro, umbral_min, umbral_max, unidad, severidad, activo,
+               COALESCE(contar_tiempo_activo, false),
+               COALESCE(reportar_parada, false),
+               COALESCE(modo, 'fallo')
         FROM config_umbrales
         WHERE equipo_id = $1 AND parametro = $2 AND activo = true
-    `, equipoID, parametro).Scan(&u.ID, &u.EquipoID, &u.Parametro, &u.UmbralMin, &u.UmbralMax, &u.Unidad, &u.Severidad, &u.Activo)
+    `, equipoID, parametro).Scan(
+		&u.ID,
+		&u.EquipoID,
+		&u.Parametro,
+		&u.UmbralMin,
+		&u.UmbralMax,
+		&u.Unidad,
+		&u.Severidad,
+		&u.Activo,
+		&u.ContarTiempoActivo,
+		&u.ReportarParada,
+		&u.Modo,
+	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -187,6 +202,7 @@ func (r *ConfigRepository) ObtenerEstadoEquipo(equipoID int) (string, error) {
 	err := r.DB.QueryRow(`SELECT estado_equipo FROM equipos WHERE id = $1`, equipoID).Scan(&estado)
 	return estado, err
 }
+
 // ListarTodosUmbrales lista TODOS los umbrales configurados.
 func (r *ConfigRepository) ListarTodosUmbrales() ([]models.ConfigUmbral, error) {
 	rows, err := r.DB.Query(`
@@ -323,4 +339,46 @@ func (r *ConfigRepository) ObtenerUmbralesPorTag(
 		return nil, err
 	}
 	return u, nil
+}
+
+func (r *ConfigRepository) ObtenerTagsParaMonitorear() ([]models.TagParaMonitorear, error) {
+	rows, err := r.DB.Query(`
+        SELECT 
+            cu.id, cu.equipo_id, COALESCE(e.nombre, ''),
+            cu.tag_id, cu.parametro,
+            COALESCE(t.element_path, ''),
+            COALESCE(t.element_name, ''),
+            COALESCE(t.tag_name, ''),
+            COALESCE(cu.unidad, ''),
+            COALESCE(cu.modo, 'fallo'),
+            COALESCE(cu.contar_tiempo_activo, false),
+            COALESCE(cu.reportar_parada, false),
+            COALESCE(cu.min_duracion_parada_segundos, 1200)
+        FROM config_umbrales cu
+        JOIN equipos e ON e.id = cu.equipo_id
+        JOIN tags_descubiertos t ON t.id = cu.tag_id
+        WHERE cu.activo = true
+        ORDER BY cu.equipo_id, cu.parametro
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lista []models.TagParaMonitorear
+	for rows.Next() {
+		var t models.TagParaMonitorear
+		if err := rows.Scan(
+			&t.UmbralID, &t.EquipoID, &t.EquipoNombre,
+			&t.TagID, &t.Parametro,
+			&t.ElementPath, &t.ElementName, &t.TagName,
+			&t.Unidad, &t.Modo,
+			&t.ContarTiempoActivo, &t.ReportarParada,
+			&t.MinDuracionParadaSegundos,
+		); err != nil {
+			return nil, err
+		}
+		lista = append(lista, t)
+	}
+	return lista, rows.Err()
 }

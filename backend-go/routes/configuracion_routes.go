@@ -21,4 +21,5 @@ func registrarConfiguracionRoutes(
 	r.HandleFunc("/api/config/fuentes/{id}", configHandler.EliminarFuente).Methods("DELETE")
 	r.HandleFunc("/api/equipos/{id}/fuentes", configHandler.ListarFuentesPorEquipo).Methods("GET")
 	r.HandleFunc("/api/equipos/{id}/umbrales", configHandler.ListarUmbrales).Methods("GET")
+	r.HandleFunc("/api/pi/tags/para-monitorear", configHandler.ListarTagsParaMonitorear).Methods("GET")
 }

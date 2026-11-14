@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using IndustrialConnector.Models;
 using IndustrialConnector.Services;
 using IndustrialConnector.Services.PI;
+using IndustrialConnector.Services.Export;
 using IndustrialConnector.Services.Rules;
 using OSIsoft.AF.Asset;
 using OSIsoft.AF.Data;
@@ -28,6 +29,8 @@ namespace IndustrialConnector.Workers
         private readonly ILogger<PiSystemWorker> _logger;
         private readonly PiSystemConfig _config;
         private readonly PiDataPipeService _dataPipe;
+        private readonly CatalogSyncService _catalogSync;
+        private readonly TagsConfigService _tagsConfig;
 
         private int _errorCount = 0;
 
@@ -45,6 +48,8 @@ namespace IndustrialConnector.Workers
             BufferService buffer,
             HealthService health,
             ILogger<PiSystemWorker> logger,
+            CatalogSyncService catalogSync,
+            TagsConfigService tagsConfig,
             IOptions<PiSystemConfig> config)
         {
             _connection = connection;
@@ -57,6 +62,8 @@ namespace IndustrialConnector.Workers
             _buffer = buffer;
             _health = health;
             _logger = logger;
+            _catalogSync = catalogSync;
+            _tagsConfig = tagsConfig;
             _config = config.Value;
         }
 
@@ -64,10 +71,10 @@ namespace IndustrialConnector.Workers
             CancellationToken stoppingToken)
         {
             _logger.LogInformation(
-                "🔌 PI System Worker iniciado ");
+                "ðŸ”Œ PI System Worker iniciado ");
 
             // =====================================================
-            // 1. CONEXIÓN CON PI SYSTEM
+            // 1. CONEXIÃ“N CON PI SYSTEM
             // =====================================================
 
             if (!_connection.IsConnected)
@@ -79,7 +86,7 @@ namespace IndustrialConnector.Workers
                 if (!connected)
                 {
                     _logger.LogError(
-                        "❌ No se pudo conectar al PI System.");
+                        "âŒ No se pudo conectar al PI System.");
 
                     return;
                 }
@@ -88,7 +95,7 @@ namespace IndustrialConnector.Workers
             _health.SetPiSystemConnected(true);
 
             _logger.LogInformation(
-                "✅ Conexión con PI System establecida.");
+                "âœ… ConexiÃ³n con PI System establecida.");
 
             // =====================================================
             // 2. OBTENER AF DATABASE
@@ -100,18 +107,18 @@ namespace IndustrialConnector.Workers
             if (database == null)
             {
                 _logger.LogError(
-                    "❌ No se pudo obtener la AF Database: {Database}",
+                    "âŒ No se pudo obtener la AF Database: {Database}",
                     _config.Database);
 
                 return;
             }
 
             _logger.LogInformation(
-                "✅ AF Database seleccionada: {Database}",
+                "âœ… AF Database seleccionada: {Database}",
                 database.Name);
 
             // =====================================================
-            // 3. OBTENER ELEMENTO RAÍZ
+            // 3. OBTENER ELEMENTO RAÃZ
             // =====================================================
 
             var rootElement =
@@ -120,14 +127,14 @@ namespace IndustrialConnector.Workers
             if (rootElement == null)
             {
                 _logger.LogError(
-                    "❌ No se encontró el elemento raíz: {RootElement}",
+                    "âŒ No se encontrÃ³ el elemento raÃ­z: {RootElement}",
                     _config.RootElement);
 
                 return;
             }
 
             _logger.LogInformation(
-                "✅ Elemento raíz: {RootElement}",
+                "âœ… Elemento raÃ­z: {RootElement}",
                 rootElement.Name);
 
             var attributeInfos =
@@ -138,13 +145,31 @@ namespace IndustrialConnector.Workers
                     _config.Database);
 
             // =====================================================
+            // 5.1 SINCRONIZAR CATÁLOGO CON EL BACKEND
+            // =====================================================
+            try
+            {
+                var endpointSync = "/api/pi/tags/sync";
+                var syncOk = await _catalogSync.SincronizarCatalogoAsync(attributeInfos, endpointSync);
+                if (syncOk)
+                {
+                    _logger.LogInformation("📤 Catálogo completo enviado al backend.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "No se pudo sincronizar el catálogo con el backend (no bloquea el flujo).");
+            }
+
+            // =====================================================
             // 6. CLASIFICAR
             // =====================================================
 
             var classified =
                 _classifier.ClassifyAll(attributeInfos);
 
-            // Exportar el catálogo completo, sin filtrar por prioridad.
+            // Exportar el catÃ¡logo completo, sin filtrar por prioridad.
             try
             {
                 var catalog = classified
@@ -177,7 +202,7 @@ namespace IndustrialConnector.Workers
                 System.IO.File.WriteAllText(catalogPath, json);
 
                 _logger.LogInformation(
-                    "Catálogo PI exportado: {Count} atributos. Archivo: {Path}",
+                    "CatÃ¡logo PI exportado: {Count} atributos. Archivo: {Path}",
                     catalog.Count,
                     catalogPath);
             }
@@ -185,7 +210,7 @@ namespace IndustrialConnector.Workers
             {
                 _logger.LogWarning(
                     ex,
-                    "No se pudo exportar el catálogo de atributos PI.");
+                    "No se pudo exportar el catÃ¡logo de atributos PI.");
             }
 
             var criticalCount =
@@ -201,7 +226,7 @@ namespace IndustrialConnector.Workers
                 classified[PiAttributePriority.Ignore].Count;
 
             _logger.LogInformation(
-                "📊 Clasificación PI | Total: {Total} | Critical: {Critical} | Important: {Important} | Normal: {Normal} | Ignore: {Ignore}",
+                "ðŸ“Š ClasificaciÃ³n PI | Total: {Total} | Critical: {Critical} | Important: {Important} | Normal: {Normal} | Ignore: {Ignore}",
                 attributeInfos.Count,
                 criticalCount,
                 importantCount,
@@ -213,21 +238,17 @@ namespace IndustrialConnector.Workers
             // 7. SELECCIONAR ATRIBUTOS MONITOREABLES
             // =====================================================
 
-            var hasConfiguredTags =
-                _config.Tags != null && _config.Tags.Count > 0;
+            // Obtener tags del backend
+            var tagsDelBackend = await _tagsConfig.ObtenerTagsParaMonitorearAsync();
 
-            var configuredTags = _config.Tags?
-                .Where(tag =>
-                    tag != null &&
-                    !string.IsNullOrWhiteSpace(tag.ElementPath) &&
-                    !string.IsNullOrWhiteSpace(tag.AttributeName))
-                .ToList() ?? new List<TagConfig>();
+            var hasConfiguredTags = tagsDelBackend.Count > 0;
+            var configuredTags = tagsDelBackend;
 
             List<PiAttributeInfo> monitoredInfos;
 
             if (hasConfiguredTags)
             {
-                // La selección manual tiene prioridad sobre la clasificación.
+                // La selecciÃ³n manual tiene prioridad sobre la clasificaciÃ³n.
                 monitoredInfos = attributeInfos
                     .Where(info => configuredTags.Any(tag =>
                         string.Equals(
@@ -245,7 +266,7 @@ namespace IndustrialConnector.Workers
                     .ToList();
 
                 _logger.LogInformation(
-                    "Selección manual PI: {Configured} configurados, " +
+                    "SelecciÃ³n manual PI: {Configured} configurados, " +
                     "{Matched} encontrados.",
                     configuredTags.Count,
                     monitoredInfos.Count);
@@ -276,12 +297,12 @@ namespace IndustrialConnector.Workers
                 {
                     _logger.LogWarning(
                         "Hay tags configurados, pero sus rutas o nombres " +
-                        "están vacíos o son inválidos.");
+                        "estÃ¡n vacÃ­os o son invÃ¡lidos.");
                 }
             }
             else if (_config.AutoDiscover)
             {
-                // Mantener el comportamiento automático existente.
+                // Mantener el comportamiento automÃ¡tico existente.
                 monitoredInfos =
                     classified[PiAttributePriority.Critical]
                         .Concat(
@@ -289,14 +310,14 @@ namespace IndustrialConnector.Workers
                         .ToList();
 
                 _logger.LogInformation(
-                    "Selección automática PI activada.");
+                    "SelecciÃ³n automÃ¡tica PI activada.");
             }
             else
             {
                 monitoredInfos = new List<PiAttributeInfo>();
 
                 _logger.LogWarning(
-                    "No hay tags configurados y AutoDiscover está desactivado.");
+                    "No hay tags configurados y AutoDiscover estÃ¡ desactivado.");
             }
 
             _logger.LogInformation(
@@ -306,13 +327,13 @@ namespace IndustrialConnector.Workers
             if (monitoredInfos.Count == 0)
             {
                 _logger.LogWarning(
-                    "No hay atributos PI válidos para monitorear.");
+                    "No hay atributos PI vÃ¡lidos para monitorear.");
 
                 return;
             }
 
             // =====================================================
-            // 8. MAPEAR PiAttributeInfo → AFAttribute
+            // 8. MAPEAR PiAttributeInfo â†’ AFAttribute
             // =====================================================
 
             var monitoredAttributes =
@@ -321,18 +342,18 @@ namespace IndustrialConnector.Workers
                     monitoredInfos);
 
             _logger.LogInformation(
-                "🎯 AF Attributes válidos para lectura: {Count}",
+                "ðŸŽ¯ AF Attributes vÃ¡lidos para lectura: {Count}",
                 monitoredAttributes.Count);
 
             if (monitoredAttributes.Count == 0)
             {
                 _logger.LogWarning(
-                    "⚠️ No se pudieron resolver atributos PI monitoreables.");
+                    "âš ï¸ No se pudieron resolver atributos PI monitoreables.");
 
                 return;
             }
             _logger.LogInformation(
-                "📡 Inicializando AFDataPipe con {Count} atributos...",
+                "ðŸ“¡ Inicializando AFDataPipe con {Count} atributos...",
                 monitoredAttributes.Count);
 
             var pipeInitialized =
@@ -341,13 +362,13 @@ namespace IndustrialConnector.Workers
             if (!pipeInitialized)
             {
                 _logger.LogError(
-                    "❌ No se pudo inicializar AFDataPipe.");
+                    "âŒ No se pudo inicializar AFDataPipe.");
 
                 return;
             }
 
             _logger.LogInformation(
-                "✅ AFDataPipe inicializado correctamente. Atributos registrados: {Count}",
+                "âœ… AFDataPipe inicializado correctamente. Atributos registrados: {Count}",
                 _dataPipe.RegisteredCount);
 
             // =====================================================
@@ -366,7 +387,7 @@ namespace IndustrialConnector.Workers
                         {
                             _logger.LogError(
                                 error.Value,
-                                "❌ Error en AFDataPipe para atributo {Attribute}",
+                                "âŒ Error en AFDataPipe para atributo {Attribute}",
                                 error.Key.Name);
                         }
                     }
@@ -415,7 +436,7 @@ namespace IndustrialConnector.Workers
                             {
                                 _logger.LogDebug(
                                     ex,
-                                    "⚠️ Error procesando evento AFDataPipe.");
+                                    "âš ï¸ Error procesando evento AFDataPipe.");
                             }
                         }
 
@@ -434,7 +455,7 @@ namespace IndustrialConnector.Workers
                                 _buffer.Count);
 
                             _logger.LogInformation(
-                                "📡 AFDataPipe: {Events} eventos | {Readings} lecturas | Buffer: {Buffer}",
+                                "ðŸ“¡ AFDataPipe: {Events} eventos | {Readings} lecturas | Buffer: {Buffer}",
                                 events.Count,
                                 readings.Count,
                                 _buffer.Count);
@@ -458,14 +479,14 @@ namespace IndustrialConnector.Workers
 
                     _logger.LogError(
                         ex,
-                        "❌ Error en ciclo AFDataPipe. Error {ErrorCount}/{MaxErrors}",
+                        "âŒ Error en ciclo AFDataPipe. Error {ErrorCount}/{MaxErrors}",
                         _errorCount,
                         MaxErrors);
 
                     if (_errorCount >= MaxErrors)
                     {
                         _logger.LogError(
-                            "❌ Se alcanzó el máximo de errores consecutivos en AFDataPipe.");
+                            "âŒ Se alcanzÃ³ el mÃ¡ximo de errores consecutivos en AFDataPipe.");
 
                         break;
                     }
@@ -473,7 +494,7 @@ namespace IndustrialConnector.Workers
             }
 
             _logger.LogInformation(
-                "🛑 PI System Worker detenido.");
+                "ðŸ›‘ PI System Worker detenido.");
         }
 
         // =========================================================
@@ -627,7 +648,7 @@ namespace IndustrialConnector.Workers
                 {
                     _logger.LogDebug(
                         ex,
-                        "⚠️ Error descubriendo atributos del elemento {Element}",
+                        "âš ï¸ Error descubriendo atributos del elemento {Element}",
                         element.Name);
                 }
             }
@@ -678,7 +699,7 @@ namespace IndustrialConnector.Workers
                 {
                     _logger.LogDebug(
                         ex,
-                        "⚠️ Error resolviendo atributos del elemento {Element}",
+                        "âš ï¸ Error resolviendo atributos del elemento {Element}",
                         element.Name);
                 }
             }

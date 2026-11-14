@@ -179,3 +179,15 @@ func (h *ConfigHandler) EliminarUmbral(w http.ResponseWriter, r *http.Request) {
 		"mensaje": "Umbral eliminado",
 	})
 }
+
+func (h *ConfigHandler) ListarTagsParaMonitorear(w http.ResponseWriter, r *http.Request) {
+	tags, err := h.Repo.ObtenerTagsParaMonitorear()
+	if err != nil {
+		utils.ErrorJSON(w, 500, err.Error())
+		return
+	}
+	if tags == nil {
+		tags = []models.TagParaMonitorear{}
+	}
+	utils.SuccessJSON(w, 200, tags)
+}

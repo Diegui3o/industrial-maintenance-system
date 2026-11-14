@@ -65,6 +65,7 @@ namespace IndustrialConnector.Services.PI
                 "🔎 Atributos descubiertos: {Count}",
                 attributes.Count);
 
+
             return attributes;
         }
 

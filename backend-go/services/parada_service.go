@@ -10,8 +10,8 @@ import (
 )
 
 type ParadaService struct {
-	Repo            *repository.ParadaRepository
-	EquipoRepo      *repository.EquipoRepository
+	Repo               *repository.ParadaRepository
+	EquipoRepo         *repository.EquipoRepository
 	TagDescubiertoRepo *repository.TagDescubiertoRepository
 	// Si tienes repos para componentes/repuestos, añádelos aquí.
 	// Si no, se resuelven por SQL directo en los métodos de snapshot.
@@ -79,14 +79,20 @@ func (s *ParadaService) RegistrarParada(
 	return nil
 }
 
-// resolverSnapshots rellena los nombres informativos de la parada.
-// Todos los errores son silenciosos (se loguean pero no bloquean).
 func (s *ParadaService) resolverSnapshots(p *models.Parada) {
 	// Tag
 	if p.TagID != nil {
 		tag, err := s.TagDescubiertoRepo.GetByID(*p.TagID)
 		if err == nil && tag != nil {
 			p.TagNombre = tag.TagName
+		}
+	}
+
+	// Equipo nombre (NUEVO)
+	if p.EquipoID > 0 {
+		equipo, err := s.EquipoRepo.ObtenerEquipoPorID(p.EquipoID)
+		if err == nil && equipo != nil {
+			p.EquipoNombre = equipo.Nombre
 		}
 	}
 

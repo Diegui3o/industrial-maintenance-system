@@ -4,9 +4,9 @@ package engine
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 
 	"backend/models"
 	"backend/repository"
@@ -14,29 +14,29 @@ import (
 )
 
 type RuleEngine struct {
-    ConfigRepo         *repository.ConfigRepository
-    SensorRepo         *repository.SensorRepository
-    DecisionService    *services.DecisionService
-    AlarmaService      *services.AlarmaService
-    EventoService      *services.EventosService
-    NotifierService    *services.NotifierService
-    EquipoRepo         *repository.EquipoRepository
-    Dispatcher         *services.DispatcherService
-    TagDescubiertoRepo *repository.TagDescubiertoRepository
-    AlertaService      *services.AlertaService
-    TiempoActivoService *services.TiempoActivoService
+	ConfigRepo          *repository.ConfigRepository
+	SensorRepo          *repository.SensorRepository
+	DecisionService     *services.DecisionService
+	AlarmaService       *services.AlarmaService
+	EventoService       *services.EventosService
+	NotifierService     *services.NotifierService
+	EquipoRepo          *repository.EquipoRepository
+	Dispatcher          *services.DispatcherService
+	TagDescubiertoRepo  *repository.TagDescubiertoRepository
+	AlertaService       *services.AlertaService
+	TiempoActivoService *services.TiempoActivoService
 
-    tagEquipoCache map[string]int
-    tagCacheMu     sync.RWMutex
+	tagEquipoCache map[string]int
+	tagCacheMu     sync.RWMutex
 
-    // Contadores de confirmación por (tagID|parametro)
-    confirmaciones   map[string]*contadorConfirmacion
-    confirmacionesMu sync.RWMutex
+	// Contadores de confirmación por (tagID|parametro)
+	confirmaciones   map[string]*contadorConfirmacion
+	confirmacionesMu sync.RWMutex
 }
 
 type contadorConfirmacion struct {
-    fueraConsecutivas  int
-    dentroConsecutivas int
+	fueraConsecutivas  int
+	dentroConsecutivas int
 }
 
 func NewRuleEngine(
@@ -52,23 +52,23 @@ func NewRuleEngine(
 	alertaService *services.AlertaService,
 	tiempoActivoService *services.TiempoActivoService,
 ) *RuleEngine {
-    return &RuleEngine{
-        ConfigRepo:         configRepo,
-        SensorRepo:         sensorRepo,
-        DecisionService:    decisionService,
-        AlarmaService:      alarmaService,
-        EventoService:      eventoService,
-        NotifierService:    notifierService,
-        EquipoRepo:         equipoRepo,
-        Dispatcher:         dispatcher,
-        TagDescubiertoRepo: tagDescubiertoRepo,
-        AlertaService:      alertaService,
-        TiempoActivoService: tiempoActivoService,
+	return &RuleEngine{
+		ConfigRepo:          configRepo,
+		SensorRepo:          sensorRepo,
+		DecisionService:     decisionService,
+		AlarmaService:       alarmaService,
+		EventoService:       eventoService,
+		NotifierService:     notifierService,
+		EquipoRepo:          equipoRepo,
+		Dispatcher:          dispatcher,
+		TagDescubiertoRepo:  tagDescubiertoRepo,
+		AlertaService:       alertaService,
+		TiempoActivoService: tiempoActivoService,
 
-        tagEquipoCache: make(map[string]int),
+		tagEquipoCache: make(map[string]int),
 
-        confirmaciones: make(map[string]*contadorConfirmacion),
-    }
+		confirmaciones: make(map[string]*contadorConfirmacion),
+	}
 }
 
 func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp time.Time) {
@@ -261,304 +261,307 @@ func (e *RuleEngine) ProcessSensorData(reading models.SensorReading, timestamp t
 			err,
 		)
 	}
-	
-var tagID int
-tagDesc, _ := e.TagDescubiertoRepo.ObtenerTagPorEquipoYNombre(
-    reading.EquipmentID,
-    reading.TagName,
-)
-if tagDesc != nil {
-    tagID = tagDesc.ID
-}
 
-// Resolver los 3 activos del tag
-var equipoActivoID *int
-var componenteActivoID *int
-var repuestoActivoID *int
-var umbral *models.ConfigUmbral
+	var tagID int
+	tagDesc, _ := e.TagDescubiertoRepo.ObtenerTagPorEquipoYNombre(
+		reading.EquipmentID,
+		reading.TagName,
+	)
+	if tagDesc != nil {
+		tagID = tagDesc.ID
+	}
 
-if tagID > 0 {
-    eqID, compID, repID, err := e.TagDescubiertoRepo.ObtenerActivosDelTag(tagID)
-    if err != nil {
-        log.Printf("Error obteniendo activos del tag %d: %v", tagID, err)
-    }
-    equipoActivoID = eqID
-    componenteActivoID = compID
-    repuestoActivoID = repID
+	// Resolver los 3 activos del tag
+	var equipoActivoID *int
+	var componenteActivoID *int
+	var repuestoActivoID *int
+	var umbral *models.ConfigUmbral
 
-    // Buscar umbral por tag
-    u, err := e.ConfigRepo.ObtenerUmbralesPorTag(tagID, reading.TagName)
-    if err == nil && u != nil {
-        umbral = u
-    }
-}
+	if tagID > 0 {
+		eqID, compID, repID, err := e.TagDescubiertoRepo.ObtenerActivosDelTag(tagID)
+		if err != nil {
+			log.Printf("Error obteniendo activos del tag %d: %v", tagID, err)
+		}
+		equipoActivoID = eqID
+		componenteActivoID = compID
+		repuestoActivoID = repID
 
-if umbral == nil {
-    u, err := e.ConfigRepo.ObtenerUmbrales(
-        reading.EquipmentID,
-        reading.TagName,
-    )
-    if err != nil {
-        log.Printf(
-            "Error obteniendo umbrales legacy: Equipo=%d | Tag=%s | Error=%v",
-            reading.EquipmentID, reading.TagName, err,
-        )
-        return
-    }
-    if u == nil {
-        return
-    }
-    umbral = u
-}
+		if tagID > 0 {
+			eqID, compID, repID, err := e.TagDescubiertoRepo.ObtenerActivosDelTag(tagID)
+			if err != nil {
+				log.Printf("Error obteniendo activos del tag %d: %v", tagID, err)
+			}
+			equipoActivoID = eqID
+			componenteActivoID = compID
+			repuestoActivoID = repID
+		}
 
-// ============================================
-// EVALUAR ACTIVOS
-// ============================================
-
-log.Printf(
-    "Evaluando tag=%s valor=%.3f equipo=%v componente=%v repuesto=%v",
-    reading.TagName, reading.Value,
-    ptrOrZero(equipoActivoID),
-    ptrOrZero(componenteActivoID),
-    ptrOrZero(repuestoActivoID),
-)
-// Registrar tiempo activo si estÃ¡ configurado
-if umbral != nil && umbral.ContarTiempoActivo && e.TiempoActivoService != nil {
-    eqID := ptrOrZero(equipoActivoID)
-    compID := ptrOrZero(componenteActivoID)
-    repID := ptrOrZero(repuestoActivoID)
-
-    activoTipo := "equipo"
-    activoID := eqID
-    if compID > 0 {
-        activoTipo = "componente"
-        activoID = compID
-    } else if repID > 0 {
-        activoTipo = "repuesto"
-        activoID = repID
-    }
-
-	var reportarInfo *models.ReportarParadaInfo
-	if umbral.ReportarParada {
-		reportarInfo = &models.ReportarParadaInfo{
-			Reportar:            true,
-			MinDuracionSegundos: ptrOrZeroInt(umbral.MinDuracionParadaSegundos),
-			EquipoID:            ptrOrZero(equipoActivoID),
-			ComponenteID:        componenteActivoID,
-			RepuestoID:          repuestoActivoID,
+		if umbral == nil {
+			u, err := e.ConfigRepo.ObtenerUmbrales(
+				reading.EquipmentID,
+				reading.TagName,
+			)
+			if err != nil {
+				log.Printf(
+					"Error obteniendo umbrales legacy: Equipo=%d | Tag=%s | Error=%v",
+					reading.EquipmentID, reading.TagName, err,
+				)
+				return
+			}
+			if u == nil {
+				return
+			}
+			umbral = u
 		}
 	}
 
-	e.TiempoActivoService.RegistrarLectura(
-		tagID, activoTipo, activoID,
-		reading.Value, reading.Quality, timestamp,
-		reportarInfo,
+	if umbral == nil {
+		u, err := e.ConfigRepo.ObtenerUmbrales(
+			reading.EquipmentID,
+			reading.TagName,
+		)
+		if err != nil {
+			log.Printf(
+				"Error obteniendo umbrales legacy: Equipo=%d | Tag=%s | Error=%v",
+				reading.EquipmentID, reading.TagName, err,
+			)
+			return
+		}
+		if u == nil {
+			return
+		}
+		umbral = u
+	}
+
+	// ============================================
+	// EVALUAR ACTIVOS
+	// ============================================
+
+	log.Printf(
+		"Evaluando tag=%s valor=%.3f equipo=%v componente=%v repuesto=%v",
+		reading.TagName, reading.Value,
+		ptrOrZero(equipoActivoID),
+		ptrOrZero(componenteActivoID),
+		ptrOrZero(repuestoActivoID),
 	)
-}
-fueraDeRango :=
-    (umbral.UmbralMin != nil && reading.Value < *umbral.UmbralMin) ||
-    (umbral.UmbralMax != nil && reading.Value > *umbral.UmbralMax)
+	// Registrar tiempo activo si estÃ¡ configurado
+	if umbral != nil && umbral.ContarTiempoActivo && e.TiempoActivoService != nil {
+		eqID := ptrOrZero(equipoActivoID)
+		compID := ptrOrZero(componenteActivoID)
+		repID := ptrOrZero(repuestoActivoID)
+		activoTipo := "equipo"
+		activoID := eqID
+		if compID > 0 {
+			activoTipo = "componente"
+			activoID = compID
+		} else if repID > 0 {
+			activoTipo = "repuesto"
+			activoID = repID
+		}
 
-// Resolver el activo principal (equipo > componente > repuesto)
-activoTipoActual := "equipo"
-activoIDActual := 0
-if equipoActivoID != nil && *equipoActivoID > 0 {
-    activoIDActual = *equipoActivoID
-} else if componenteActivoID != nil && *componenteActivoID > 0 {
-    activoTipoActual = "componente"
-    activoIDActual = *componenteActivoID
-} else if repuestoActivoID != nil && *repuestoActivoID > 0 {
-    activoTipoActual = "repuesto"
-    activoIDActual = *repuestoActivoID
-}
+		var reportarInfo *models.ReportarParadaInfo
+		if umbral.ReportarParada {
+			reportarInfo = &models.ReportarParadaInfo{
+				Reportar:            true,
+				MinDuracionSegundos: ptrOrZeroInt(umbral.MinDuracionParadaSegundos),
+				EquipoID:            ptrOrZero(equipoActivoID),
+				ComponenteID:        componenteActivoID,
+				RepuestoID:          repuestoActivoID,
+			}
+		}
 
-if activoIDActual == 0 {
-    log.Printf("Sin activo resuelto para tag=%s, se ignora evaluaciÃ³n de umbral", reading.TagName)
-    return
-}
+		e.TiempoActivoService.RegistrarLectura(
+			tagID, activoTipo, activoID,
+			reading.Value, reading.Quality, timestamp,
+			reportarInfo,
+		)
+	}
+	fueraDeRango :=
+		(umbral.UmbralMin != nil && reading.Value < *umbral.UmbralMin) ||
+			(umbral.UmbralMax != nil && reading.Value > *umbral.UmbralMax)
 
-// Estado actual del activo
-estadoActual, err := e.EquipoRepo.ObtenerEstadoActivo(activoTipoActual, activoIDActual)
-if err != nil {
-    log.Printf("Error consultando estado activo (%s=%d): %v", activoTipoActual, activoIDActual, err)
-    return
-}
-log.Printf("Activo %s=%d estado=%s | valor=%.3f fueraRango=%v",
-    activoTipoActual, activoIDActual, estadoActual, reading.Value, fueraDeRango)
+	// Resolver el activo principal (equipo > componente > repuesto)
+	activoTipoActual := "equipo"
+	activoIDActual := 0
+	if equipoActivoID != nil && *equipoActivoID > 0 {
+		activoIDActual = *equipoActivoID
+	} else if componenteActivoID != nil && *componenteActivoID > 0 {
+		activoTipoActual = "componente"
+		activoIDActual = *componenteActivoID
+	} else if repuestoActivoID != nil && *repuestoActivoID > 0 {
+		activoTipoActual = "repuesto"
+		activoIDActual = *repuestoActivoID
+	}
 
-claveContador := fmt.Sprintf("%d|%s", tagID, reading.TagName)
+	if activoIDActual == 0 {
+		log.Printf("Sin activo resuelto para tag=%s, se ignora evaluaciÃ³n de umbral", reading.TagName)
+		return
+	}
 
-e.confirmacionesMu.Lock()
-if e.confirmaciones[claveContador] == nil {
-    e.confirmaciones[claveContador] = &contadorConfirmacion{}
-}
-contador := e.confirmaciones[claveContador]
-e.confirmacionesMu.Unlock()
+	// Estado actual del activo
+	estadoActual, err := e.EquipoRepo.ObtenerEstadoActivo(activoTipoActual, activoIDActual)
+	if err != nil {
+		log.Printf("Error consultando estado activo (%s=%d): %v", activoTipoActual, activoIDActual, err)
+		return
+	}
+	log.Printf("Activo %s=%d estado=%s | valor=%.3f fueraRango=%v",
+		activoTipoActual, activoIDActual, estadoActual, reading.Value, fueraDeRango)
 
-if fueraDeRango {
-    contador.fueraConsecutivas++
-    contador.dentroConsecutivas = 0
-} else {
-    contador.dentroConsecutivas++
-    contador.fueraConsecutivas = 0
-}
+	claveContador := fmt.Sprintf("%d|%s", tagID, reading.TagName)
 
-lecturasConfirmacion := 3
-if umbral.LecturasConfirmacion != nil && *umbral.LecturasConfirmacion > 0 {
-    lecturasConfirmacion = *umbral.LecturasConfirmacion
-}
+	e.confirmacionesMu.Lock()
+	if e.confirmaciones[claveContador] == nil {
+		e.confirmaciones[claveContador] = &contadorConfirmacion{}
+	}
+	contador := e.confirmaciones[claveContador]
+	e.confirmacionesMu.Unlock()
 
-log.Printf(
-    "Confirmacion tag=%s: fuera=%d dentro=%d necesarias=%d",
-    reading.TagName,
-    contador.fueraConsecutivas,
-    contador.dentroConsecutivas,
-    lecturasConfirmacion,
-)
+	if fueraDeRango {
+		contador.fueraConsecutivas++
+		contador.dentroConsecutivas = 0
+	} else {
+		contador.dentroConsecutivas++
+		contador.fueraConsecutivas = 0
+	}
 
-if fueraDeRango && estadoActual != "fallo" && contador.fueraConsecutivas < lecturasConfirmacion {
-    log.Printf(
-        "Esperando confirmacion de falla: tag=%s %d/%d",
-        reading.TagName,
-        contador.fueraConsecutivas,
-        lecturasConfirmacion,
-    )
-    return
-}
+	lecturasConfirmacion := 3
+	if umbral.LecturasConfirmacion != nil && *umbral.LecturasConfirmacion > 0 {
+		lecturasConfirmacion = *umbral.LecturasConfirmacion
+	}
 
-if !fueraDeRango && estadoActual == "fallo" && contador.dentroConsecutivas < lecturasConfirmacion {
-    log.Printf(
-        "Esperando confirmacion de recuperacion: tag=%s %d/%d",
-        reading.TagName,
-        contador.dentroConsecutivas,
-        lecturasConfirmacion,
-    )
-    return
-}
+	log.Printf(
+		"Confirmacion tag=%s: fuera=%d dentro=%d necesarias=%d",
+		reading.TagName,
+		contador.fueraConsecutivas,
+		contador.dentroConsecutivas,
+		lecturasConfirmacion,
+	)
 
-if !fueraDeRango {
-    // Solo hay transiciÃ³n si estaba en 'fallo' (recuperaciÃ³n)
-    if estadoActual == "fallo" {
-        log.Printf("ðŸŸ¢ RECUPERACIÃ“N: %s=%d vuelve al rango (valor=%.3f) â†’ 'activo'",
-            activoTipoActual, activoIDActual, reading.Value)
+	if fueraDeRango && estadoActual != "fallo" && contador.fueraConsecutivas < lecturasConfirmacion {
+		log.Printf(
+			"Esperando confirmacion de falla: tag=%s %d/%d",
+			reading.TagName,
+			contador.fueraConsecutivas,
+			lecturasConfirmacion,
+		)
+		return
+	}
 
-        // 1. Cerrar alarmas activas
-        _ = e.AlarmaService.CerrarAlarmasActivasPorEquipo(activoIDActual)
-        if activoTipoActual != "equipo" {
-            // Si es componente o repuesto, cerrar por columna especÃ­fica
-            _ = e.cerrarAlarmasActivasPorActivo(activoTipoActual, activoIDActual)
-        }
+	if !fueraDeRango && estadoActual == "fallo" && contador.dentroConsecutivas < lecturasConfirmacion {
+		log.Printf(
+			"Esperando confirmacion de recuperacion: tag=%s %d/%d",
+			reading.TagName,
+			contador.dentroConsecutivas,
+			lecturasConfirmacion,
+		)
+		return
+	}
 
-        // 2. Registrar evento de recuperación PRIMERO (mientras el estado es 'fallo')
-        if e.EventoService != nil {
-            _ = e.EventoService.CambiarEstadoActivo(
-                *equipoActivoID, componenteActivoID, repuestoActivoID,
-                &tagID, &reading.TagName, "activo",
-                fmt.Sprintf("Recuperado: %s = %.3f dentro de rango", reading.TagName, reading.Value),
-            )
-        }
+	if !fueraDeRango {
+		// Solo hay transiciÃ³n si estaba en 'fallo' (recuperaciÃ³n)
+		if estadoActual == "fallo" {
+			log.Printf("ðŸŸ¢ RECUPERACIÃ“N: %s=%d vuelve al rango (valor=%.3f) â†’ 'activo'",
+				activoTipoActual, activoIDActual, reading.Value)
 
-        // 3. Cambiar estado del activo a activo
-        _ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "activo")
+			// 1. Cerrar alarmas activas
+			_ = e.AlarmaService.CerrarAlarmasActivasPorEquipo(activoIDActual)
+			if activoTipoActual != "equipo" {
+				// Si es componente o repuesto, cerrar por columna especÃ­fica
+				_ = e.cerrarAlarmasActivasPorActivo(activoTipoActual, activoIDActual)
+			}
 
-        // 4. Cerrar fila de tiempo con motivo 'recuperado', abrir 'activo'
-        if e.TiempoActivoService != nil && umbral.ContarTiempoActivo {
-            e.TiempoActivoService.Transicionar(
-                tagID, activoTipoActual, activoIDActual,
-                "activo", "recuperado", reading.Value, timestamp,
-            )
-        }
-    } else if estadoActual == "mantenimiento" {
-        // Sigue en mantenimiento, no hacemos nada
-        log.Printf("Activo %s=%d en mantenimiento, valor dentro de rango â†’ sin cambios",
-            activoTipoActual, activoIDActual)
-    }
-    return
-}
+			// 2. Registrar evento de recuperación PRIMERO (mientras el estado es 'fallo')
+			if e.EventoService != nil {
+				_ = e.EventoService.CambiarEstadoActivo(
+					*equipoActivoID, componenteActivoID, repuestoActivoID,
+					&tagID, &reading.TagName, "activo",
+					fmt.Sprintf("Recuperado: %s = %.3f dentro de rango", reading.TagName, reading.Value),
+				)
+			}
 
-if estadoActual == "fallo" {
-    // Ya estÃ¡ en fallo, no repetir. Registrar evento silencioso para histÃ³rico.
-    evento := &models.DatoEvento{
-        EquipoID:        *equipoActivoID,
-        ComponenteID:    componenteActivoID,
-        RepuestoID:      repuestoActivoID,
-        TagID:           &tagID,
-        TipoEvento:      "persistencia_fallo",
-        Descripcion:     fmt.Sprintf("%s sigue fuera de rango: %.3f", reading.TagName, reading.Value),
-        ValorNuevo:      &reading.Value,
-        Parametro:       reading.TagName,
-        TimestampEvento: timestamp,
-    }
-    _ = e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento)
-    return
-}
+			// 3. Cambiar estado del activo a activo
+			_ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "activo")
+		} else if estadoActual == "mantenimiento" {
+			// Sigue en mantenimiento, no hacemos nada
+			log.Printf("Activo %s=%d en mantenimiento, valor dentro de rango â†’ sin cambios",
+				activoTipoActual, activoIDActual)
+		}
+		return
+	}
 
-// TransiciÃ³n a fallo (desde 'activo' o 'mantenimiento')
-motivoTransicion := "activo"
-if estadoActual == "mantenimiento" {
-    motivoTransicion = "salida_por_falla"
-    log.Printf("ðŸ”´ SALIDA DE MANTENIMIENTO: %s=%d valor=%.3f fuera de rango â†’ 'fallo'",
-        activoTipoActual, activoIDActual, reading.Value)
-} else {
-    log.Printf("ðŸ”´ FALLA: %s=%d valor=%.3f fuera de rango â†’ 'fallo'",
-        activoTipoActual, activoIDActual, reading.Value)
-}
+	if estadoActual == "fallo" {
+		// Ya estÃ¡ en fallo, no repetir. Registrar evento silencioso para histÃ³rico.
+		evento := &models.DatoEvento{
+			EquipoID:        *equipoActivoID,
+			ComponenteID:    componenteActivoID,
+			RepuestoID:      repuestoActivoID,
+			TagID:           &tagID,
+			TipoEvento:      "persistencia_fallo",
+			Descripcion:     fmt.Sprintf("%s sigue fuera de rango: %.3f", reading.TagName, reading.Value),
+			ValorNuevo:      &reading.Value,
+			Parametro:       reading.TagName,
+			TimestampEvento: timestamp,
+		}
+		_ = e.DecisionService.ConfigGuardadoRepo.GuardarEvento(evento)
+		return
+	}
 
-// 1. Guardar evento de alarma
-motivo := fmt.Sprintf(
-    "%s = %.3f %s (fuera de rango: min=%s max=%s)",
-    reading.TagName, reading.Value, reading.Unit,
-    fmtFloatPtr(umbral.UmbralMin), fmtFloatPtr(umbral.UmbralMax),
-)
-eventoAlarma := &models.DatoEvento{
-    EquipoID:        *equipoActivoID,
-    ComponenteID:    componenteActivoID,
-    RepuestoID:      repuestoActivoID,
-    TagID:           &tagID,
-    TipoEvento:      "alarma",
-    Descripcion:     motivo,
-    ValorNuevo:      &reading.Value,
-    Parametro:       reading.TagName,
-    TimestampEvento: timestamp,
-}
-_ = e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoAlarma)
+	// Transición a fallo (desde 'activo' o 'mantenimiento')
+	if estadoActual == "mantenimiento" {
+		log.Printf("🔴 SALIDA DE MANTENIMIENTO: %s=%d valor=%.3f fuera de rango → 'fallo'",
+			activoTipoActual, activoIDActual, reading.Value)
+	} else {
+		log.Printf("🔴 FALLA: %s=%d valor=%.3f fuera de rango → 'fallo'",
+			activoTipoActual, activoIDActual, reading.Value)
+	}
 
-// 2. Registrar cambio en eventos_estado PRIMERO (mientras el estado es 'activo' o 'mantenimiento')
-if e.EventoService != nil {
-    _ = e.EventoService.CambiarEstadoActivo(
-        *equipoActivoID, componenteActivoID, repuestoActivoID,
-        &tagID, &reading.TagName, "fallo", motivo,
-    )
-}
+	// 1. Guardar evento de alarma
+	motivo := fmt.Sprintf(
+		"%s = %.3f %s (fuera de rango: min=%s max=%s)",
+		reading.TagName, reading.Value, reading.Unit,
+		fmtFloatPtr(umbral.UmbralMin), fmtFloatPtr(umbral.UmbralMax),
+	)
+	eventoAlarma := &models.DatoEvento{
+		EquipoID:        *equipoActivoID,
+		ComponenteID:    componenteActivoID,
+		RepuestoID:      repuestoActivoID,
+		TagID:           &tagID,
+		TipoEvento:      "alarma",
+		Descripcion:     motivo,
+		ValorNuevo:      &reading.Value,
+		Parametro:       reading.TagName,
+		TimestampEvento: timestamp,
+	}
+	_ = e.DecisionService.ConfigGuardadoRepo.GuardarEvento(eventoAlarma)
 
-// 3. Cambiar estado del activo a 'fallo'
-_ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "fallo")
+	// 2. Registrar cambio en eventos_estado PRIMERO (mientras el estado es 'activo' o 'mantenimiento')
+	if e.EventoService != nil {
+		_ = e.EventoService.CambiarEstadoActivo(
+			*equipoActivoID, componenteActivoID, repuestoActivoID,
+			&tagID, &reading.TagName, "fallo", motivo,
+		)
+	}
 
-// 4. Crear alarma/evento segÃºn el modo
-if umbral.Modo == "alerta" {
-    if e.AlertaService != nil {
-        e.AlertaService.GenerarAlertaPolimorfica(
-            *equipoActivoID, componenteActivoID, repuestoActivoID,
-            &tagID, &reading.TagName, &reading.Value,
-            umbral.UmbralMin, umbral.UmbralMax, motivo,
-        )
-    }
-} else {
-    if e.AlarmaService != nil {
-        e.AlarmaService.GenerarAlarmaPolimorfica(
-            *equipoActivoID, componenteActivoID, repuestoActivoID,
-            &tagID, &reading.TagName, motivo,
-        )
-    }
-}
+	// 3. Cambiar estado del activo a 'fallo'
+	_ = e.EquipoRepo.ActualizarEstadoActivo(activoTipoActual, activoIDActual, "fallo")
 
-    // 5. Transicionar tiempo con motivo adecuado
-    if e.TiempoActivoService != nil && umbral.ContarTiempoActivo {
-        e.TiempoActivoService.Transicionar(
-            tagID, activoTipoActual, activoIDActual,
-            "fallo", motivoTransicion, reading.Value, timestamp,
-        )
-    }
+	// 4. Crear alarma/evento segÃºn el modo
+	if umbral.Modo == "alerta" {
+		if e.AlertaService != nil {
+			e.AlertaService.GenerarAlertaPolimorfica(
+				*equipoActivoID, componenteActivoID, repuestoActivoID,
+				&tagID, &reading.TagName, &reading.Value,
+				umbral.UmbralMin, umbral.UmbralMax, motivo,
+			)
+		}
+	} else {
+		if e.AlarmaService != nil {
+			e.AlarmaService.GenerarAlarmaPolimorfica(
+				*equipoActivoID, componenteActivoID, repuestoActivoID,
+				&tagID, &reading.TagName, motivo,
+			)
+		}
+	}
 }
 
 func (e *RuleEngine) ProcessPingResult(equipoID int, failedAttempts int, maxRetries int) {
@@ -662,6 +665,7 @@ func ptrOrZeroInt(p *int) int {
 	}
 	return *p
 }
+
 // cerrarAlarmasActivasPorActivo cierra las alarmas activas de un componente/repuesto.
 func (e *RuleEngine) cerrarAlarmasActivasPorActivo(tipo string, id int) error {
 	var col string

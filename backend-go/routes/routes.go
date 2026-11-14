@@ -70,8 +70,8 @@ func SetupRoutes(
 	piTagService := services.NewPITagService(piTagRepo, equipoRepo)
 	estructuraPlantaService := services.NewEstructuraPlantaService(estructuraPlantaRepo)
 	paradaRepo := repository.NewParadaRepository(db)
-    paradaSvc := services.NewParadaService(paradaRepo, equipoRepo, tagDescubiertoRepo)
-    tiempoActivoSvc := services.NewTiempoActivoService(tiempoActivoRepo, paradaSvc)
+	paradaSvc := services.NewParadaService(paradaRepo, equipoRepo, tagDescubiertoRepo)
+	tiempoActivoSvc := services.NewTiempoActivoService(tiempoActivoRepo, paradaSvc)
 	alertaHandler := handlers.NewAlertaHandler(alertaRepo)
 
 	// ============================================
@@ -93,6 +93,7 @@ func SetupRoutes(
 		Repo:      configRepo,
 		Scheduler: sched,
 	}
+	paradaHandler := handlers.NewParadaHandler(paradaSvc)
 	activoService := services.NewActivoService(
 		equipoRepo,
 		alarmaRepo,
@@ -162,6 +163,11 @@ func SetupRoutes(
 		auditoriaHandler,
 	)
 
+	registrarParadasRoutes(
+		r,
+		paradaHandler,
+	)
+
 	// ============================================
 	// USUARIOS
 	// ============================================
@@ -206,7 +212,7 @@ func SetupRoutes(
 		r,
 		configHandler,
 	)
-	
+
 	registrarAlertasRoutes(
 		r,
 		alertaHandler,

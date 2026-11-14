@@ -48,29 +48,31 @@ func (r *ParadaRepository) Listar(
 	equipoID *int,
 ) ([]models.Parada, error) {
 	query := `
-        SELECT id, equipo_id, tag_id, componente_id, repuesto_id,
-               COALESCE(proceso_nombre, ''),
-               COALESCE(subproceso_nombre, ''),
-               COALESCE(componente_nombre, ''),
-               COALESCE(repuesto_nombre, ''),
-               COALESCE(tag_nombre, ''),
-               inicio, fin, duracion_minutos,
-               COALESCE(personal_responsable, ''),
-               COALESCE(area_responsable, ''),
-               COALESCE(motivo, ''),
-               sync_excel, excel_row_id, sync_excel_updated_at,
-               created_at, updated_at
-        FROM paradas_reportadas
-        WHERE inicio >= $1 AND inicio < $2
+        SELECT p.id, p.equipo_id, COALESCE(e.nombre, ''),
+               p.tag_id, p.componente_id, p.repuesto_id,
+               COALESCE(p.proceso_nombre, ''),
+               COALESCE(p.subproceso_nombre, ''),
+               COALESCE(p.componente_nombre, ''),
+               COALESCE(p.repuesto_nombre, ''),
+               COALESCE(p.tag_nombre, ''),
+               p.inicio, p.fin, p.duracion_minutos,
+               COALESCE(p.personal_responsable, ''),
+               COALESCE(p.area_responsable, ''),
+               COALESCE(p.motivo, ''),
+               p.sync_excel, p.excel_row_id, p.sync_excel_updated_at,
+               p.created_at, p.updated_at
+        FROM paradas_reportadas p
+        LEFT JOIN equipos e ON e.id = p.equipo_id
+        WHERE p.inicio >= $1 AND p.inicio < $2
     `
 	args := []interface{}{desde, hasta}
 
 	if equipoID != nil && *equipoID > 0 {
-		query += ` AND equipo_id = $3`
+		query += ` AND p.equipo_id = $3`
 		args = append(args, *equipoID)
 	}
 
-	query += ` ORDER BY inicio DESC`
+	query += ` ORDER BY p.inicio DESC`
 
 	rows, err := r.DB.Query(query, args...)
 	if err != nil {
@@ -86,22 +88,25 @@ func (r *ParadaRepository) ObtenerPorID(id int) (*models.Parada, error) {
 	var p models.Parada
 
 	err := r.DB.QueryRow(`
-        SELECT id, equipo_id, tag_id, componente_id, repuesto_id,
-               COALESCE(proceso_nombre, ''),
-               COALESCE(subproceso_nombre, ''),
-               COALESCE(componente_nombre, ''),
-               COALESCE(repuesto_nombre, ''),
-               COALESCE(tag_nombre, ''),
-               inicio, fin, duracion_minutos,
-               COALESCE(personal_responsable, ''),
-               COALESCE(area_responsable, ''),
-               COALESCE(motivo, ''),
-               sync_excel, excel_row_id, sync_excel_updated_at,
-               created_at, updated_at
-        FROM paradas_reportadas
-        WHERE id = $1
+        SELECT p.id, p.equipo_id, COALESCE(e.nombre, ''),
+               p.tag_id, p.componente_id, p.repuesto_id,
+               COALESCE(p.proceso_nombre, ''),
+               COALESCE(p.subproceso_nombre, ''),
+               COALESCE(p.componente_nombre, ''),
+               COALESCE(p.repuesto_nombre, ''),
+               COALESCE(p.tag_nombre, ''),
+               p.inicio, p.fin, p.duracion_minutos,
+               COALESCE(p.personal_responsable, ''),
+               COALESCE(p.area_responsable, ''),
+               COALESCE(p.motivo, ''),
+               p.sync_excel, p.excel_row_id, p.sync_excel_updated_at,
+               p.created_at, p.updated_at
+        FROM paradas_reportadas p
+        LEFT JOIN equipos e ON e.id = p.equipo_id
+        WHERE p.id = $1
     `, id).Scan(
-		&p.ID, &p.EquipoID, &p.TagID, &p.ComponenteID, &p.RepuestoID,
+		&p.ID, &p.EquipoID, &p.EquipoNombre,
+		&p.TagID, &p.ComponenteID, &p.RepuestoID,
 		&p.ProcesoNombre, &p.SubprocesoNombre, &p.ComponenteNombre,
 		&p.RepuestoNombre, &p.TagNombre,
 		&p.Inicio, &p.Fin, &p.DuracionMinutos,
@@ -135,24 +140,26 @@ func (r *ParadaRepository) ActualizarResponsable(
 	return err
 }
 
-// ListarSinSincronizar devuelve las paradas que aÃºn no se han escrito al Excel.
+// ListarSinSincronizar devuelve las paradas que aún no se han escrito al Excel.
 func (r *ParadaRepository) ListarSinSincronizar() ([]models.Parada, error) {
 	rows, err := r.DB.Query(`
-        SELECT id, equipo_id, tag_id, componente_id, repuesto_id,
-               COALESCE(proceso_nombre, ''),
-               COALESCE(subproceso_nombre, ''),
-               COALESCE(componente_nombre, ''),
-               COALESCE(repuesto_nombre, ''),
-               COALESCE(tag_nombre, ''),
-               inicio, fin, duracion_minutos,
-               COALESCE(personal_responsable, ''),
-               COALESCE(area_responsable, ''),
-               COALESCE(motivo, ''),
-               sync_excel, excel_row_id, sync_excel_updated_at,
-               created_at, updated_at
-        FROM paradas_reportadas
-        WHERE sync_excel = false
-        ORDER BY id ASC
+        SELECT p.id, p.equipo_id, COALESCE(e.nombre, ''),
+               p.tag_id, p.componente_id, p.repuesto_id,
+               COALESCE(p.proceso_nombre, ''),
+               COALESCE(p.subproceso_nombre, ''),
+               COALESCE(p.componente_nombre, ''),
+               COALESCE(p.repuesto_nombre, ''),
+               COALESCE(p.tag_nombre, ''),
+               p.inicio, p.fin, p.duracion_minutos,
+               COALESCE(p.personal_responsable, ''),
+               COALESCE(p.area_responsable, ''),
+               COALESCE(p.motivo, ''),
+               p.sync_excel, p.excel_row_id, p.sync_excel_updated_at,
+               p.created_at, p.updated_at
+        FROM paradas_reportadas p
+        LEFT JOIN equipos e ON e.id = p.equipo_id
+        WHERE p.sync_excel = false
+        ORDER BY p.id ASC
     `)
 	if err != nil {
 		return nil, err
@@ -205,13 +212,13 @@ func (r *ParadaRepository) CrearSyncLog(log *models.ParadaSyncLog) error {
 	).Scan(&log.ID, &log.EjecutadoEn)
 }
 
-// scanParadas procesa un *sql.Rows en []models.Parada.
 func scanParadas(rows *sql.Rows) ([]models.Parada, error) {
 	var lista []models.Parada
 	for rows.Next() {
 		var p models.Parada
 		if err := rows.Scan(
-			&p.ID, &p.EquipoID, &p.TagID, &p.ComponenteID, &p.RepuestoID,
+			&p.ID, &p.EquipoID, &p.EquipoNombre,
+			&p.TagID, &p.ComponenteID, &p.RepuestoID,
 			&p.ProcesoNombre, &p.SubprocesoNombre, &p.ComponenteNombre,
 			&p.RepuestoNombre, &p.TagNombre,
 			&p.Inicio, &p.Fin, &p.DuracionMinutos,
