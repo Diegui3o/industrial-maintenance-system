@@ -625,6 +625,7 @@ func (r *EquipoRepository) ListarHijos(padreID int) ([]models.Equipo, error) {
 func (r *EquipoRepository) ListarRaices() ([]models.Equipo, error) {
 	return []models.Equipo{}, nil
 }
+
 // ObtenerEquipoPadreDeComponente devuelve el equipo_id del componente.
 // Devuelve 0 si el componente no existe o no tiene equipo padre.
 func (r *EquipoRepository) ObtenerEquipoPadreDeComponente(componenteID int) (int, error) {
@@ -673,6 +674,7 @@ func (r *EquipoRepository) ObtenerEquipoPadreDeRepuesto(repuestoID int) (int, er
 	}
 	return *equipoID, nil
 }
+
 // ObtenerEstadoActivo devuelve el estado actual de un activo
 // (equipo, componente o repuesto). Si el activo no existe, devuelve "".
 func (r *EquipoRepository) ObtenerEstadoActivo(
@@ -746,4 +748,27 @@ func (r *EquipoRepository) ActualizarEstadoActivo(
 	}
 
 	return err
+}
+
+// ObtenerUbicacionEquipo devuelve el proceso y subproceso del equipo.
+func (r *EquipoRepository) ObtenerUbicacionEquipo(equipoID int) (proceso string, subproceso string, err error) {
+	if equipoID <= 0 {
+		return "", "", nil
+	}
+
+	err = r.DB.QueryRow(`
+        SELECT
+            COALESCE(p.nombre, '') AS proceso,
+            COALESCE(sp.nombre, '') AS subproceso
+        FROM planta_equipos pe
+        LEFT JOIN subprocesos_planta sp ON sp.id = pe.subproceso_id
+        LEFT JOIN procesos_planta p ON p.id = sp.proceso_id
+        WHERE pe.equipo_id = $1
+        LIMIT 1
+    `, equipoID).Scan(&proceso, &subproceso)
+
+	if err == sql.ErrNoRows {
+		return "", "", nil
+	}
+	return proceso, subproceso, err
 }

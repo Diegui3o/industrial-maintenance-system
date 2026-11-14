@@ -14,3 +14,10 @@ func registrarParadasRoutes(
 	r.HandleFunc("/api/paradas/export", paradaHandler.Exportar).Methods("GET")
 	r.HandleFunc("/api/paradas/{id}/responsable", paradaHandler.ActualizarResponsable).Methods("PUT")
 }
+
+func registrarReporteRoutes(
+	r *mux.Router,
+	reporteHandler *handlers.ReporteHandler,
+) {
+	r.HandleFunc("/api/reporte/export", reporteHandler.Exportar).Methods("GET")
+}

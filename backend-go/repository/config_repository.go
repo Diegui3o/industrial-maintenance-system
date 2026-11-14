@@ -92,7 +92,7 @@ func (r *ConfigRepository) CrearFuente(f *models.ConfigFuente) error {
 
 func (r *ConfigRepository) ListarUmbralesPorEquipo(equipoID int) ([]models.ConfigUmbral, error) {
 	rows, err := r.DB.Query(`
-        SELECT id, equipo_id, parametro, umbral_min, umbral_max, unidad, severidad, activo
+        SELECT id, equipo_id, tag_id, parametro, umbral_min, umbral_max, unidad, severidad, activo
         FROM config_umbrales
         WHERE equipo_id = $1
         ORDER BY parametro
@@ -105,7 +105,7 @@ func (r *ConfigRepository) ListarUmbralesPorEquipo(equipoID int) ([]models.Confi
 	var umbrales []models.ConfigUmbral
 	for rows.Next() {
 		var u models.ConfigUmbral
-		if err := rows.Scan(&u.ID, &u.EquipoID, &u.Parametro, &u.UmbralMin, &u.UmbralMax, &u.Unidad, &u.Severidad, &u.Activo); err != nil {
+		if err := rows.Scan(&u.ID, &u.EquipoID, &u.TagID, &u.Parametro, &u.UmbralMin, &u.UmbralMax, &u.Unidad, &u.Severidad, &u.Activo); err != nil {
 			return nil, err
 		}
 		umbrales = append(umbrales, u)

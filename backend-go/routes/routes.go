@@ -133,6 +133,14 @@ func SetupRoutes(
 		estructuraPlantaService,
 		db,
 	)
+	reporteHandler := handlers.NewReporteHandler(
+		equipoRepo,
+		configRepo,
+		tagDescubiertoRepo,
+		tiempoActivoSvc,
+		paradaSvc,
+		alarmaService,
+	)
 	tiempoActivoHandler := handlers.NewTiempoActivoHandler(tiempoActivoSvc)
 
 	// ============================================
@@ -166,6 +174,10 @@ func SetupRoutes(
 	registrarParadasRoutes(
 		r,
 		paradaHandler,
+	)
+	registrarReporteRoutes(
+		r,
+		reporteHandler,
 	)
 
 	// ============================================
