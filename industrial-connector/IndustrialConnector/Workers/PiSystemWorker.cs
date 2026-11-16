@@ -394,51 +394,66 @@ namespace IndustrialConnector.Workers
 
                     if (events.Count > 0)
                     {
-                        var readings =
-                            new List<SensorReading>();
 
-                        foreach (var pipeEvent in events.Results)
+                    var readings = new List<SensorReading>();
+
+                    // Control de duplicados dentro del mismo ciclo AFDataPipe.
+                    var processedEvents = new HashSet<string>(
+                        StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var pipeEvent in events.Results)
+                    {
+                        try
                         {
-                            try
+                            if (pipeEvent == null)
+                                continue;
+
+                            var value = pipeEvent.Value;
+
+                            if (value == null)
+                                continue;
+
+                            var attribute = value.Attribute;
+
+                            if (attribute == null)
+                                continue;
+
+                            // Identificador del evento: atributo + timestamp + valor.
+                            var eventKey =
+                                $"{attribute.GetPath()}|" +
+                                $"{value.Timestamp}|" +
+                                $"{Convert.ToString(value.Value, System.Globalization.CultureInfo.InvariantCulture)}";
+
+                            if (!processedEvents.Add(eventKey))
                             {
-                                if (pipeEvent == null)
-                                {
-                                    continue;
-                                }
+                                _logger.LogWarning(
+                                    "Evento duplicado omitido: {Attribute} | Timestamp: {Timestamp} | Valor: {Value}",
+                                    attribute.Name,
+                                    value.Timestamp,
+                                    value.Value);
 
-                                var value = pipeEvent.Value;
-
-                                if (value == null)
-                                {
-                                    continue;
-                                }
-
-                                var attribute = value.Attribute;
-
-                                if (attribute == null)
-                                {
-                                    continue;
-                                }
-
-                                var reading =
-                                    _reader.Read(
-                                        attribute,
-                                        value,
-                                        _config.Server,
-                                        _config.Database);
-
-                                if (reading != null)
-                                {
-                                    readings.Add(reading);
-                                }
+                                continue;
                             }
-                            catch (Exception ex)
+
+                            var reading = _reader.Read(
+                                attribute,
+                                value,
+                                _config.Server,
+                                _config.Database);
+
+                            if (reading != null)
                             {
-                                _logger.LogDebug(
-                                    ex,
-                                    "âš ï¸ Error procesando evento AFDataPipe.");
+                                readings.Add(reading);
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(
+                                ex,
+                                "Error procesando evento AFDataPipe.");
+                        }
+                    }
+
 
                         foreach (var reading in readings)
                         {
